@@ -1025,76 +1025,6 @@ void spymasters_web( special_effect_t& effect )
   effect.execute_action = create_proc_action<spymasters_web_t>( "spymasters_web", effect, stacking_buff, use_buff );
 }
 
-// 444067 driver
-// 448643 unknown (0.2s duration, 6yd radius, outgoing aoe hit?)
-// 448621 unknown (0.125s duration, echo delay?)
-// 448669 damage
-// TODO: confirm if additional echoes are immediate, delayed, or staggered
-void void_reapers_chime( special_effect_t& effect )
-{
-  struct void_reapers_chime_cb_t : public dbc_proc_callback_t
-  {
-    action_t* major;
-    action_t* minor;
-    action_t* queensbane = nullptr;
-    double hp_pct;
-
-    void_reapers_chime_cb_t( const special_effect_t& e )
-      : dbc_proc_callback_t( e.player, e ), hp_pct( e.driver()->effectN( 2 ).base_value() )
-    {
-      auto damage_spell = effect.player->find_spell( 448669 );
-      auto damage_name = std::string( damage_spell->name_cstr() );
-      auto damage_amount = effect.driver()->effectN( 1 ).average( effect );
-
-      major = create_proc_action<generic_aoe_proc_t>( damage_name, effect, damage_spell );
-      major->base_dd_min = major->base_dd_max = damage_amount;
-      major->base_multiplier *= role_mult( effect );
-      major->base_aoe_multiplier = effect.driver()->effectN( 5 ).percent();
-
-      minor = create_proc_action<generic_aoe_proc_t>( damage_name + "_echo", effect, damage_spell );
-      minor->base_dd_min = minor->base_dd_max = damage_amount * effect.driver()->effectN( 3 ).percent();
-      minor->base_multiplier *= role_mult( effect );
-      minor->name_str_reporting = "Echo";
-      major->add_child( minor );
-    }
-
-    void initialize() override
-    {
-      dbc_proc_callback_t::initialize();
-
-      if ( listener->sets->has_set_bonus( listener->specialization(), TWW_KCI, B2 ) )
-        if ( auto claw = find_special_effect( listener, 444135 ) )
-          queensbane = claw->execute_action;
-    }
-
-    void execute( action_t*, action_state_t* s ) override
-    {
-      major->execute_on_target( s->target );
-
-      bool echo = false;
-
-      if ( queensbane )
-      {
-        auto dot = queensbane->find_dot( s->target );
-        if ( dot && dot->is_ticking() )
-          echo = true;
-      }
-
-      if ( !echo && s->target->health_percentage() < hp_pct )
-        echo = true;
-
-      if ( echo )
-      {
-          // TODO: are these immediate, delayed, or staggered?
-          minor->execute_on_target( s->target );
-          minor->execute_on_target( s->target );
-      }
-    }
-  };
-
-  new void_reapers_chime_cb_t( effect );
-}
-
 // 445593 equip
 //  e1: damage value
 //  e2: haste value
@@ -4103,9 +4033,348 @@ void quickwick_candlestick( special_effect_t& effect )
 // 455447 weak not so gentle flame
 // 455479 strong not so gentle flame
 // 455480 strong light up
+// TODO: Figure out Takes odd behavior
+// Figure out the pets AP/SP coefficients for auto attacking pets
 void candle_confidant( special_effect_t& effect )
 {
-  effect.player->sim->error( "Candle Confidant is not implemented yet." );
+  struct candle_confidant_pet_t : public pet_t
+  {
+    bool use_auto_attack;
+    const special_effect_t& effect;
+    action_t* parent_action;
+
+    candle_confidant_pet_t( util::string_view name, const special_effect_t& e, const spell_data_t* summon_spell )
+      : pet_t( e.player->sim, e.player, name, true, true ), effect( e ), parent_action( nullptr )
+    {
+      npc_id = summon_spell->effectN( 1 ).misc_value1();
+      use_auto_attack = false;
+      owner_coeff.ap_from_ap = 1;
+      owner_coeff.ap_from_sp = 1;
+    }
+
+    resource_e primary_resource() const override
+    {
+      return RESOURCE_NONE;
+    }
+
+    virtual attack_t* create_auto_attack()
+    {
+      return nullptr;
+    }
+
+    struct auto_attack_t final : public melee_attack_t
+    {
+      auto_attack_t( candle_confidant_pet_t* p ) : melee_attack_t( "main_hand", p )
+      {
+        assert( p->main_hand_weapon.type != WEAPON_NONE );
+        p->main_hand_attack                    = p->create_auto_attack();
+        p->main_hand_attack->weapon            = &( p->main_hand_weapon );
+        p->main_hand_attack->base_execute_time = p->main_hand_weapon.swing_time;
+
+        ignore_false_positive = true;
+        trigger_gcd           = 0_ms;
+        school                = SCHOOL_PHYSICAL;
+      }
+
+      void execute() override
+      {
+        player->main_hand_attack->schedule_execute();
+      }
+
+      bool ready() override
+      {
+        if ( player->is_moving() )
+          return false;
+        return ( player->main_hand_attack->execute_event == nullptr );
+      }
+    };
+
+    void update_stats() override
+    {
+      pet_t::update_stats();
+      // Current doesnt seem to scale with haste
+      if ( owner->bugs )
+      {
+        current_pet_stats.composite_melee_haste             = 1;
+        current_pet_stats.composite_spell_haste             = 1;
+        current_pet_stats.composite_melee_auto_attack_speed = 1;
+        current_pet_stats.composite_spell_cast_speed        = 1;
+      }
+    }
+
+    action_t* create_action( util::string_view name, util::string_view options_str ) override
+    {
+      if ( name == "auto_attack" )
+        return new auto_attack_t( this );
+
+      return pet_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      if ( use_auto_attack )
+        def->add_action( "auto_attack" );
+
+      pet_t::init_action_list();
+    }
+  };
+
+  struct auto_attack_melee_t : public melee_attack_t
+  {
+    auto_attack_melee_t( pet_t* p, util::string_view name = "main_hand", action_t* a = nullptr )
+      : melee_attack_t( name, p )
+    {
+      this->background = this->repeating = true;
+      this->not_a_proc = this->may_crit = true;
+      this->special                     = false;
+      this->weapon_multiplier           = 1.0;
+      this->trigger_gcd                 = 0_ms;
+      this->school                      = SCHOOL_PHYSICAL;
+      this->stats->school               = SCHOOL_PHYSICAL;
+
+      auto proxy = a;
+      auto it    = range::find( proxy->child_action, name, &action_t::name );
+      if ( it != proxy->child_action.end() )
+        stats = ( *it )->stats;
+      else
+        proxy->add_child( this );
+    }
+
+    void execute() override
+    {
+      if ( this->player->executing )
+        this->schedule_execute();
+      else
+        melee_attack_t::execute();
+    }
+  };
+
+  struct candle_confidant_pet_spell_t : public spell_t
+  {
+    candle_confidant_pet_spell_t( util::string_view n, pet_t* p, const spell_data_t* s, util::string_view options_str, action_t* a )
+      : spell_t( n, p, s )
+    {
+      auto proxy = a;
+      auto it    = range::find( proxy->child_action, data().id(), &action_t::id );
+      if ( it != proxy->child_action.end() )
+        stats = ( *it )->stats;
+      else
+        proxy->add_child( this );
+
+      parse_options( options_str );
+    }
+  };
+
+  struct weak_light_up_t : public candle_confidant_pet_spell_t
+  {
+    weak_light_up_t( const special_effect_t& e, candle_confidant_pet_t* p, util::string_view options_str, action_t* a )
+      : candle_confidant_pet_spell_t( "light_up_waxx", p, p->find_spell( 455443 ), options_str, a )
+    {
+      base_dd_min = base_dd_max = e.driver()->effectN( 1 ).average( e );
+    }
+
+    void execute() override
+    {
+      // Has the odd spell que delay where itll wait a bit before starting the next cast, about 2.75s on average.
+      trigger_gcd = base_execute_time + rng().range( 500_ms, 1000_ms );
+      candle_confidant_pet_spell_t::execute();
+    }
+  };
+
+  struct weak_not_so_gentle_flame_t : public candle_confidant_pet_spell_t
+  {
+    weak_not_so_gentle_flame_t( const special_effect_t& e, candle_confidant_pet_t* p, util::string_view options_str, action_t* a )
+      : candle_confidant_pet_spell_t( "notsogentle_flame_wayne", p, p->find_spell( 455447 ), options_str, a )
+    {
+      base_dd_min = base_dd_max = e.driver()->effectN( 2 ).average( e );
+    }
+
+    void execute() override
+    {
+      // Has the odd spell que delay where itll wait a bit before starting the next cast, about 3.2s on average.
+      cooldown->duration = 3_s + rng().range( 100_ms, 300_ms );
+      candle_confidant_pet_spell_t::execute();
+    }
+  };
+
+  struct strong_light_up_t : public candle_confidant_pet_spell_t
+  {
+    strong_light_up_t( const special_effect_t& e, candle_confidant_pet_t* p, util::string_view options_str, action_t* a )
+      : candle_confidant_pet_spell_t( "light_up_take", p, p->find_spell( 455480 ), options_str, a )
+    {
+      base_dd_min = base_dd_max = e.driver()->effectN( 3 ).average( e );
+    }
+
+    void execute() override
+    {
+      // TODO: Take is weird, lots of odd spell queing events, missed casts, and long delays between casts.
+      // Figure out exactly whats going on here.
+      // https://www.warcraftlogs.com/reports/PNwkxKmn1cgtMYh3#fight=68&type=damage-done&source=289&view=events
+      cooldown->duration = 3_s + rng().range( 100_ms, 300_ms );
+      candle_confidant_pet_spell_t::execute();
+    }
+  };
+
+  struct strong_not_so_gentle_flame_t : public candle_confidant_pet_spell_t
+  {
+    strong_not_so_gentle_flame_t( const special_effect_t& e, candle_confidant_pet_t* p, util::string_view options_str, action_t* a )
+      : candle_confidant_pet_spell_t( "notsogentle_flame_take", p, p->find_spell( 455479 ), options_str, a )
+    {
+      base_dd_min = base_dd_max = e.driver()->effectN( 4 ).average( e );
+    }
+
+    void execute() override
+    {
+      // TODO: Take is weird, lots of odd spell queing events, missed casts, and long delays between casts.
+      // Figure out exactly whats going on here.
+      // https://www.warcraftlogs.com/reports/PNwkxKmn1cgtMYh3#fight=68&type=damage-done&source=289&view=events
+      cooldown->duration = 5_s + rng().range( 100_ms, 300_ms );
+      candle_confidant_pet_spell_t::execute();
+    }
+  };
+
+  struct waxx_pet_t : public candle_confidant_pet_t
+  {
+    waxx_pet_t( const special_effect_t& e, action_t* parent = nullptr )
+      : candle_confidant_pet_t( "Waxx", e, e.player->find_spell( 455445 ) )
+    {
+      parent_action = parent;
+    }
+
+    action_t* create_action( util::string_view name, util::string_view options_str ) override
+    {
+      if ( name == "light_up" )
+        return new weak_light_up_t( effect, this, options_str, parent_action );
+
+      return candle_confidant_pet_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      candle_confidant_pet_t::init_action_list();
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      def->add_action( "light_up" );
+    }
+  };
+
+  struct wayne_pet_t : public candle_confidant_pet_t
+  {
+    wayne_pet_t( const special_effect_t& e, action_t* parent = nullptr )
+      : candle_confidant_pet_t( "Wayne", e, e.player->find_spell( 455448 ) )
+    {
+      parent_action = parent;
+      use_auto_attack = true;
+      main_hand_weapon.type = WEAPON_BEAST;
+      main_hand_weapon.swing_time = 2_s;
+    }
+
+    attack_t* create_auto_attack() override
+    {
+      return new auto_attack_melee_t( this, "main_hand_wayne", parent_action );
+    }
+
+    action_t* create_action( util::string_view name, util::string_view options_str ) override
+    {
+      if ( name == "not_so_gentle_flame" )
+        return new weak_not_so_gentle_flame_t( effect, this, options_str, parent_action );
+
+      return candle_confidant_pet_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      candle_confidant_pet_t::init_action_list();
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      def->add_action( "not_so_gentle_flame" );
+    }
+  };
+
+  // TODO: Take is weird, lots of odd spell queing events, missed casts, and long delays between casts.
+  // Figure out exactly whats going on here.
+  // https://www.warcraftlogs.com/reports/PNwkxKmn1cgtMYh3#fight=68&type=damage-done&source=289&view=events
+  struct take_pet_t : public candle_confidant_pet_t
+  {
+    take_pet_t( const special_effect_t& e, action_t* parent = nullptr )
+      : candle_confidant_pet_t( "Take", e, e.player->find_spell( 455453 ) )
+    {
+      parent_action = parent;
+      use_auto_attack = true;
+      main_hand_weapon.type = WEAPON_BEAST;
+      main_hand_weapon.swing_time = 2_s;
+    }
+
+    attack_t* create_auto_attack() override
+    {
+      return new auto_attack_melee_t( this, "main_hand_take", parent_action );
+    }
+
+    action_t* create_action( util::string_view name, util::string_view options_str ) override
+    {
+      if ( name == "not_so_gentle_flame" )
+        return new strong_not_so_gentle_flame_t( effect, this, options_str, parent_action );
+      if ( name == "light_up" )
+        return new strong_light_up_t( effect, this, options_str, parent_action );
+
+      return candle_confidant_pet_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      candle_confidant_pet_t::init_action_list();
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      def->add_action( "not_so_gentle_flame" );
+      def->add_action( "light_up" );
+    }
+  };
+
+  struct candle_confidant_t : public generic_proc_t
+  {
+    spawner::pet_spawner_t<waxx_pet_t> waxx_spawner;
+    spawner::pet_spawner_t<wayne_pet_t> wayne_spawner;
+    spawner::pet_spawner_t<take_pet_t> take_spawner;
+
+    candle_confidant_t( const special_effect_t& e, const spell_data_t* s )
+      : generic_proc_t( e, "candle_confidant", s ),
+        waxx_spawner( "waxx", e.player ),
+        wayne_spawner( "wayne", e.player ),
+        take_spawner( "take", e.player )
+    {
+      auto waxx_summon_spell = e.player->find_spell( 455445 );
+      waxx_spawner.set_creation_callback( [ & ]( player_t* ) { return new waxx_pet_t( e, this ); } );
+      waxx_spawner.set_default_duration( waxx_summon_spell->duration() );
+
+      auto wayne_summon_spell = e.player->find_spell( 455448 );
+      wayne_spawner.set_creation_callback( [ & ]( player_t* ) { return new wayne_pet_t( e, this ); } );
+      wayne_spawner.set_default_duration( wayne_summon_spell->duration() );
+
+      auto take_summon_spell = e.player->find_spell( 455453 );
+      take_spawner.set_creation_callback( [ & ]( player_t* ) { return new take_pet_t( e, this ); } );
+      take_spawner.set_default_duration( take_summon_spell->duration() );
+    }
+
+    void execute() override
+    {
+      generic_proc_t::execute();
+      int pet_id = rng().range( 0, 3 );
+      switch ( pet_id )
+      {
+        case 0:
+          waxx_spawner.spawn();
+          break;
+        case 1:
+          wayne_spawner.spawn();
+          break;
+        case 2:
+          take_spawner.spawn();
+          break;
+      }
+    }
+  };
+
+  effect.execute_action = create_proc_action<candle_confidant_t>( "candle_confidant", effect, effect.player->find_spell( 455435 ) );
+
+  new dbc_proc_callback_t( effect.player, effect );
 }
 
 // 435493 driver, buff
@@ -4403,21 +4672,6 @@ void kaheti_shadeweavers_emblem( special_effect_t& effect )
 }
 
 // Weapons
-// 444135 driver
-// 448862 dot (trigger)
-// TODO: confirm effect value is for the entire dot and not per tick
-void void_reapers_claw( special_effect_t& effect )
-{
-  effect.duration_ = effect.trigger()->duration();
-  effect.tick = effect.trigger()->effectN( 1 ).period();
-  // TODO: confirm effect value is for the entire dot and not per tick
-  effect.discharge_amount =
-    effect.driver()->effectN( 1 ).average( effect ) * effect.tick / effect.duration_;
-  effect.discharge_amount *= role_mult( effect );
-
-  new dbc_proc_callback_t( effect.player, effect );
-}
-
 // 443384 driver
 // 443585 damage
 // 443515 unknown buff
@@ -4926,6 +5180,93 @@ void excavation( special_effect_t& effect )
 
 namespace sets
 {
+// 444067 driver
+// 448643 unknown (0.2s duration, 6yd radius, outgoing aoe hit?)
+// 448621 unknown (0.125s duration)
+// 448669 damage
+void void_reapers_contract( special_effect_t& effect )
+{
+  struct void_reapers_contract_cb_t : public dbc_proc_callback_t
+  {
+    action_t* major;
+    action_t* minor;
+    action_t* queensbane = nullptr;
+    double hp_pct;
+
+    void_reapers_contract_cb_t( const special_effect_t& e )
+      : dbc_proc_callback_t( e.player, e ), hp_pct( e.driver()->effectN( 2 ).base_value() )
+    {
+      auto damage_spell = effect.player->find_spell( 448669 );
+      auto damage_name = std::string( damage_spell->name_cstr() );
+      auto damage_amount = effect.driver()->effectN( 1 ).average( effect );
+
+      major = create_proc_action<generic_aoe_proc_t>( damage_name, effect, damage_spell );
+      major->base_dd_min = major->base_dd_max = damage_amount;
+      major->base_multiplier *= role_mult( effect );
+      major->base_aoe_multiplier = effect.driver()->effectN( 5 ).percent();
+
+      minor = create_proc_action<generic_aoe_proc_t>( damage_name + "_echo", effect, damage_spell );
+      minor->base_dd_min = minor->base_dd_max = damage_amount * effect.driver()->effectN( 3 ).percent();
+      minor->base_multiplier *= role_mult( effect );
+      major->base_aoe_multiplier = effect.driver()->effectN( 5 ).percent();
+      minor->name_str_reporting = "Echo";
+      major->add_child( minor );
+    }
+
+    void initialize() override
+    {
+      dbc_proc_callback_t::initialize();
+
+      if ( listener->sets->has_set_bonus( listener->specialization(), TWW_KCI, B2 ) )
+        if ( auto claw = find_special_effect( listener, 444135 ) )
+          queensbane = claw->execute_action;
+    }
+
+    void execute( action_t*, action_state_t* s ) override
+    {
+      major->execute_on_target( s->target );
+
+      bool echo = false;
+
+      if ( queensbane )
+      {
+        auto dot = queensbane->find_dot( s->target );
+        if ( dot && dot->is_ticking() )
+          echo = true;
+      }
+
+      if ( !echo && s->target->health_percentage() < hp_pct )
+        echo = true;
+
+      if ( echo )
+      {
+        // each echo delayed by 300ms
+        make_repeating_event( *listener->sim, 300_ms, [ this, s ] {
+          if ( !s->target->is_sleeping() )
+            minor->execute_on_target( s->target );
+        }, 2 );
+      }
+    }
+  };
+
+  new void_reapers_contract_cb_t( effect );
+}
+
+// 444135 driver
+// 448862 dot (trigger)
+void void_reapers_warp_blade( special_effect_t& effect )
+{
+  auto dot_data = effect.trigger();
+  auto dot = create_proc_action<generic_proc_t>( "queensbane", effect, dot_data );
+  dot->base_td =
+    effect.driver()->effectN( 1 ).average( effect ) * dot_data->effectN( 1 ).period() / dot_data->duration();
+  dot->base_multiplier *= role_mult( effect );
+
+  effect.execute_action = dot;
+
+  new dbc_proc_callback_t( effect.player, effect );
+}
+
 // Woven Dusk
 // 457655 Driver
 // 457630 Buff
@@ -5148,7 +5489,6 @@ void register_special_effects()
   // Trinkets
   register_special_effect( 444959, items::spymasters_web, true );
   register_special_effect( 444958, DISABLED_EFFECT );  // spymaster's web
-  register_special_effect( 444067, items::void_reapers_chime );
   register_special_effect( 445619, items::aberrant_spellforge, true );
   register_special_effect( 445593, DISABLED_EFFECT );  // aberrant spellforge
   register_special_effect( 447970, items::sikrans_endless_arsenal );
@@ -5213,7 +5553,6 @@ void register_special_effects()
   register_special_effect( 455452, DISABLED_EFFECT );  // kaheti shadeweaver's emblem
 
   // Weapons
-  register_special_effect( 444135, items::void_reapers_claw );
   register_special_effect( 443384, items::fateweaved_needle );
   register_special_effect( 442205, items::befoulers_syringe );
   register_special_effect( 455887, items::voltaic_stormcaller );
@@ -5226,7 +5565,9 @@ void register_special_effects()
   register_special_effect( 455799, items::excavation );
 
   // Sets
-  register_special_effect( 444166, DISABLED_EFFECT );  // kye'veza's cruel implements
+  register_special_effect( 444067, sets::void_reapers_contract );    // kye'veza's cruel implements trinket
+  register_special_effect( 444135, sets::void_reapers_warp_blade );  // kye'veza's cruel implements weapon
+  register_special_effect( 444166, DISABLED_EFFECT );                // kye'veza's cruel implements
   register_special_effect( 457655, sets::woven_dusk, true );
   register_special_effect( 455521, sets::woven_dawn, true );
   register_special_effect( 443764, sets::embrace_of_the_cinderbee, true );
