@@ -55,7 +55,7 @@ actions.bear+=/rage_of_the_sleeper,if=(cooldown.incarnation_guardian_of_ursoc.re
 actions.bear+=/berserking,if=buff.incarnation_guardian_of_ursoc.up|buff.berserk_bear.up
 
 actions.bear+=/ironfur,if=!buff.ravage.up&variable.ironfur_spam&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)
-actions.bear+=/ironfur,if=!buff.ravage.up&rage.deficit<=(12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled)<?(talent.blood_frenzy.enabled*3*(spell_targets.swipe_bear>?5))
+actions.bear+=/ironfur,if=rage.deficit<=(12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled)<?(talent.blood_frenzy.enabled*3*(spell_targets.swipe_bear>?5))
 
 actions.bear+=/maul,if=buff.ravage.up
 
