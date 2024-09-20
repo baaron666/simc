@@ -3,7 +3,7 @@ actions+=/soothe
 actions+=/call_action_list,name=mitigation
 
 actions.mitigation+=/barkskin
-actions.mitigation+=/ironfur,if=buff.bear_form.up&tanking&incoming_damage_5s>0.1*health.max&buff.ironfur.remains<2
+actions.mitigation+=/ironfur,if=buff.bear_form.up&tanking&incoming_damage_5s>0.1*health.max&buff.ironfur.remains<1
 actions.mitigation+=/regrowth,if=health.pct<65
 actions.mitigation+=/renewal,if=health.pct<65
 actions.mitigation+=/frenzied_regeneration,if=buff.bear_form.up&buff.frenzied_regeneration.down&health.pct<65
@@ -53,7 +53,7 @@ actions.bear+=/convoke_the_spirits,if=!variable.ripweaving
 actions.bear+=/incarnation
 actions.bear+=/berserk_bear
 actions.bear+=/lunar_beam,if=(cooldown.incarnation_guardian_of_ursoc.remains>10+5*talent.ursocs_guidance.enabled|cooldown.berserk_bear.remains>10)&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.ready|cooldown.rage_of_the_sleeper.remains>5)
-actions.bear+=/rage_of_the_sleeper,if=(cooldown.incarnation_guardian_of_ursoc.remains>10+5*talent.ursocs_guidance.enabled|cooldown.berserk_bear.remains>10)&rage>40&(!talent.lunar_beam.enabled|cooldown.lunar_beam.remains>5)
+actions.bear+=/rage_of_the_sleeper,if=(cooldown.incarnation_guardian_of_ursoc.remains>10+5*talent.ursocs_guidance.enabled|cooldown.berserk_bear.remains>10)&(!talent.lunar_beam.enabled|cooldown.lunar_beam.remains>5)&rage>40
 actions.bear+=/berserking,if=buff.incarnation_guardian_of_ursoc.up|buff.berserk_bear.up
 
 actions.bear+=/maul,if=buff.ravage.up&(buff.tooth_and_claw.up&buff.vicious_cycle_maul.stack=3|buff.ravage.remains<2*gcd.max|buff.tooth_and_claw.up&buff.tooth_and_claw.remains<2*gcd.max)
@@ -70,9 +70,9 @@ actions.bear+=/maul,if=buff.ravage.up
 
 actions.bear+=/call_action_list,name=preweave,if=variable.ripweaving&spell_targets.swipe_bear<=2&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)&buff.feline_potential_counter.stack=6
 
-actions.bear+=/thrash_bear,if=spell_targets.swipe_bear>=5&rage.deficit>talent.blood_frenzy.enabled*15&talent.lunar_calling.enabled
-
 actions.bear+=/call_action_list,name=builder,if=talent.ravage.enabled
+
+actions.bear+=/thrash_bear,if=talent.lunar_calling.enabled&spell_targets.swipe_bear>=5&rage.deficit>talent.blood_frenzy.enabled*15
 
 actions.bear+=/raze,if=buff.tooth_and_claw.stack=2&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2
 actions.bear+=/maul,if=buff.tooth_and_claw.stack=2&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5
