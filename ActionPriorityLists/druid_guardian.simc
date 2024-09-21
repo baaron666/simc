@@ -56,7 +56,8 @@ actions.bear+=/lunar_beam,if=(cooldown.incarnation_guardian_of_ursoc.remains>10+
 actions.bear+=/rage_of_the_sleeper,if=(cooldown.incarnation_guardian_of_ursoc.remains>10+5*talent.ursocs_guidance.enabled|cooldown.berserk_bear.remains>10)&(!talent.lunar_beam.enabled|cooldown.lunar_beam.remains>5)&rage>40
 actions.bear+=/berserking,if=buff.incarnation_guardian_of_ursoc.up|buff.berserk_bear.up
 
-actions.bear+=/maul,if=buff.ravage.up&(buff.tooth_and_claw.up&buff.vicious_cycle_maul.stack=3|buff.ravage.remains<2*gcd.max)
+actions.bear+=/maul,if=buff.ravage.up&buff.tooth_and_claw.up&buff.vicious_cycle_maul.stack=3
+actions.bear+=/maul,if=buff.ravage.up&buff.ravage.remains<2*gcd.max
 
 actions.bear+=/maul,if=buff.tooth_and_claw.up&buff.tooth_and_claw.remains<2*gcd.max&buff.ravage.up
 actions.bear+=/raze,if=buff.tooth_and_claw.up&buff.tooth_and_claw.remains<2*gcd.max&spell_targets.swipe_bear>=2
@@ -67,15 +68,13 @@ actions.bear+=/ironfur,if=rage.deficit<=(12+4*buff.gore.up+5*talent.soul_of_the_
 
 actions.bear+=/mangle,if=variable.ripweaving&spell_targets.swipe_bear<=2&buff.feline_potential_counter.stack<6&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
 
-actions.bear+=/maul,if=buff.ravage.up&buff.tooth_and_claw.stack=2
-actions.bear+=/maul,if=buff.ravage.up&buff.vicious_cycle_maul.stack=3
 actions.bear+=/maul,if=buff.ravage.up
 
 actions.bear+=/call_action_list,name=preweave,if=variable.ripweaving&spell_targets.swipe_bear<=2&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)&buff.feline_potential_counter.stack=6
 
-actions.bear+=/call_action_list,name=builder,if=talent.ravage.enabled
-
 actions.bear+=/thrash_bear,if=talent.lunar_calling.enabled&spell_targets.swipe_bear>=5&rage.deficit>talent.blood_frenzy.enabled*15
+
+actions.bear+=/call_action_list,name=builder,if=talent.ravage.enabled
 
 actions.bear+=/raze,if=buff.tooth_and_claw.stack=2&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2
 actions.bear+=/maul,if=buff.tooth_and_claw.stack=2&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5
