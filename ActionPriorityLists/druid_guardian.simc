@@ -76,13 +76,13 @@ actions.bear+=/thrash_bear,if=talent.lunar_calling.enabled&spell_targets.swipe_b
 
 actions.bear+=/call_action_list,name=builder,if=talent.ravage.enabled
 
-actions.bear+=/raze,if=buff.tooth_and_claw.stack=2&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2
-actions.bear+=/maul,if=buff.tooth_and_claw.stack=2&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5
+actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=2
+actions.bear+=/maul,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=2
 
-actions.bear+=/raze,if=buff.vicious_cycle_maul.stack=3&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2
-actions.bear+=/maul,if=buff.vicious_cycle_maul.stack=3&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5
+actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=1&buff.vicious_cycle_maul.stack>=1
+actions.bear+=/maul,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=1&buff.vicious_cycle_maul.stack=3
 
-actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2
+actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2&!(talent.ravage.enabled&variable.ironfur_spam)
 actions.bear+=/maul,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5&!(talent.ravage.enabled&variable.ironfur_spam)
 
 actions.bear+=/call_action_list,name=builder,if=!talent.ravage.enabled
