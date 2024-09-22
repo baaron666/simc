@@ -94,8 +94,6 @@ actions.bear+=/swipe_bear
 
 
 actions.builder+=/mangle,if=buff.incarnation.up&spell_targets.swipe_bear>=2&spell_targets.swipe_bear<=10&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
-actions.builder+=/mangle,if=buff.vicious_cycle_mangle.stack=3&spell_targets.swipe_bear<=10&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
-actions.builder+=/mangle,if=buff.gore.up&spell_targets.swipe_bear<=10&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
 actions.builder+=/thrash_bear,if=spell_targets.swipe_bear>=5&rage.deficit>talent.blood_frenzy.enabled*15
 actions.builder+=/mangle,if=spell_targets.swipe_bear<=10&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
 actions.builder+=/thrash_bear,if=spell_targets.swipe_bear>=1&spell_targets.swipe_bear<=4&rage.deficit>talent.blood_frenzy.enabled*3*spell_targets.swipe_bear
