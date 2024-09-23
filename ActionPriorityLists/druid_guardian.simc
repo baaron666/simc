@@ -101,6 +101,7 @@ actions.preweave+=/rake,if=refreshable
 actions.preweave+=/shred,if=!dot.rake.refreshable
 
 
+actions.cat+=/mangle,if=buff.wildshape_mastery.remains<gcd.max
 actions.cat+=/convoke_the_spirits,if=buff.feline_potential.up
 actions.cat+=/rip,if=buff.feline_potential.up&refreshable&target.time_to_die>12
 actions.cat+=/ferocious_bite,if=buff.feline_potential.up&energy>50
