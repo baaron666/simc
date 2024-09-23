@@ -66,22 +66,17 @@ actions.bear+=/maul,if=buff.tooth_and_claw.up&buff.tooth_and_claw.remains<2*gcd.
 actions.bear+=/ironfur,if=!buff.ravage.up&variable.ironfur_spam&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)
 actions.bear+=/ironfur,if=rage.deficit<=(12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled)<?(talent.blood_frenzy.enabled*3*(spell_targets.swipe_bear>?5))
 
-actions.bear+=/mangle,if=variable.ripweaving&spell_targets.swipe_bear<=2&buff.feline_potential_counter.stack<6&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
-
-actions.bear+=/maul,if=buff.ravage.up
-
-actions.bear+=/call_action_list,name=preweave,if=variable.ripweaving&spell_targets.swipe_bear<=2&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)&buff.feline_potential_counter.stack=6
-
 actions.bear+=/thrash_bear,if=talent.lunar_calling.enabled&spell_targets.swipe_bear>=5&rage.deficit>talent.blood_frenzy.enabled*15
 
+actions.bear+=/mangle,if=variable.ripweaving&spell_targets.swipe_bear<=2&buff.feline_potential_counter.stack<6&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
+actions.bear+=/maul,if=buff.ravage.up
+actions.bear+=/call_action_list,name=preweave,if=variable.ripweaving&spell_targets.swipe_bear<=2&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)&buff.feline_potential_counter.stack=6
 actions.bear+=/call_action_list,name=builder,if=talent.ravage.enabled
 
 actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2&!(talent.ravage.enabled&variable.ironfur_spam)
 actions.bear+=/maul,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5&!(talent.ravage.enabled&variable.ironfur_spam)
-
 actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=2
 actions.bear+=/maul,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=2
-
 actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=1&buff.vicious_cycle_maul.stack>=1
 actions.bear+=/maul,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear<=5&(talent.ravage.enabled&variable.ironfur_spam)&buff.tooth_and_claw.stack=1&buff.vicious_cycle_maul.stack=3
 
