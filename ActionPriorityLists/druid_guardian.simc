@@ -68,9 +68,9 @@ actions.bear+=/ironfur,if=rage.deficit<=(12+4*buff.gore.up+5*talent.soul_of_the_
 
 actions.bear+=/thrash_bear,if=talent.lunar_calling.enabled&spell_targets.swipe_bear>=5&rage.deficit>talent.blood_frenzy.enabled*15
 
-actions.bear+=/mangle,if=variable.ripweaving&spell_targets.swipe_bear<=2&buff.feline_potential_counter.stack<6&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
+actions.bear+=/mangle,if=variable.ripweaving&spell_targets.swipe_bear<=3&buff.feline_potential_counter.stack<6&rage.deficit>12+4*buff.gore.up+5*talent.soul_of_the_forest.enabled
 actions.bear+=/maul,if=buff.ravage.up
-actions.bear+=/call_action_list,name=preweave,if=variable.ripweaving&spell_targets.swipe_bear<=2&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)&buff.feline_potential_counter.stack=6
+actions.bear+=/call_action_list,name=preweave,if=variable.ripweaving&spell_targets.swipe_bear<=3&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)&buff.feline_potential_counter.stack=6
 actions.bear+=/call_action_list,name=builder,if=talent.ravage.enabled
 
 actions.bear+=/raze,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains>1)&spell_targets.swipe_bear>=2&!(talent.ravage.enabled&variable.ironfur_spam)
@@ -82,7 +82,7 @@ actions.bear+=/maul,if=(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the
 
 actions.bear+=/call_action_list,name=builder,if=!talent.ravage.enabled
 
-actions.bear+=/call_action_list,name=preweave,if=variable.use_cat_filler&spell_targets.swipe_bear<=2&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)
+actions.bear+=/call_action_list,name=preweave,if=variable.use_cat_filler&spell_targets.swipe_bear<=3&energy>60&(!talent.rage_of_the_sleeper.enabled|cooldown.rage_of_the_sleeper.remains<=52)
 actions.bear+=/starsurge,if=talent.starsurge.enabled&rage<20
 actions.bear+=/moonfire,if=talent.lunar_insight.enabled&spell_targets.swipe_bear>=2&spell_targets.swipe_bear<=4
 actions.bear+=/swipe_bear
@@ -97,15 +97,15 @@ actions.builder+=/moonfire,if=buff.galactic_guardian.up&talent.boundless_moonlig
 
 actions.preweave+=/heart_of_the_wild,if=buff.feline_potential_counter.stack=6
 actions.preweave+=/ironfur,if=!buff.ravage.up&variable.ironfur_spam&buff.feline_potential_counter.stack=6
-actions.preweave+=/rake,if=refreshable
+actions.preweave+=/rake,target_if=max:(target.time_to_die>?60)-86400*(!refreshable),if=refreshable&target.time_to_die>9
 actions.preweave+=/shred,if=!dot.rake.refreshable
 
 
 actions.cat+=/mangle,if=buff.wildshape_mastery.remains<gcd.max
 actions.cat+=/convoke_the_spirits,if=buff.feline_potential.up
-actions.cat+=/rip,if=buff.feline_potential.up&refreshable&target.time_to_die>12
+actions.cat+=/rip,target_if=max:(target.time_to_die>?60)-86400*(!refreshable),if=buff.feline_potential.up&refreshable&target.time_to_die>12
 actions.cat+=/ferocious_bite,if=buff.feline_potential.up&energy>50
-actions.cat+=/rip,if=buff.feline_potential.down&!ticking&combo_points>=2&combo_points<=7-buff.feline_potential_counter.stack
+actions.cat+=/rip,target_if=max:(target.time_to_die>?60)-86400*(ticking),if=buff.feline_potential.down&!ticking&combo_points>=2&combo_points<=7-buff.feline_potential_counter.stack&target.time_to_die>2+2*combo_points
 actions.cat+=/ferocious_bite,if=buff.feline_potential.down&energy>50&combo_points=5
 actions.cat+=/mangle,if=buff.feline_potential.down
 actions.cat+=/shred,if=energy>60
