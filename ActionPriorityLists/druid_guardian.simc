@@ -41,7 +41,7 @@ actions+=/run_action_list,name=cat,if=buff.cat_form.up
 actions+=/run_action_list,name=bear
 
 
-actions.bear+=/moonfire,if=talent.boundless_moonlight.enabled&refreshable&target.time_to_die>9&spell_targets.swipe_bear<=3
+actions.bear+=/moonfire,if=(!talent.galactic_guardian.enabled|talent.boundless_moonlight.enabled)&refreshable&target.time_to_die>9&spell_targets.swipe_bear<=3
 actions.bear+=/thrash_bear,if=refreshable|dot.thrash_bear.stack<3+talent.flashing_claws.rank
 
 actions.bear+=/pulverize
