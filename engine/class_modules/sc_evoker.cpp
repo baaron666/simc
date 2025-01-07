@@ -4964,13 +4964,13 @@ struct shattering_star_t : public evoker_spell_t
   shattering_star_t( evoker_t* p, std::string_view name, bool tier_set_proc, std::string_view options_str = {} )
     : evoker_spell_t( name, p, p->talent.shattering_star, options_str )
   {
-    aoe = as<int>( data().effectN( 1 ).base_value() );
+    aoe = as<int>( data().effectN( 1 ).base_value() * ( 1 + p->talent.eternitys_span->effectN( 2 ).percent() ) );
     if ( tier_set_proc )
     {
-      aoe = as<int>( p->sets->set( EVOKER_DEVASTATION, TWW2, B2 )->effectN( 2 ).base_value() );
+      aoe += as<int>( p->sets->set( EVOKER_DEVASTATION, TWW2, B2 )->effectN( 2 ).base_value() -
+                      data().effectN( 1 ).base_value() );
       base_multiplier *= p->sets->set( EVOKER_DEVASTATION, TWW2, B2 )->effectN( 1 ).percent();
     }
-    aoe = as<int>( aoe * ( 1.0 + p->talent.eternitys_span->effectN( 2 ).percent() ) );
     aoe = ( aoe == 1 ) ? 0 : aoe;
   }
 
@@ -4999,7 +4999,7 @@ struct shattering_star_t : public evoker_spell_t
     evoker_spell_t::impact( s );
 
     if ( result_is_hit( s->result ) )
-      td( s->target )->debuffs.shattering_star->trigger( -1, td( s->target )->debuffs.shattering_star->default_value * base_multiplier );
+      td( s->target )->debuffs.shattering_star->trigger( -1, td( s->target )->debuffs.shattering_star->default_value );
   }
 
   double composite_da_multiplier( const action_state_t* s ) const override
