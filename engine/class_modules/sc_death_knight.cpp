@@ -9978,6 +9978,22 @@ struct obliterate_t final : public death_knight_melee_attack_t
         }
       }
 
+      if ( p()->talent.frost.bonegrinder.ok() && !p()->buffs.bonegrinder_frost->up() )
+      {
+        p()->buffs.bonegrinder_crit->trigger();
+        if ( p()->buffs.bonegrinder_crit->at_max_stacks() )
+        {
+          p()->buffs.bonegrinder_frost->trigger();
+          p()->buffs.bonegrinder_crit->expire();
+        }
+      }
+
+      if ( rng().roll( p()->talent.frost.murderous_efficiency->effectN( 1 ).percent() ) )
+      {
+        p()->replenish_rune( as<int>( p()->spell.murderous_efficiency_gain->effectN( 1 ).base_value() ),
+                        p()->gains.murderous_efficiency );
+      }
+
       make_event<delayed_execute_event_t>( *sim, p(), p()->buffs.killing_machine->check() ? km_mh : mh, execute_state->target, mh_delay );
       if ( oh )
         make_event<delayed_execute_event_t>( *sim, p(), p()->buffs.killing_machine->check() ? km_oh : oh, execute_state->target, oh_delay );
@@ -11660,29 +11676,17 @@ void death_knight_t::consume_killing_machine( proc_t* proc, timespan_t total_del
 
   proc->occur();
 
-  // Killing Machine Consumption appears to be delayed by 20ms after the final consumption action was executed
-  make_event( sim, total_delay + 20_ms, [ this ] {
+  // Killing Machine is consumed shortly after casting Obliterate.
+  make_event( sim, total_delay, [ this ] {
     buffs.killing_machine->decrement();
 
-    if ( rng().roll( talent.frost.murderous_efficiency->effectN( 1 ).percent() ) )
-    {
-      replenish_rune( as<int>( spell.murderous_efficiency_gain->effectN( 1 ).base_value() ),
-                      gains.murderous_efficiency );
-    }
-
-    if ( talent.frost.bonegrinder.ok() && !buffs.bonegrinder_frost->up() )
-    {
-      buffs.bonegrinder_crit->trigger();
-      if ( buffs.bonegrinder_crit->at_max_stacks() )
-      {
-        buffs.bonegrinder_frost->trigger();
-        buffs.bonegrinder_crit->expire();
-      }
-    }
-
+    // Arctic Assault fires on a delay after consuming Killing Machine. 
+    // Uncertain from logs if its tied to the Obliterate execute or the consumption, leaving it here for now.
     if ( talent.frost.arctic_assault.ok() )
     {
-      get_action<glacial_advance_damage_t>( "glacial_advance_arctic_assault", this, true )->execute();
+      make_event( *sim, 500_ms, [ this ]() {
+        get_action<glacial_advance_damage_t>( "glacial_advance_arctic_assault", this, true )->execute();
+      } );
     }
 
     if ( talent.frost.frostscythe.ok() )
