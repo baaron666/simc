@@ -5583,7 +5583,6 @@ struct upheaval_t : public empowered_charge_spell_t
         base_dd_multiplier *= p->sets->set( EVOKER_AUGMENTATION, TWW2, B2 )->effectN( 1 ).percent();
         sands           = nullptr;
         threads_of_fate = nullptr;
-        extend_ebon     = 0_s;
       }
 
       if ( is_tierset && !is_rumbling_earth )
@@ -6033,20 +6032,11 @@ struct breath_of_eons_t : public evoker_spell_t
 
     p()->get_target_data( s->target )->debuffs.temporal_wound->trigger();
 
-    if ( s->chain_target == 0 && upheaval_set )
-    {
-      auto emp_state       = upheaval_set->get_state();
-      emp_state->target    = s->target;
-      upheaval_set->target = s->target;
-      upheaval_set->snapshot_state( emp_state, upheaval_set->amount_type( emp_state ) );
-      upheaval_set->cast_state( emp_state )->empower = EMPOWER_1;
-      upheaval_set->schedule_execute( emp_state );
-    }
-
     if ( eruption && s->chain_target < p()->talent.overlord->effectN( 1 ).base_value() )
     {
       make_event( sim, 200_ms, [ this, s ] { eruption->execute_on_target( s->target ); } );
     }
+
     if ( p()->talent.scalecommander.melt_armor.ok() )
     {
       auto td = p()->get_target_data( s->target );
@@ -6065,6 +6055,17 @@ struct breath_of_eons_t : public evoker_spell_t
 
     if ( ebon )
       ebon->execute();
+
+    if ( upheaval_set )
+    {
+      auto emp_state       = upheaval_set->get_state();
+      emp_state->target    = target;
+      upheaval_set->target = target;
+      upheaval_set->snapshot_state( emp_state, upheaval_set->amount_type( emp_state ) );
+      upheaval_set->cast_state( emp_state )->empower = EMPOWER_4;
+      upheaval_set->schedule_execute( emp_state );
+    }
+
 
     if ( is_precombat )
     {
@@ -8355,7 +8356,7 @@ void evoker_t::init_special_effects()
           emp_state->target    = s->target;
           upheaval_set->target = s->target;
           upheaval_set->snapshot_state( emp_state, upheaval_set->amount_type( emp_state ) );
-          upheaval_set->cast_state( emp_state )->empower = EMPOWER_1;
+          upheaval_set->cast_state( emp_state )->empower = EMPOWER_4;
           upheaval_set->schedule_execute( emp_state );
         }
       }
