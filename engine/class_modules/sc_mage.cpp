@@ -5549,7 +5549,7 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
       frigid_pulse->execute_on_target( s->target );
 
     // Trigger splinter only if the Ice Lance didn't attempt to consume Winter's Chill.
-    // TODO: figure out what happens when IL cleaves
+    // TODO 11.1: FoF triggers a splinter on cast, WC triggers one on impact as before, but only if a stack was consumed
     if ( !should_consume_winters_chill( s ) )
       p()->trigger_splinter( s->target );
   }
