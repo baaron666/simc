@@ -2021,6 +2021,7 @@ void sigil_of_algari_concordance( special_effect_t& e )
     action_t* one_time_action;
     unsigned tick;
     pet_t* pet;
+    timespan_t period;
 
     algari_pet_cast_event_t( pet_t* p, timespan_t time_to_execute, unsigned tick, action_t* st_action,
                              action_t* aoe_action, action_t* one_time_action )
@@ -2029,8 +2030,10 @@ void sigil_of_algari_concordance( special_effect_t& e )
         aoe_action( aoe_action ),
         one_time_action( one_time_action ),
         tick( tick ),
-        pet( p )
+        pet( p ), 
+        period( 0_ms )
     {
+      period = pet->find_spell( 452325 )->effectN( 1 ).period();
     }
 
     const char* name() const override
@@ -2058,7 +2061,7 @@ void sigil_of_algari_concordance( special_effect_t& e )
         {
           st_action->execute();
         }
-        make_event<algari_pet_cast_event_t>( sim(), pet, pet->find_spell( 452325 )->effectN( 1 ).period(), tick,
+        make_event<algari_pet_cast_event_t>( sim(), pet, period, tick,
                                              st_action, aoe_action, one_time_action );
       }
     }
@@ -6447,6 +6450,124 @@ void funhouse_lens( special_effect_t& effect )
                                                                effect.player->find_spell( 1214603 ) );
 }
 
+// Suspicious Energy Drink
+// 1216625 Driver
+// 1216650 Buff
+void suspicious_energy_drink( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  struct suspicious_energy_drink_buff_t : public stat_buff_t
+  {
+    double bonus_value;
+    double hp_limit;
+    double base_buff_value;
+    suspicious_energy_drink_buff_t( player_t* p, util::string_view n, const special_effect_t& e, const spell_data_t* s )
+      : stat_buff_t( e.player, n, s ), bonus_value( 0 ), hp_limit( 0 )
+    {
+      base_buff_value = e.driver()->effectN( 1 ).average( e );
+      set_stat_from_effect_type( A_MOD_RATING, base_buff_value );
+      bonus_value = e.driver()->effectN( 2 ).average( e );
+      hp_limit    = e.driver()->effectN( 3 ).base_value();
+    }
+
+    void start( int s, double, timespan_t d ) override
+    {
+      double value = base_buff_value;
+      if ( player->health_percentage() < hp_limit )
+      {
+        value += bonus_value;
+      }
+
+      stat_buff_t::start( s, value, d );
+    }
+  };
+
+  auto buff = create_buff<suspicious_energy_drink_buff_t>( effect.player, "suspicious_energy_drink", effect,
+                                                           effect.player->find_spell( 1216650 ) );
+
+  effect.custom_buff = buff;
+  new dbc_proc_callback_t( effect.player, effect );
+}
+
+// Amorphous Relic
+// 472120 Driver
+// 472195 Periodic Trigger
+// 472184 Haste Buff
+// 472185 Primary Buff
+void amorphous_relic( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  struct amorphous_relic_event_t : public event_t
+  {
+    player_t* player;
+    buff_t* haste_buff;
+    buff_t* crit_buff;
+    timespan_t period;
+    event_t* next_event;
+
+    amorphous_relic_event_t( player_t* p, timespan_t time_to_execute, buff_t* haste, buff_t* crit )
+      : event_t( *p, time_to_execute ),
+        player( p ),
+        haste_buff( haste ),
+        crit_buff( crit ),
+        period( 0_ms ),
+        next_event( nullptr )
+    {
+      period = player->find_spell( 472195 )->effectN( 1 ).period();
+    }
+
+    const char* name() const override
+    {
+      return "amorphous_relic_event";
+    }
+
+    void execute() override
+    {
+      if ( next_event == nullptr )
+        next_event = make_event<amorphous_relic_event_t>( sim(), player, period, haste_buff, crit_buff );
+      else
+      {
+        // Reset the timer if combat was started again and the event triggered before the next secheduled time.
+        event_t::cancel( next_event );
+        next_event = make_event<amorphous_relic_event_t>( sim(), player, period, haste_buff, crit_buff );
+      }
+
+      if ( player->in_combat )
+      {
+        bool haste = player->rng().roll( 0.5 );
+        switch ( haste )
+        {
+          case true:
+            haste_buff->trigger();
+            break;
+          case false:
+            crit_buff->trigger();
+            break;
+        }
+      }
+    }
+  };
+
+  auto haste_buff = create_buff<stat_buff_t>( effect.player, effect.player->find_spell( 472184 ) )
+                        ->add_stat_from_effect( 2, effect.driver()->effectN( 4 ).average( effect ) )
+                        ->add_stat_from_effect( 3, effect.driver()->effectN( 3 ).average( effect ) );
+
+  auto crit_buff = create_buff<stat_buff_t>( effect.player, effect.player->find_spell( 472185 ) )
+                       ->add_stat_from_effect( 2, effect.driver()->effectN( 1 ).average( effect ) )
+                       ->add_stat_from_effect( 3, effect.driver()->effectN( 2 ).average( effect ) );
+
+  effect.player->register_on_combat_state_callback( [ haste_buff, crit_buff ]( player_t* p, bool c ) {
+    if ( c )
+    {
+      make_event<amorphous_relic_event_t>( *p->sim, p, 0_ms, haste_buff, crit_buff );
+    }
+  } );
+}
+
 // Weapons
 
 // 443384 driver
@@ -9004,6 +9125,8 @@ void register_special_effects()
   register_special_effect( 1219294, items::garbagemancers_last_resort );
   register_special_effect( 1213432, items::funhouse_lens );
   register_special_effect( 1214603, DISABLED_EFFECT ); // Funhouse Lens value spell
+  register_special_effect( 1216625, items::suspicious_energy_drink );
+  register_special_effect( 472120, items::amorphous_relic );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );

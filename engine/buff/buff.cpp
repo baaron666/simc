@@ -3326,6 +3326,10 @@ stat_buff_t* stat_buff_t::add_stat_from_effect( size_t i, double a, const stat_c
     if ( stat != STAT_NONE )
       return add_stat( stat, a, c );
   }
+  else if ( eff.subtype() == A_MOD_INCREASE_HEALTH || eff.subtype() == A_MOD_INCREASE_HEALTH_2 )
+  {
+    return add_stat( STAT_MAX_HEALTH, a, c );
+  }
 
   return do_error( "STAT_NONE" );
 }
