@@ -7358,7 +7358,7 @@ void best_in_slots( special_effect_t& effect )
 // 1218463 Small Damage
 void machine_gobs_iron_grin( special_effect_t& effect )
 {
-  if (!effect.player->is_ptr())
+  if ( !effect.player->is_ptr() )
     return;
 
   struct machine_gobs_iron_grin_cb_t : public dbc_proc_callback_t
@@ -7374,11 +7374,11 @@ void machine_gobs_iron_grin( special_effect_t& effect )
       big_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_bellowing_laugh", e, 1218471, true );
       big_damage->base_dd_min = big_damage->base_dd_max = e.driver()->effectN( 3 ).average( e );
 
-      medium_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_big_grin", e, 1218469, true );
+      medium_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_big_grin", e, 1218469, true );
       medium_damage->base_dd_min = medium_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
 
-      small_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_hiccup", e, 1218463, true );
-      small_damage->base_dd_min = small_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
+      small_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_hiccup", e, 1218463, true );
+      small_damage->base_dd_min = small_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
 
       big_damage->add_child( medium_damage );
       big_damage->add_child( small_damage );
@@ -7387,7 +7387,7 @@ void machine_gobs_iron_grin( special_effect_t& effect )
     void execute( action_t*, action_state_t* s ) override
     {
       auto rand = rng().range( 0, 3 );
-      switch (rand)
+      switch ( rand )
       {
         case 0:
           big_damage->execute_on_target( s->target );
