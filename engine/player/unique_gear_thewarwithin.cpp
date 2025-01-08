@@ -6291,6 +6291,31 @@ void best_in_slots( special_effect_t& effect )
   effect.execute_action = create_proc_action<cheating_t>( "cheating", effect, equip_driver );
 }
 
+// Machine Gob's Iron Grin
+// 1218442 Driver
+// 1218471 Damage
+void machine_gobs_iron_grin( special_effect_t& effect )
+{
+  struct machine_gobs_iron_grin_cb_t : public dbc_proc_callback_t
+  {
+    action_t* damage;
+
+    machine_gobs_iron_grin_cb_t( const special_effect_t& e ) : dbc_proc_callback_t( e.player, e ), damage( nullptr )
+    {
+      damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_bellowing_laugh", e, 1218471, true );
+    }
+
+    void execute( action_t*, action_state_t* s ) override
+    {
+      auto rand_idx = rng().range( 1, 4 );
+      damage->base_dd_min = damage->base_dd_max = effect.driver()->effectN( rand_idx ).average( effect );
+      damage->execute_on_target( s->target );
+    }
+  };
+
+  new machine_gobs_iron_grin_cb_t( effect );
+}
+
 // Armor
 // 457815 driver
 // 457918 nature damage driver
@@ -8401,6 +8426,7 @@ void register_special_effects()
   register_special_effect( 471316, items::vile_contamination );
   register_special_effect( { 473400, 473401 }, items::best_in_slots );
   register_special_effect( 471063, DISABLED_EFFECT );  // best in slots equip driver
+  register_special_effect( 1218442, items::machine_gobs_iron_grin );
 
   // Armor
   register_special_effect( 457815, items::seal_of_the_poisoned_pact );

@@ -26824,8 +26824,8 @@ static const std::array<spelltext_data_t, 27202> __ptr_spelltext_data { {
   { 1214796, "$@spelldesc467037", 0, 0 },
   { 1214802, "$@spelldesc467037", "Pursuing an intruder. Self-destructs on contact.", 0 },
   { 1214806, 0, "Increases Critical Strike Rating by $w1.", 0 },
-  { 1214823, "$@spelldesc1214161", "Claiming credit from allies! $?e0[Critical Strike increased by $w1. ]$?e1[Haste increased by $w2. ]$?e2[Mastery increased by $w3. ]$?e3[Versatility increased by $w4.]", 0 },
-  { 1214826, "$@spelldesc1214161", "Reclaimed credit from $@auracaster! $?e0[Critical Strike increased by $w1. ]$?e1[Haste increased by $w2. ]$?e2[Mastery increased by $w3. ]$?e3[Versatility increased by $w4.]", 0 },
+  { 1214823, "$@spelldesc1214161", "Claiming credit from allies! $?e0[Critical Strike increased by $w1. ][]$?e1[Haste increased by $w2. ][]$?e2[Mastery increased by $w3. ][]$?e3[Versatility increased by $w4.][]", 0 },
+  { 1214826, "$@spelldesc1214161", "Reclaimed credit from $@auracaster! $?e0[Critical Strike increased by $w1. ][]$?e1[Haste increased by $w2. ][]$?e2[Mastery increased by $w3. ][]$?e3[Versatility increased by $w4.][]", 0 },
   { 1214849, "$@spelldesc53480", "You've commanded your Eagle to protect someone and cannot benefit from Spotter's Mark.", 0 },
   { 1214852, "Damaging an Elite creature below $s1% health creates an imperfect copy of it at $s2% power to fight by your side. Only $s3 $Lcopy:copies; can exist at the same time.", 0, "Rank 1/4" },
   { 1214882, "$@spelldesc467036", "$@spelldesc467036", 0 },
@@ -27205,7 +27205,9 @@ static const std::array<spelltext_data_t, 27202> __ptr_spelltext_data { {
 } };
 
 // spelltext hotfix entries, wow build 11.1.0.58221
-static constexpr std::array<hotfix::client_hotfix_entry_t, 0> __ptr_spelltext_hotfix_data { {
+static constexpr std::array<hotfix::client_hotfix_entry_t, 2> __ptr_spelltext_hotfix_data { {
+  { 1214823,  1, "Claiming credit from allies! $?e0[Critical Strike increased by $w1. ]$?e1[Haste increased by $w2. ]$?e2[Mastery increased by $w3. ]$?e3[Versatility increased by $w4.]", "Claiming credit from allies! $?e0[Critical Strike increased by $w1. ][]$?e1[Haste increased by $w2. ][]$?e2[Mastery increased by $w3. ][]$?e3[Versatility increased by $w4.][]" },
+  { 1214826,  1, "Reclaimed credit from $@auracaster! $?e0[Critical Strike increased by $w1. ]$?e1[Haste increased by $w2. ]$?e2[Mastery increased by $w3. ]$?e3[Versatility increased by $w4.]", "Reclaimed credit from $@auracaster! $?e0[Critical Strike increased by $w1. ][]$?e1[Haste increased by $w2. ][]$?e2[Mastery increased by $w3. ][]$?e3[Versatility increased by $w4.][]" },
 } };
 
 // Spell description variables, wow build 11.1.0.58221
