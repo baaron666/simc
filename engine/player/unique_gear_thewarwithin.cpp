@@ -6353,6 +6353,94 @@ void ratfang_toxin( special_effect_t& effect )
   effect.execute_action = use;
 }
 
+// Garbagemancer's Last Resort
+// 1219294 Driver
+// 1219314 Ground Trigger
+// 1219296 Value spell
+// 1219299 Damage
+void garbagemancers_last_resort( special_effect_t& effect )
+{
+  struct garbagemancers_last_resort_t : public generic_proc_t
+  {
+    ground_aoe_params_t params;
+    garbagemancers_last_resort_t( const special_effect_t& e, std::string_view n, const spell_data_t* s )
+      : generic_proc_t( e, n, s )
+    {
+      auto value_spell    = e.player->find_spell( 1219296 );
+      auto damage         = create_proc_action<generic_aoe_proc_t>( "garbocalypse", e, 1219299, true );
+      damage->base_dd_min = damage->base_dd_max = value_spell->effectN( 1 ).average( e );
+
+      auto ground_aoe = create_proc_action<generic_aoe_proc_t>( "garbagemancers_last_resort_ground", e, 1219314 );
+
+      // TODO: probably better ground targeting emulation for the damage, unlikely targets in a place will still be
+      // there after 10s
+      params.pulse_time( ground_aoe->data().duration() )
+          .duration( timespan_t::from_seconds( value_spell->effectN( 2 ).base_value() ) )
+          .action( ground_aoe )
+          .expiration_callback( [ damage ]( const action_state_t* ) { damage->execute(); } );
+    }
+
+    void impact( action_state_t* s ) override
+    {
+      generic_proc_t::impact( s );
+      params.start_time( timespan_t::min() ).target( target );  // reset start time
+      make_event<ground_aoe_event_t>( *sim, player, params );
+    }
+  };
+
+  auto use = create_proc_action<garbagemancers_last_resort_t>( "garbagemancers_last_resort", effect,
+                                                               "garbagemancers_last_resort", effect.driver() );
+
+  // Setting a random cooldown for now, its got none in data leading to sims spamming the hell out of it and getting stuck.
+  // Also has no cooldown in game...
+  // TODO - Remove once theres a cooldown in data.
+  effect.cooldown_ = 60_s;
+  effect.execute_action = use;
+}
+
+// Funhouse Lens
+// 1213432 Driver
+// 1214603 Value Spell
+// 1213433 Crit Buff
+// 1213434 Haste Buff
+void funhouse_lens( special_effect_t& effect )
+{
+  struct funhouse_lens_t : public spell_t
+  {
+    buff_t* crit_buff;
+    buff_t* haste_buff;
+    funhouse_lens_t( const special_effect_t& e, std::string_view n, const spell_data_t* s )
+      : spell_t( n, e.player, s ), crit_buff( nullptr ), haste_buff( nullptr )
+    {
+      crit_buff = create_buff<stat_buff_t>( e.player, "funhouse_lens_crit", e.player->find_spell( 1213433 ) )
+                      ->add_stat_from_effect_type( A_MOD_RATING, s->effectN( 1 ).average( e ) )
+                      ->set_name_reporting( "Crit" );
+
+      haste_buff = create_buff<stat_buff_t>( e.player, "funhouse_lens_haste", e.player->find_spell( 1213434 ) )
+                       ->add_stat_from_effect_type( A_MOD_RATING, s->effectN( 2 ).average( e ) )
+                       ->set_name_reporting( "Haste" );
+    }
+
+    void execute() override
+    {
+      spell_t::execute();
+      bool crit = rng().roll( 0.5 );
+      switch ( crit )
+      {
+        case true:
+          crit_buff->trigger();
+          break;
+        case false:
+          haste_buff->trigger();
+          break;
+      }
+    }
+  };
+
+  effect.execute_action = create_proc_action<funhouse_lens_t>( "funhouse_lens", effect, "funhouse_lens",
+                                                               effect.player->find_spell( 1214603 ) );
+}
+
 // Weapons
 
 // 443384 driver
@@ -8907,6 +8995,9 @@ void register_special_effects()
   register_special_effect( 470675, items::noggenfogger_ultimate_deluxe );
   register_special_effect( 1216605, items::ratfang_toxin );
   register_special_effect( 1216603, DISABLED_EFFECT ); // Ratfang toxin equip driver
+  register_special_effect( 1219294, items::garbagemancers_last_resort );
+  register_special_effect( 1213432, items::funhouse_lens );
+  register_special_effect( 1214603, DISABLED_EFFECT ); // Funhouse Lens value spell
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );

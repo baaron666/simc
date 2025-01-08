@@ -1,5 +1,5 @@
 // Spell text, wow build 11.1.0.58221
-static const std::array<spelltext_data_t, 27205> __ptr_spelltext_data { {
+static const std::array<spelltext_data_t, 27206> __ptr_spelltext_data { {
   {      17, "Shields an ally for $d, absorbing $s1 damage.", "Absorbs $w1 damage.", 0 },
   {      53, "Stab the target, causing ${$s2*$<mult>} Physical damage. Damage increased by $s4% when you are behind your target$?s319949[, and critical strikes apply Find Weakness for $319949s1 sec][].\r\n\r\n|cFFFFFFFFAwards $s3 combo $lpoint:points;.|r", 0, 0 },
   {      56, "Stuns target for $d.", "Stunned.", 0 },
@@ -26773,6 +26773,7 @@ static const std::array<spelltext_data_t, 27205> __ptr_spelltext_data { {
   { 1213424, "$@spelldesc1213303", 0, 0 },
   { 1213432, "Look through the lens and randomly scale up or down, gaining $1214603s1 Critical Strike or Haste for $1213433d1.", 0, 0 },
   { 1213433, 0, "Critical Strike increased by $1214603w1.", 0 },
+  { 1213434, 0, "Haste increased by $1214603w2.", 0 },
   { 1213436, 0, "Inflicting $1214609w1 damage every $t1 sec.", 0 },
   { 1213437, "Coat the enemy in a layer of unstable slime, dealing $1214609s3 Nature damage over $1213436d1. If the target dies while slimed, it releases corrosive goo that deals $1214609s2 Nature damage, split between nearby enemies.", 0, 0 },
   { 1213486, "$@spelldesc1213493", "$@spelldesc1213493", 0 },
