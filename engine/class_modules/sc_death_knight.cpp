@@ -2980,7 +2980,7 @@ struct ghoul_pet_t final : public base_ghoul_pet_t
       pet_melee_attack_t<ghoul_pet_t>::execute();
       if ( triggers_apocalypse && dk()->runeforge.rune_of_apocalypse && hit_any_target )
       {
-        int n = as<int>( pet()->rng().range( 0, runeforge_apocalypse::MAX ) );
+        int n = std::floor( pet()->rng().range( 0, runeforge_apocalypse::MAX ) );
 
         death_knight_td_t* td = dk()->get_target_data( target );
 

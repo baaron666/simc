@@ -6968,20 +6968,19 @@ void mister_locknstalk( special_effect_t& effect )
   {
     action_t* st_damage;
     action_t* aoe_damage;
+    action_t* proxy;
     mister_locknstalk_cb_t( const special_effect_t& e )
-      : dbc_proc_callback_t( e.player, e ), st_damage( nullptr ), aoe_damage( nullptr )
+      : dbc_proc_callback_t( e.player, e ), st_damage( nullptr ), aoe_damage( nullptr ), proxy( nullptr )
     {
-      auto proxy = new action_t( action_e::ACTION_OTHER, "mister_locknstalk", e.player, e.driver() );
+      proxy = new action_t( action_e::ACTION_OTHER, "mister_locknstalk", e.player, e.driver() );
       st_damage              = create_proc_action<generic_proc_t>( "precision_targeting", e, 1215690 );
       st_damage->base_dd_min = st_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
       // st_damage->base_multiplier                      = role_mult( e );
-      st_damage->execute_action = proxy;
       proxy->add_child( st_damage );
 
       aoe_damage              = create_proc_action<generic_aoe_proc_t>( "mass_destruction", e, 1215733, true );
       aoe_damage->base_dd_min = aoe_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
       // aoe_damage->base_multiplier                       = role_mult( e );
-      aoe_damage->execute_action = proxy;
       proxy->add_child( aoe_damage );
     }
 
@@ -6993,6 +6992,7 @@ void mister_locknstalk( special_effect_t& effect )
         aoe_damage->execute_on_target( s->target );
       else
         st_damage->execute_on_target( s->target );
+      proxy->stats->add_execute( 0_ms, listener );
     }
   };
 
