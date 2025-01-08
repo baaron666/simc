@@ -6911,24 +6911,21 @@ void zees_thug_hotline( special_effect_t& effect )
         thwack_jack_spawner( "thwack_jack", e.player )
     {
       auto pocket_ace_summon_spell = e.player->find_spell( 1217431 );
-      auto pocket_ace = new action_t( action_e::ACTION_OTHER, "pocket_ace", e.player, pocket_ace_summon_spell );
-      pocket_ace->name_str_reporting = "pocket_ace";
+      auto pocket_ace = new action_t( action_e::ACTION_OTHER, "call_pocket_ace", e.player, pocket_ace_summon_spell );
       pocket_ace_spawner.set_creation_callback(
           [ &e, pocket_ace ]( player_t* ) { return new pocket_ace_pet_t( e, pocket_ace ); } );
       pocket_ace_spawner.set_default_duration( pocket_ace_summon_spell->duration() );
       add_child( pocket_ace );
 
       auto snake_eyes_summon_spell = e.player->find_spell( 1217432 );
-      auto snake_eyes = new action_t( action_e::ACTION_OTHER, "snake_eyes", e.player, snake_eyes_summon_spell );
-      snake_eyes->name_str_reporting = "snake_eyes";
+      auto snake_eyes = new action_t( action_e::ACTION_OTHER, "call_snake_eyes", e.player, snake_eyes_summon_spell );
       snake_eyes_spawner.set_creation_callback(
           [ &e, snake_eyes ]( player_t* ) { return new snake_eyes_pet_t( e, snake_eyes ); } );
       snake_eyes_spawner.set_default_duration( snake_eyes_summon_spell->duration() );
       add_child( snake_eyes );
 
       auto thwack_jack_summon_spell = e.player->find_spell( 1217427 );
-      auto thwack_jack = new action_t( action_e::ACTION_OTHER, "thwack_jack", e.player, thwack_jack_summon_spell );
-      thwack_jack->name_str_reporting = "thwack_jack";
+      auto thwack_jack = new action_t( action_e::ACTION_OTHER, "call_thwack_jack", e.player, thwack_jack_summon_spell );
       thwack_jack_spawner.set_creation_callback(
           [ &e, thwack_jack ]( player_t* ) { return new thwack_jack_pet_t( e, thwack_jack ); } );
       thwack_jack_spawner.set_default_duration( thwack_jack_summon_spell->duration() );
