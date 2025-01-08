@@ -6235,6 +6235,9 @@ void reverb_radio( special_effect_t& effect )
 // 1214810 Vers Buff
 void mechanocore_amplifier( special_effect_t& effect )
 {
+  if ( !effect.player->is_ptr() )
+    return;
+
   struct mechanocore_amplifier_buff_t : public stat_buff_t
   {
     double high_value;
