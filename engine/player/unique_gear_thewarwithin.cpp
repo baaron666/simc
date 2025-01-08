@@ -6961,6 +6961,9 @@ void zees_thug_hotline( special_effect_t& effect )
 // 1215733 Mass Destruction damage
 void mister_locknstalk( special_effect_t& effect )
 {
+  if ( !effect.player->is_ptr() )
+    return;
+
   struct mister_locknstalk_cb_t : public dbc_proc_callback_t
   {
     action_t* st_damage;
