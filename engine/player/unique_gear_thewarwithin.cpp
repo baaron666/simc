@@ -7411,24 +7411,22 @@ void machine_gobs_iron_grin( special_effect_t& effect )
     action_t* big_damage;
     action_t* medium_damage;
     action_t* small_damage;
+    action_t* proxy;
 
     machine_gobs_iron_grin_cb_t( const special_effect_t& e )
-      : dbc_proc_callback_t( e.player, e ), big_damage( nullptr ), medium_damage( nullptr ), small_damage( nullptr )
+      : dbc_proc_callback_t( e.player, e ), big_damage( nullptr ), medium_damage( nullptr ), small_damage( nullptr ), proxy( nullptr )
     {
-      auto proxy = new action_t( action_e::ACTION_OTHER, "machine_gobs_iron_grin", e.player, e.driver() );
+      proxy = new action_t( action_e::ACTION_OTHER, "machine_gobs_iron_grin", e.player, e.driver() );
       big_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_bellowing_laugh", e, 1218471, true );
       big_damage->base_dd_min = big_damage->base_dd_max = e.driver()->effectN( 3 ).average( e );
-      big_damage->execute_action = proxy;
       proxy->add_child( big_damage );
 
       medium_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_big_grin", e, 1218469, true );
       medium_damage->base_dd_min = medium_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
-      medium_damage->execute_action = proxy;
       proxy->add_child( medium_damage );
 
       small_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_hiccup", e, 1218463, true );
       small_damage->base_dd_min = small_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
-      small_damage->execute_action = proxy;
       proxy->add_child( small_damage );
     }
 
@@ -7447,6 +7445,7 @@ void machine_gobs_iron_grin( special_effect_t& effect )
           small_damage->execute_on_target( s->target );
           break;
       }
+      proxy->stats->add_execute( 0_ms, listener );
     }
   };
 
