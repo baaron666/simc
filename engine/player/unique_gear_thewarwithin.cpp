@@ -6088,11 +6088,14 @@ void papas_prized_putter( special_effect_t& effect )
 // 472127 DoT
 void turbodrain_5000( special_effect_t& effect )
 {
-  auto dot_spell = effect.player->find_spell( 472127 );
-  auto dot = create_proc_action<generic_proc_t>( "turbodrain_5000", effect, dot_spell );
+  if ( !effect.player->is_ptr() )
+    return;
+
+  auto dot_spell    = effect.player->find_spell( 472127 );
+  auto dot          = create_proc_action<generic_proc_t>( "turbodrain_5000", effect, dot_spell );
   auto total_damage = effect.driver()->effectN( 1 ).average( effect );
-  auto ticks = dot_spell->duration() / dot_spell->effectN( 1 ).period();
-  dot->base_td = total_damage / ticks;
+  auto ticks        = dot_spell->duration() / dot_spell->effectN( 1 ).period();
+  dot->base_td      = total_damage / ticks;
   // currently has no role mult
   // dot->base_td_multiplier = role_mult( effect );
   effect.execute_action = dot;
@@ -6107,6 +6110,9 @@ void turbodrain_5000( special_effect_t& effect )
 // Pet currently only melee attacks.
 void noggenfogger_ultimate_deluxe( special_effect_t& effect )
 {
+  if ( !effect.player->is_ptr() )
+    return;
+
   struct blackwater_pirate_base_pet_t : public pet_t
   {
   protected:
@@ -6245,6 +6251,106 @@ void noggenfogger_ultimate_deluxe( special_effect_t& effect )
 
   // Name is currently typod in spell data, might need fixed if the data name changes. 
   effect.execute_action = create_proc_action<noggenfogger_ultimate_deluxe_t>( "noggenfogger_utimate_deluxe", effect );
+}
+
+// Ratfang Toxin
+// 1216605 Use Driver
+// 1216603 Equip Driver & Values
+// 1216604 Debuff
+// 1216606 DoT
+void ratfang_toxin( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  auto equip_driver = effect.player->find_spell( 1216603 );
+  assert( equip_driver && "Ratfang Toxing missing Equip Driver" );
+
+  struct ratfang_toxin_cb_t : public dbc_proc_callback_t
+  {
+    const spell_data_t* debuff_spell;
+
+    ratfang_toxin_cb_t( const special_effect_t& e )
+      : dbc_proc_callback_t( e.player, e ), debuff_spell( e.player->find_spell( 1216604 ) )
+    {
+    }
+
+    buff_t* create_debuff( player_t* t ) override
+    {
+      if ( t->is_enemy() )
+      {
+        return make_buff( actor_pair_t( t, listener ), "ratfang_toxin_debuff", debuff_spell );
+      }
+      else
+        return nullptr;
+    }
+
+    void execute( action_t*, action_state_t* s ) override
+    {
+      get_debuff( s->target )->trigger();
+    }
+  };
+
+  auto equip      = new special_effect_t( effect.player );
+  equip->name_str = "ratfang_toxin_equip";
+  equip->item     = effect.item;
+  equip->spell_id = equip_driver->id();
+  effect.player->special_effects.push_back( equip );
+
+  auto equip_cb = new ratfang_toxin_cb_t( *equip );
+  equip_cb->initialize();
+  equip_cb->activate();
+
+  struct ratfang_toxin_t : public generic_proc_t
+  {
+    buff_t* debuff;
+    const spell_data_t* value_spell;
+    double base_tick_damage;
+    double debuff_increase;
+    ratfang_toxin_cb_t& equip_callback;
+
+    ratfang_toxin_t( const special_effect_t& e, std::string_view name, const spell_data_t* spell,
+                     ratfang_toxin_cb_t& equip )
+      : generic_proc_t( e, name, spell ),
+        debuff( nullptr ),
+        value_spell( e.player->find_spell( 1216603 ) ),
+        base_tick_damage( 0 ),
+        debuff_increase( 0 ),
+        equip_callback( equip )
+    {
+      auto ticks = spell->duration() / spell->effectN( 1 ).period();
+      base_tick_damage = value_spell->effectN( 2 ).average( e ) / ticks;
+      base_td         = base_tick_damage;
+      debuff_increase = value_spell->effectN( 3 ).average( e ) / ticks;
+    }
+
+    void execute() override
+    {
+      debuff = equip_callback.get_debuff( target );
+      if ( debuff->up() )
+      {
+        base_td += debuff_increase * debuff->check();
+        debuff->expire();
+      }
+      generic_proc_t::execute();
+    }
+
+    void last_tick( dot_t* d ) override
+    {
+      generic_proc_t::last_tick( d );
+      base_td = base_tick_damage;
+    }
+
+    void reset() override
+    {
+      generic_proc_t::reset();
+      base_td = base_tick_damage;
+    }
+  };
+
+  auto use = create_proc_action<ratfang_toxin_t>( "ratfang_toxin_dot", effect, "ratfang_toxin_dot", effect.player->find_spell( 1216606 ), *equip_cb );
+
+  effect.execute_action = use;
 }
 
 // Weapons
@@ -8799,6 +8905,8 @@ void register_special_effects()
   register_special_effect( 1215238, items::papas_prized_putter );
   register_special_effect( 472125, items::turbodrain_5000 );
   register_special_effect( 470675, items::noggenfogger_ultimate_deluxe );
+  register_special_effect( 1216605, items::ratfang_toxin );
+  register_special_effect( 1216603, DISABLED_EFFECT ); // Ratfang toxin equip driver
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
