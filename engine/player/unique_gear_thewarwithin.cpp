@@ -6360,6 +6360,9 @@ void ratfang_toxin( special_effect_t& effect )
 // 1219299 Damage
 void garbagemancers_last_resort( special_effect_t& effect )
 {
+  if ( !effect.player->is_ptr() )
+    return;
+
   struct garbagemancers_last_resort_t : public generic_proc_t
   {
     ground_aoe_params_t params;
@@ -6391,10 +6394,10 @@ void garbagemancers_last_resort( special_effect_t& effect )
   auto use = create_proc_action<garbagemancers_last_resort_t>( "garbagemancers_last_resort", effect,
                                                                "garbagemancers_last_resort", effect.driver() );
 
-  // Setting a random cooldown for now, its got none in data leading to sims spamming the hell out of it and getting stuck.
-  // Also has no cooldown in game...
+  // Setting a random cooldown for now, its got none in data leading to sims spamming the hell out of it and getting
+  // stuck. Also has no cooldown in game...
   // TODO - Remove once theres a cooldown in data.
-  effect.cooldown_ = 60_s;
+  effect.cooldown_      = 60_s;
   effect.execute_action = use;
 }
 
@@ -6405,6 +6408,9 @@ void garbagemancers_last_resort( special_effect_t& effect )
 // 1213434 Haste Buff
 void funhouse_lens( special_effect_t& effect )
 {
+  if ( !effect.player->is_ptr() )
+    return;
+
   struct funhouse_lens_t : public spell_t
   {
     buff_t* crit_buff;
