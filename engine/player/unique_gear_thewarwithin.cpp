@@ -6296,6 +6296,9 @@ void best_in_slots( special_effect_t& effect )
 // 1218471 Damage
 void machine_gobs_iron_grin( special_effect_t& effect )
 {
+  if ( !effect.player->is_ptr() )
+    return;
+
   struct machine_gobs_iron_grin_cb_t : public dbc_proc_callback_t
   {
     action_t* damage;
@@ -6307,7 +6310,7 @@ void machine_gobs_iron_grin( special_effect_t& effect )
 
     void execute( action_t*, action_state_t* s ) override
     {
-      auto rand_idx = rng().range( 1, 4 );
+      auto rand_idx       = rng().range( 1, 4 );
       damage->base_dd_min = damage->base_dd_max = effect.driver()->effectN( rand_idx ).average( effect );
       damage->execute_on_target( s->target );
     }
@@ -6786,6 +6789,7 @@ void the_jastor_diamond( special_effect_t& effect )
     }
   };
 
+  effect.cooldown_ = 12.5_s; // Oddly got removed from spell data? manually overriding for now
   effect.spell_id = 1214822;
   new the_jastor_diamond_cb_t( effect );
 }
