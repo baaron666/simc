@@ -6974,13 +6974,13 @@ void mister_locknstalk( special_effect_t& effect )
       auto proxy = new action_t( action_e::ACTION_OTHER, "mister_locknstalk", e.player, e.driver() );
       st_damage              = create_proc_action<generic_proc_t>( "precision_targeting", e, 1215690 );
       st_damage->base_dd_min = st_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
-      st_damage->base_multiplier                      = role_mult( e );
+      // st_damage->base_multiplier                      = role_mult( e );
       st_damage->execute_action = proxy;
       proxy->add_child( st_damage );
 
       aoe_damage              = create_proc_action<generic_aoe_proc_t>( "mass_destruction", e, 1215733, true );
       aoe_damage->base_dd_min = aoe_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
-      aoe_damage->base_multiplier                       = role_mult( e );
+      // aoe_damage->base_multiplier                       = role_mult( e );
       aoe_damage->execute_action = proxy;
       proxy->add_child( aoe_damage );
     }
