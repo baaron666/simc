@@ -6954,6 +6954,48 @@ void zees_thug_hotline( special_effect_t& effect )
   new dbc_proc_callback_t( effect.player, effect );
 }
 
+// Mister Lock-n-Stalk
+// 467469 Equip Driver
+// 467485 Use Driver
+// 1215690 Precision Targeting damage
+// 1215733 Mass Destruction damage
+void mister_locknstalk( special_effect_t& effect )
+{
+  struct mister_locknstalk_cb_t : public dbc_proc_callback_t
+  {
+    action_t* st_damage;
+    action_t* aoe_damage;
+    mister_locknstalk_cb_t( const special_effect_t& e )
+      : dbc_proc_callback_t( e.player, e ), st_damage( nullptr ), aoe_damage( nullptr )
+    {
+      auto proxy = new action_t( action_e::ACTION_OTHER, "mister_locknstalk", e.player, e.driver() );
+      st_damage              = create_proc_action<generic_proc_t>( "precision_targeting", e, 1215690 );
+      st_damage->base_dd_min = st_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
+      st_damage->base_multiplier                      = role_mult( e );
+      st_damage->execute_action = proxy;
+      proxy->add_child( st_damage );
+
+      aoe_damage              = create_proc_action<generic_aoe_proc_t>( "mass_destruction", e, 1215733, true );
+      aoe_damage->base_dd_min = aoe_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
+      aoe_damage->base_multiplier                       = role_mult( e );
+      aoe_damage->execute_action = proxy;
+      proxy->add_child( aoe_damage );
+    }
+
+    void execute( action_t*, action_state_t* s )
+    {
+      // TODO: add options to toggle between modes?
+      // For now, assume people are swapping between modes for ST and AoE
+      if ( listener->sim->target_non_sleeping_list.size() > 1 )
+        aoe_damage->execute_on_target( s->target );
+      else
+        st_damage->execute_on_target( s->target );
+    }
+  };
+
+  new mister_locknstalk_cb_t( effect );
+}
+
 // Weapons
 
 // 443384 driver
@@ -7370,18 +7412,21 @@ void machine_gobs_iron_grin( special_effect_t& effect )
     machine_gobs_iron_grin_cb_t( const special_effect_t& e )
       : dbc_proc_callback_t( e.player, e ), big_damage( nullptr ), medium_damage( nullptr ), small_damage( nullptr )
     {
-      // TODO: maybe make a proxy action to parent these guys into?
+      auto proxy = new action_t( action_e::ACTION_OTHER, "machine_gobs_iron_grin", e.player, e.driver() );
       big_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_bellowing_laugh", e, 1218471, true );
       big_damage->base_dd_min = big_damage->base_dd_max = e.driver()->effectN( 3 ).average( e );
+      big_damage->execute_action = proxy;
+      proxy->add_child( big_damage );
 
       medium_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_big_grin", e, 1218469, true );
       medium_damage->base_dd_min = medium_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
+      medium_damage->execute_action = proxy;
+      proxy->add_child( medium_damage );
 
       small_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_hiccup", e, 1218463, true );
       small_damage->base_dd_min = small_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
-
-      big_damage->add_child( medium_damage );
-      big_damage->add_child( small_damage );
+      small_damage->execute_action = proxy;
+      proxy->add_child( small_damage );
     }
 
     void execute( action_t*, action_state_t* s ) override
@@ -9517,6 +9562,8 @@ void register_special_effects()
   register_special_effect( 1216625, items::suspicious_energy_drink );
   register_special_effect( 472120, items::amorphous_relic );
   register_special_effect( 1217356, items::zees_thug_hotline );
+  register_special_effect( 467469, items::mister_locknstalk );
+  register_special_effect( 467485, DISABLED_EFFECT );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
