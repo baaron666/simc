@@ -1301,17 +1301,13 @@ struct void_bolt_proc_t final : public void_bolt_base_t
 
   void real_execute()
   {
+    void_bolt_base_t::execute();
+
     // TODO: Check ordering
     if ( p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B4 ) && can_proc_pi )
     {
       if ( player->buffs.power_infusion->check() )
       {
-        // TODO: check if resets PI or not.
-        if ( player->buffs.power_infusion->current_value != pi_value )
-        {
-          player->buffs.power_infusion->current_value = pi_value;
-          player->buffs.power_infusion->invalidate_cache();
-        }
         player->buffs.power_infusion->extend_duration( player, tww2_pi_proc_duration );
       }
       else
@@ -1319,8 +1315,6 @@ struct void_bolt_proc_t final : public void_bolt_base_t
         player->buffs.power_infusion->trigger( 1, pi_value, -1, tww2_pi_proc_duration );
       }
     }
-
-    void_bolt_base_t::execute();
   }
 
   void execute() override
