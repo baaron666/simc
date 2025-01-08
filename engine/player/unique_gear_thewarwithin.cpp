@@ -7391,10 +7391,13 @@ void machine_gobs_iron_grin( special_effect_t& effect )
       {
         case 0:
           big_damage->execute_on_target( s->target );
+          break;
         case 1:
           medium_damage->execute_on_target( s->target );
+          break;
         case 2:
           small_damage->execute_on_target( s->target );
+          break;
       }
     }
   };
