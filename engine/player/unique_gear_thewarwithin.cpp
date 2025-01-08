@@ -6225,6 +6225,91 @@ void reverb_radio( special_effect_t& effect )
   new dbc_proc_callback_t( effect.player, effect );
 }
 
+// Mechano-core Amplifer
+// 1214787 Driver
+// e1: Highest stat value
+// e2: Lowest stat value
+// 1214806 Crit Buff
+// 1214807 Haste Buff
+// 1214808 Mastery Buff
+// 1214810 Vers Buff
+void mechanocore_amplifier( special_effect_t& effect )
+{
+  struct mechanocore_amplifier_buff_t : public stat_buff_t
+  {
+    double high_value;
+    double low_value;
+    mechanocore_amplifier_buff_t( player_t* p, util::string_view name, const spell_data_t* s, const special_effect_t& e,
+                                  const item_t* item = nullptr )
+      : stat_buff_t( p, name, s, item ), high_value( 0 ), low_value( 0 )
+    {
+      high_value = e.driver()->effectN( 1 ).average( e );
+      low_value  = e.driver()->effectN( 2 ).average( e );
+      set_default_value( 0 );
+    }
+
+    void set_given_stat_value( double val )
+    {
+      for ( auto& buffed_stat : stats )
+      {
+        buffed_stat.amount = val;
+      }
+    }
+
+    void trigger_high()
+    {
+      set_given_stat_value( high_value );
+      trigger();
+    }
+
+    void trigger_low()
+    {
+      set_given_stat_value( low_value );
+      trigger();
+    }
+  };
+
+  struct mechanocore_amplifier_cb_t : public dbc_proc_callback_t
+  {
+    std::unordered_map<stat_e, mechanocore_amplifier_buff_t*> buffs;
+
+    mechanocore_amplifier_cb_t( const special_effect_t& e ) : dbc_proc_callback_t( e.player, e ), buffs()
+    {
+      static constexpr std::array<std::pair<stat_e, int>, 4> buff_spells = {
+          std::make_pair( stat_e::STAT_CRIT_RATING, 1214806 ), std::make_pair( stat_e::STAT_HASTE_RATING, 1214807 ),
+          std::make_pair( stat_e::STAT_MASTERY_RATING, 1214808 ),
+          std::make_pair( stat_e::STAT_VERSATILITY_RATING, 1214810 ) };
+
+      for ( auto& spell : buff_spells )
+      {
+        auto buff_spell     = e.player->find_spell( spell.second );
+        auto buff_stat_name = util::stat_type_abbrev( spell.first );
+        auto name           = fmt::format( "{}_{}", buff_spell->name_cstr(), buff_stat_name );
+        auto buff           = create_buff<mechanocore_amplifier_buff_t>( e.player, name, buff_spell, e );
+        buff->add_stat_from_effect_type( A_MOD_RATING, 0 );
+        buff->set_name_reporting( buff_stat_name );
+        buffs.insert( { spell.first, buff } );
+      }
+    }
+
+    void execute( action_t*, action_state_t* ) override
+    {
+      bool highest = rng().roll( 0.5 );
+      switch ( highest )
+      {
+        case true:
+          buffs.at( util::highest_stat( listener, secondary_ratings ) )->trigger_high();
+          break;
+        case false:
+          buffs.at( util::lowest_stat( listener, secondary_ratings ) )->trigger_low();
+          break;
+      }
+    }
+  };
+
+  new mechanocore_amplifier_cb_t( effect );
+}
+
 // 470641 driver, trigger damage
 // 470642 damage
 // 470643 reflect, NYI
@@ -8507,6 +8592,7 @@ void register_special_effects()
   register_special_effect( 471059, items::geargrinders_remote );
   register_special_effect( 1218714, items::improvised_seaforium_pacemaker );
   register_special_effect( 471567, items::reverb_radio );
+  register_special_effect( 1214787, items::mechanocore_amplifier );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );

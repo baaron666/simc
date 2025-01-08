@@ -1527,6 +1527,7 @@ class SpellDataGenerator(DataGenerator):
          1217431, 1217432, 1217427, 1217638, 1217665, 1217675, 1217676, 1217723, # Zee's Thug Hotline
          1214823, 1214826, # The Jastor Diamond
          1218471, 1218442, # Machine Gob's Iron Grin
+         1214787, 1214806, 1214807, 1214808, 1214810, # Mechano-core Amplifier 
         ),
 
         # Warrior:
