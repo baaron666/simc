@@ -6137,6 +6137,94 @@ void improvised_seaforium_pacemaker( special_effect_t& effect )
   new dbc_proc_callback_t( effect.player, effect );
 }
 
+// Reverb Radio
+// 471567 Driver
+// 1216212 Buff
+void reverb_radio( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  struct hyped_buff_t : public stat_buff_t
+  {
+    timespan_t amped_duration;
+    double amped_value;
+    bool amped;
+    hyped_buff_t( player_t* p, util::string_view name, const spell_data_t* s, const special_effect_t& e,
+                  const item_t* item = nullptr )
+      : stat_buff_t( p, name, s, item ), amped_duration( 0_ms ), amped_value( 0 ), amped( false )
+    {
+      amped_duration     = timespan_t::from_seconds( e.driver()->effectN( 3 ).base_value() );
+      double value = e.driver()->effectN( 1 ).average( e );
+      set_stat_from_effect_type( A_MOD_RATING, value );
+      amped_value = 1.0 + e.driver()->effectN( 2 ).percent();
+    }
+
+    void expire_override( int s, timespan_t d ) override
+    {
+      if ( amped )
+      {
+        for ( auto& buff_stat : stats )
+        {
+          player->stat_loss( buff_stat.stat, buff_stat.current_value, stat_gain, nullptr,
+                             buff_duration() > timespan_t::zero() );
+
+          buff_stat.current_value = 0;
+        }
+        amped = false;
+        set_refresh_behavior( buff_refresh_behavior::DURATION );
+        buff_t::expire_override( s, d );
+      }
+      else
+        stat_buff_t::expire_override( s, d );
+    }
+
+    void reset() override
+    {
+      stat_buff_t::reset();
+      amped = false;
+    }
+
+    void amp_it_up()
+    {
+      trigger( max_stack(), amped_duration );
+      amped = true;
+      set_refresh_behavior( buff_refresh_behavior::DISABLED );
+
+      for ( auto& buff_stat : stats )
+      {
+        if ( buff_stat.check_func && !buff_stat.check_func( *this ) )
+          continue;
+
+        player->stat_gain( buff_stat.stat, buff_stat_stack_amount( buff_stat, current_stack ), stat_gain, nullptr,
+                           buff_duration() > timespan_t::zero() );
+
+        buff_stat.current_value *= amped_value;
+      }
+    }
+
+    void bump( int stacks, double ) override
+    {
+      if ( at_max_stacks() && !amped )
+      {
+        make_event( *sim, 0_ms, [ & ] { expire(); } );
+        make_event( *sim, 0_ms, [ & ] {
+          amp_it_up();
+        } );
+        return;
+      }
+
+      if ( !at_max_stacks() && !amped )
+        stat_buff_t::bump( stacks );
+    }
+  };
+
+  auto buff = create_buff<hyped_buff_t>( effect.player, "hyped", effect.player->find_spell( 1216212 ), effect );
+  effect.custom_buff = buff;
+
+  new dbc_proc_callback_t( effect.player, effect );
+}
+
 // 470641 driver, trigger damage
 // 470642 damage
 // 470643 reflect, NYI
@@ -8418,6 +8506,7 @@ void register_special_effects()
   register_special_effect( 469888, items::eye_of_kezan );
   register_special_effect( 471059, items::geargrinders_remote );
   register_special_effect( 1218714, items::improvised_seaforium_pacemaker );
+  register_special_effect( 471567, items::reverb_radio );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
