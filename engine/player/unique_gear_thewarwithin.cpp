@@ -6856,7 +6856,7 @@ void zees_thug_hotline( special_effect_t& effect )
       parent_action               = parent;
       use_auto_attack             = true;
       main_hand_weapon.type       = WEAPON_BEAST;
-      main_hand_weapon.swing_time = 2_s;
+      main_hand_weapon.swing_time = 3.6_s;
     }
 
     attack_t* create_auto_attack() override
@@ -6864,19 +6864,6 @@ void zees_thug_hotline( special_effect_t& effect )
       auto a                = new auto_attack_melee_t( this, "main_hand_thwack_jack", parent_action, &effect );
       a->name_str_reporting = "Melee";
       return a;
-    }
-
-    void update_stats() override
-    {
-      zees_thug_hotline_pet_t::update_stats();
-      // Currently doesnt seem to scale with haste
-      if ( owner->bugs )
-      {
-        current_pet_stats.composite_melee_haste             = 1;
-        current_pet_stats.composite_spell_haste             = 1;
-        current_pet_stats.composite_melee_auto_attack_speed = 1;
-        current_pet_stats.composite_spell_cast_speed        = 1;
-      }
     }
 
     action_t* create_action( std::string_view name, std::string_view options_str ) override
