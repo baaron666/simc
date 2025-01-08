@@ -6918,10 +6918,13 @@ void zees_thug_hotline( special_effect_t& effect )
       thwack_jack_spawner.set_default_duration( thwack_jack_summon_spell->duration() );
       add_child( thwack_jack );
 
-      e.player->buffs.bloodlust->add_stack_change_callback( [ & ]( buff_t*, int old_, int new_ ) {
-        pocket_ace_spawner.spawn();
-        snake_eyes_spawner.spawn();
-        thwack_jack_spawner.spawn();
+      e.player->buffs.bloodlust->add_stack_change_callback( [ & ]( buff_t*, int, int new_ ) {
+        if ( new_ )
+        {
+          pocket_ace_spawner.spawn();
+          snake_eyes_spawner.spawn();
+          thwack_jack_spawner.spawn();
+        }
       } );
     }
 
