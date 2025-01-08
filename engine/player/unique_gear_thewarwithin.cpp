@@ -6066,57 +6066,6 @@ void mechanocore_amplifier( special_effect_t& effect )
   new mechanocore_amplifier_cb_t( effect );
 }
 
-// Machine Gob's Iron Grin
-// 1218442 Driver
-// 1218471 Big Damage
-// 1218469 Medium Damage
-// 1218463 Small Damage
-void machine_gobs_iron_grin( special_effect_t& effect )
-{
-  if ( !effect.player->is_ptr() )
-    return;
-
-  struct machine_gobs_iron_grin_cb_t : public dbc_proc_callback_t
-  {
-    action_t* big_damage;
-    action_t* medium_damage;
-    action_t* small_damage;
-
-    machine_gobs_iron_grin_cb_t( const special_effect_t& e )
-      : dbc_proc_callback_t( e.player, e ), big_damage( nullptr ), medium_damage( nullptr ), small_damage( nullptr )
-    {
-      // TODO: maybe make a proxy action to parent these guys into?
-      big_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_bellowing_laugh", e, 1218471, true );
-      big_damage->base_dd_min = big_damage->base_dd_max = e.driver()->effectN( 3 ).average( e );
-
-      medium_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_big_grin", e, 1218469, true );
-      medium_damage->base_dd_min = medium_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
-
-      small_damage              = create_proc_action<generic_aoe_proc_t>( "machine_gobs_hiccup", e, 1218463, true );
-      small_damage->base_dd_min = small_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
-
-      big_damage->add_child( medium_damage );
-      big_damage->add_child( small_damage );
-    }
-
-    void execute( action_t*, action_state_t* s ) override
-    {
-      auto rand = rng().range( 0, 3 );
-      switch ( rand )
-      {
-        case 0:
-          big_damage->execute_on_target( s->target );
-        case 1:
-          medium_damage->execute_on_target( s->target );
-        case 2:
-          small_damage->execute_on_target( s->target );
-      }
-    }
-  };
-
-  new machine_gobs_iron_grin_cb_t( effect );
-}
-
 // Papa's Prized Putter
 // 1215238 Driver
 // 1215321 Damage
@@ -6149,6 +6098,153 @@ void turbodrain_5000( special_effect_t& effect )
   effect.execute_action = dot;
 
   new dbc_proc_callback_t( effect.player, effect );
+}
+
+// Noggenfogger Ultimate Deluxe
+// 470675 Driver
+// 471404 Summon Pet spell
+// 233767 Pet NPC ID
+// Pet currently only melee attacks.
+void noggenfogger_ultimate_deluxe( special_effect_t& effect )
+{
+  struct blackwater_pirate_base_pet_t : public pet_t
+  {
+  protected:
+    const special_effect_t& effect;
+    action_t* parent_action;
+
+    blackwater_pirate_base_pet_t( std::string_view name, const special_effect_t& e, const spell_data_t* summon_spell )
+      : pet_t( e.player->sim, e.player, name, true, true ), effect( e ), parent_action( nullptr )
+    {
+      npc_id = summon_spell->effectN( 1 ).misc_value1();
+    }
+
+    resource_e primary_resource() const override
+    {
+      return RESOURCE_NONE;
+    }
+
+    virtual attack_t* create_auto_attack()
+    {
+      return nullptr;
+    }
+
+    struct auto_attack_t final : public melee_attack_t
+    {
+      auto_attack_t( blackwater_pirate_base_pet_t* p ) : melee_attack_t( "main_hand", p )
+      {
+        assert( p->main_hand_weapon.type != WEAPON_NONE );
+        p->main_hand_attack                    = p->create_auto_attack();
+        p->main_hand_attack->weapon            = &( p->main_hand_weapon );
+        p->main_hand_attack->base_execute_time = p->main_hand_weapon.swing_time;
+
+        ignore_false_positive = true;
+        trigger_gcd           = 0_ms;
+        school                = SCHOOL_PHYSICAL;
+      }
+
+      void execute() override
+      {
+        player->main_hand_attack->schedule_execute();
+      }
+
+      bool ready() override
+      {
+        return ( player->main_hand_attack->execute_event == nullptr );
+      }
+    };
+
+    action_t* create_action( std::string_view name, std::string_view options_str ) override
+    {
+      if ( name == "auto_attack" )
+        return new auto_attack_t( this );
+
+      return pet_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      def->add_action( "auto_attack" );
+
+      pet_t::init_action_list();
+    }
+  };
+
+  struct auto_attack_melee_t : public melee_attack_t
+  {
+    auto_attack_melee_t( pet_t* p, std::string_view name = "main_hand", action_t* a = nullptr )
+      : melee_attack_t( name, p )
+    {
+      this->background = this->repeating = true;
+      this->not_a_proc = this->may_crit = true;
+      this->special                     = false;
+      this->weapon_multiplier           = 1.0;
+      this->trigger_gcd                 = 0_ms;
+      this->school                      = SCHOOL_PHYSICAL;
+      this->stats->school               = SCHOOL_PHYSICAL;
+      this->base_dd_min = this->base_dd_max = p->dbc->expected_stat( p->true_level ).creature_auto_attack_dps;
+      this->base_multiplier                 = p->main_hand_weapon.swing_time.total_seconds();
+
+      auto proxy = a;
+      auto it    = range::find( proxy->child_action, name, &action_t::name );
+      if ( it != proxy->child_action.end() )
+        stats = ( *it )->stats;
+      else
+        proxy->add_child( this );
+    }
+
+    void execute() override
+    {
+      if ( this->player->executing )
+        this->schedule_execute();
+      else
+        melee_attack_t::execute();
+    }
+  };
+
+  struct blackwater_pirate_pet_t : public blackwater_pirate_base_pet_t
+  {
+    blackwater_pirate_pet_t( const special_effect_t& e, action_t* parent = nullptr )
+      : blackwater_pirate_base_pet_t( "blackwater_pirate", e, e.player->find_spell( 471404 ) )
+    {
+      parent_action = parent;
+      main_hand_weapon.type = WEAPON_BEAST;
+      main_hand_weapon.swing_time = 2_s;
+    }
+
+    attack_t* create_auto_attack() override
+    {
+      auto a = new auto_attack_melee_t( this, "main_hand", parent_action );
+      a->name_str_reporting = "Melee";
+      return a;
+    }
+  };
+
+  struct noggenfogger_ultimate_deluxe_t : public generic_proc_t
+  {
+    spawner::pet_spawner_t<blackwater_pirate_pet_t> pirate_spawner;
+
+    noggenfogger_ultimate_deluxe_t( const special_effect_t& e )
+      : generic_proc_t( e, "noggenfogger_utimate_deluxe", e.driver() ), pirate_spawner( "blackwater_pirate", e.player )
+    {
+      auto summon_spell          = e.player->find_spell( 471404 );
+      auto pirate                = new action_t( action_e::ACTION_OTHER, "blackwater_pirate", e.player, summon_spell );
+      pirate->name_str_reporting = "blackwater_pirate";
+      pirate_spawner.set_creation_callback( [ &e, pirate ]( player_t* ) { return new blackwater_pirate_pet_t( e, pirate ); } );
+      pirate_spawner.set_default_duration( summon_spell->duration() );
+      add_child( pirate );
+    }
+
+    void execute() override
+    {
+      generic_proc_t::execute();
+      pirate_spawner.spawn();
+    }
+  };
+
+  // Name is currently typod in spell data, might need fixed if the data name changes. 
+  effect.execute_action = create_proc_action<noggenfogger_ultimate_deluxe_t>( "noggenfogger_utimate_deluxe", effect );
 }
 
 // Weapons
@@ -6546,6 +6642,57 @@ void best_in_slots( special_effect_t& effect )
 
   effect.spell_id       = 473402;
   effect.execute_action = create_proc_action<cheating_t>( "cheating", effect, equip_driver );
+}
+
+// Machine Gob's Iron Grin
+// 1218442 Driver
+// 1218471 Big Damage
+// 1218469 Medium Damage
+// 1218463 Small Damage
+void machine_gobs_iron_grin( special_effect_t& effect )
+{
+  if (!effect.player->is_ptr())
+    return;
+
+  struct machine_gobs_iron_grin_cb_t : public dbc_proc_callback_t
+  {
+    action_t* big_damage;
+    action_t* medium_damage;
+    action_t* small_damage;
+
+    machine_gobs_iron_grin_cb_t( const special_effect_t& e )
+      : dbc_proc_callback_t( e.player, e ), big_damage( nullptr ), medium_damage( nullptr ), small_damage( nullptr )
+    {
+      // TODO: maybe make a proxy action to parent these guys into?
+      big_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_bellowing_laugh", e, 1218471, true );
+      big_damage->base_dd_min = big_damage->base_dd_max = e.driver()->effectN( 3 ).average( e );
+
+      medium_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_big_grin", e, 1218469, true );
+      medium_damage->base_dd_min = medium_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
+
+      small_damage = create_proc_action<generic_aoe_proc_t>( "machine_gobs_hiccup", e, 1218463, true );
+      small_damage->base_dd_min = small_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
+
+      big_damage->add_child( medium_damage );
+      big_damage->add_child( small_damage );
+    }
+
+    void execute( action_t*, action_state_t* s ) override
+    {
+      auto rand = rng().range( 0, 3 );
+      switch (rand)
+      {
+        case 0:
+          big_damage->execute_on_target( s->target );
+        case 1:
+          medium_damage->execute_on_target( s->target );
+        case 2:
+          small_damage->execute_on_target( s->target );
+      }
+    }
+  };
+
+  new machine_gobs_iron_grin_cb_t( effect );
 }
 
 // Armor
@@ -8649,9 +8796,9 @@ void register_special_effects()
   register_special_effect( 1218714, items::improvised_seaforium_pacemaker );
   register_special_effect( 471567, items::reverb_radio );
   register_special_effect( 1214787, items::mechanocore_amplifier );
-  register_special_effect( 1218442, items::machine_gobs_iron_grin );
   register_special_effect( 1215238, items::papas_prized_putter );
   register_special_effect( 472125, items::turbodrain_5000 );
+  register_special_effect( 470675, items::noggenfogger_ultimate_deluxe );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
@@ -8664,6 +8811,7 @@ void register_special_effects()
   register_special_effect( 471316, items::vile_contamination );
   register_special_effect( { 473400, 473401 }, items::best_in_slots );
   register_special_effect( 471063, DISABLED_EFFECT );  // best in slots equip driver
+  register_special_effect( 1218442, items::machine_gobs_iron_grin );
 
   // Armor
   register_special_effect( 457815, items::seal_of_the_poisoned_pact );
