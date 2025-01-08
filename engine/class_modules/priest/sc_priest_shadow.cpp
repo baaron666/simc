@@ -1299,14 +1299,8 @@ struct void_bolt_proc_t final : public void_bolt_base_t
   {
   }
 
-  void execute() override
+  void real_execute()
   {
-    // World of warcraft is a fun game.
-    if ( p().bugs && p().channeling )
-    {
-      p().channeling->cancel();
-    }
-
     // TODO: Check ordering
     if ( p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B4 ) && can_proc_pi )
     {
@@ -1327,6 +1321,28 @@ struct void_bolt_proc_t final : public void_bolt_base_t
     }
 
     void_bolt_base_t::execute();
+  }
+
+  void execute() override
+  {
+    // World of warcraft is a fun game.
+    if ( p().bugs )
+    {
+      make_event( p().sim, 1_ms, [ this ] {
+        // Piggyback can_proc_pi - This is true only on non CD Jackpots currently
+        if ( p().channeling && can_proc_pi )
+        {
+          p().channeling->cancel();
+          return;
+        }
+
+        real_execute();
+      } );
+    }
+    else
+    {
+      real_execute();
+    }
   }
 };
 
@@ -2618,11 +2634,13 @@ void priest_t::init_special_effects_shadow()
       }
     };
 
-    auto set_spell       = sets->set( PRIEST_SHADOW, TWW2, B2 );
-    auto set_effect      = new special_effect_t( this );
-    set_effect->name_str = set_spell->name_cstr();
-    set_effect->type     = SPECIAL_EFFECT_EQUIP;
-    set_effect->spell_id = set_spell->id();
+    auto set_spell           = sets->set( PRIEST_SHADOW, TWW2, B2 );
+    auto set_effect          = new special_effect_t( this );
+    set_effect->name_str     = util::tokenize_fn( set_spell->name_cstr() );
+    set_effect->type         = SPECIAL_EFFECT_EQUIP;
+    set_effect->proc_flags2_ = PF2_ALL_HIT;
+    set_effect->spell_id     = set_spell->id();
+    special_effects.push_back( set_effect );
 
     new shadow_tww2_2pc( this, *set_effect );
   }

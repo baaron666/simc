@@ -8362,11 +8362,13 @@ void evoker_t::init_special_effects()
       }
     };
 
-    auto set_spell       = sets->set( EVOKER_AUGMENTATION, TWW2, B2 );
-    auto set_effect      = new special_effect_t( this );
-    set_effect->name_str = set_spell->name_cstr();
-    set_effect->type     = SPECIAL_EFFECT_EQUIP;
-    set_effect->spell_id = set_spell->id();
+    auto set_spell           = sets->set( EVOKER_AUGMENTATION, TWW2, B2 );
+    auto set_effect          = new special_effect_t( this );
+    set_effect->name_str     = util::tokenize_fn( set_spell->name_cstr() );
+    set_effect->type         = SPECIAL_EFFECT_EQUIP;
+    set_effect->proc_flags2_ = PF2_ALL_HIT;
+    set_effect->spell_id     = set_spell->id();
+    special_effects.push_back( set_effect );
 
     auto cb = new augmentation_tww2_2pc( this, *set_effect );
   }
@@ -8408,11 +8410,11 @@ void evoker_t::init_special_effects()
 
     auto set_spell           = sets->set( EVOKER_DEVASTATION, TWW2, B2 );
     auto set_effect          = new special_effect_t( this );
-    set_effect->name_str     = set_spell->name_cstr();
+    set_effect->name_str     = util::tokenize_fn( set_spell->name_cstr() );
     set_effect->type         = SPECIAL_EFFECT_EQUIP;
-    set_effect->spell_id     = set_spell->id();
-    // TODO: Check on PTR when live. Not proccing on periodic damage currently without.
     set_effect->proc_flags2_ = PF2_ALL_HIT;
+    set_effect->spell_id     = set_spell->id();
+    special_effects.push_back( set_effect );
 
     auto cb = new devastation_tww2_2pc( this, *set_effect );
   }
