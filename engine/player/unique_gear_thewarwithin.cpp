@@ -6586,6 +6586,9 @@ void amorphous_relic( special_effect_t& effect )
 // Uses a basic auto attack as well
 void zees_thug_hotline( special_effect_t& effect )
 {
+  if ( !effect.player->is_ptr() )
+    return;
+
   struct zees_thug_hotline_pet_t : public pet_t
   {
   protected:
@@ -6845,9 +6848,6 @@ void zees_thug_hotline( special_effect_t& effect )
     }
   };
 
-  // TODO: Take is weird, lots of odd spell queing events, missed casts, and long delays between casts.
-  // Figure out exactly whats going on here.
-  // https://www.warcraftlogs.com/reports/PNwkxKmn1cgtMYh3#fight=68&type=damage-done&source=289&view=events
   struct thwack_jack_pet_t : public zees_thug_hotline_pet_t
   {
     thwack_jack_pet_t( const special_effect_t& e, action_t* parent = nullptr )
