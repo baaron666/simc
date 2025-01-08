@@ -6568,6 +6568,399 @@ void amorphous_relic( special_effect_t& effect )
   } );
 }
 
+// Zee's Thug Hotline
+// 1217356 Driver
+// Pocket Ace:
+// 1217431 Summon
+// 1217675 Gutstab - Only uses in ST
+// 1217676 Fan of Stabs - Only uses in AoE
+// Uses a basic auto attack as well
+// Snake Eyes:
+// 1217432 Summon
+// 1217719 Snipe - Only Ability
+// Does not auto attack
+// Thwack Jack:
+// 1217427 Summon
+// 1217638 Thwack! - Only uses in ST
+// 1217665 Thwack Thwack Thwack! - Only uses in AoE
+// Uses a basic auto attack as well
+void zees_thug_hotline( special_effect_t& effect )
+{
+  struct zees_thug_hotline_pet_t : public pet_t
+  {
+  protected:
+    using base_t = zees_thug_hotline_pet_t;
+
+  public:
+    bool use_auto_attack;
+    const special_effect_t& effect;
+    action_t* parent_action;
+
+    zees_thug_hotline_pet_t( std::string_view name, const special_effect_t& e, const spell_data_t* summon_spell )
+      : pet_t( e.player->sim, e.player, name, true, true ), effect( e ), parent_action( nullptr )
+    {
+      npc_id          = summon_spell->effectN( 1 ).misc_value1();
+      use_auto_attack = false;
+    }
+
+    resource_e primary_resource() const override
+    {
+      return RESOURCE_NONE;
+    }
+
+    virtual attack_t* create_auto_attack()
+    {
+      return nullptr;
+    }
+
+    struct auto_attack_t final : public melee_attack_t
+    {
+      auto_attack_t( zees_thug_hotline_pet_t* p ) : melee_attack_t( "main_hand", p )
+      {
+        assert( p->main_hand_weapon.type != WEAPON_NONE );
+        p->main_hand_attack                    = p->create_auto_attack();
+        p->main_hand_attack->weapon            = &( p->main_hand_weapon );
+        p->main_hand_attack->base_execute_time = p->main_hand_weapon.swing_time;
+
+        ignore_false_positive = true;
+        trigger_gcd           = 0_ms;
+        school                = SCHOOL_PHYSICAL;
+      }
+
+      void execute() override
+      {
+        player->main_hand_attack->schedule_execute();
+      }
+
+      bool ready() override
+      {
+        if ( player->is_moving() )
+          return false;
+
+        return ( player->main_hand_attack->execute_event == nullptr );
+      }
+    };
+
+    void create_buffs() override
+    {
+      pet_t::create_buffs();
+
+      buffs.movement->set_quiet( true );
+    }
+
+    void arise() override
+    {
+      pet_t::arise();
+
+      parent_action->stats->add_execute( 0_ms, owner );
+
+      if ( use_auto_attack && owner->base.distance > 8 )
+      {
+        trigger_movement( owner->base.distance, movement_direction_type::TOWARDS );
+        auto dur = time_to_move();
+        make_event( *sim, dur, [ this, dur ] { update_movement( dur ); } );
+      }
+    }
+
+    action_t* create_action( std::string_view name, std::string_view options_str ) override
+    {
+      if ( name == "auto_attack" )
+        return new auto_attack_t( this );
+
+      return pet_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      if ( use_auto_attack )
+        def->add_action( "auto_attack" );
+
+      pet_t::init_action_list();
+    }
+  };
+
+  struct auto_attack_melee_t : public melee_attack_t
+  {
+    auto_attack_melee_t( pet_t* p, std::string_view name = "main_hand", action_t* a = nullptr,
+                         const special_effect_t* e = nullptr )
+      : melee_attack_t( name, p )
+    {
+      this->background = this->repeating = true;
+      this->not_a_proc = this->may_crit = true;
+      this->special                     = false;
+      this->weapon_multiplier           = 1.0;
+      this->trigger_gcd                 = 0_ms;
+      this->school                      = SCHOOL_PHYSICAL;
+      this->stats->school               = SCHOOL_PHYSICAL;
+      double base_damage = e->driver()->effectN( 5 ).average( *e );
+      // Only pocket ace appears to have a reduced melee modifer
+      double mult = p->name_str == "pocket_ace" ? 0.6 : 1.0;
+      this->base_dd_min = this->base_dd_max = base_damage * mult;
+
+      auto proxy = a;
+      auto it    = range::find( proxy->child_action, name, &action_t::name );
+      if ( it != proxy->child_action.end() )
+        stats = ( *it )->stats;
+      else
+        proxy->add_child( this );
+    }
+
+    void execute() override
+    {
+      if ( this->player->executing )
+        this->schedule_execute();
+      else
+        melee_attack_t::execute();
+    }
+  };
+
+  struct zees_thug_hotline_pet_spell_t : public spell_t
+  {
+    zees_thug_hotline_pet_spell_t( std::string_view n, pet_t* p, const spell_data_t* s, std::string_view options_str,
+                                   action_t* a )
+      : spell_t( n, p, s )
+    {
+      auto proxy = a;
+      auto it    = range::find( proxy->child_action, data().id(), &action_t::id );
+      if ( it != proxy->child_action.end() )
+        stats = ( *it )->stats;
+      else
+        proxy->add_child( this );
+
+      parse_options( options_str );
+
+      // Not 100% confident this is correct. Just what it appeared to be at a glance.
+      cooldown->duration = 4_s;
+      cooldown->hasted = true;
+    }
+  };
+
+  struct gutstab_t : public zees_thug_hotline_pet_spell_t
+  {
+    gutstab_t( const special_effect_t& e, zees_thug_hotline_pet_t* p, std::string_view options_str, action_t* a )
+      : zees_thug_hotline_pet_spell_t( "gutstab", p, p->find_spell( 1217675 ), options_str, a )
+    {
+      base_dd_min = base_dd_max = e.driver()->effectN( 1 ).average( e );
+    }
+  };
+
+  struct fan_of_stabs_t : public zees_thug_hotline_pet_spell_t
+  {
+    fan_of_stabs_t( const special_effect_t& e, zees_thug_hotline_pet_t* p, std::string_view options_str, action_t* a )
+      : zees_thug_hotline_pet_spell_t( "fan_of_stabs", p, p->find_spell( 1217676 ), options_str, a )
+    {
+      aoe         = -1;
+      base_dd_min = base_dd_max = e.driver()->effectN( 4 ).average( e );
+    }
+  };
+
+  struct snipe_t : public zees_thug_hotline_pet_spell_t
+  {
+    snipe_t( const special_effect_t& e, zees_thug_hotline_pet_t* p, std::string_view options_str, action_t* a )
+      : zees_thug_hotline_pet_spell_t( "snipe", p, p->find_spell( 1217719 ), options_str, a )
+    {
+      base_dd_min = base_dd_max = e.driver()->effectN( 3 ).average( e );
+    }
+  };
+
+  struct thwack_t : public zees_thug_hotline_pet_spell_t
+  {
+    thwack_t( const special_effect_t& e, zees_thug_hotline_pet_t* p, std::string_view options_str, action_t* a )
+      : zees_thug_hotline_pet_spell_t( "thwack", p, p->find_spell( 1217638 ), options_str, a )
+    {
+      base_dd_min = base_dd_max = e.driver()->effectN( 2 ).average( e );
+    }
+  };
+
+  struct thwack_thwack_thwack_t : public zees_thug_hotline_pet_spell_t
+  {
+    thwack_thwack_thwack_t( const special_effect_t& e, zees_thug_hotline_pet_t* p, std::string_view options_str,
+                            action_t* a )
+      : zees_thug_hotline_pet_spell_t( "thwack_thwack_thwack", p, p->find_spell( 1217665 ), options_str, a )
+    {
+      aoe         = -1;
+      base_dd_min = base_dd_max = e.driver()->effectN( 4 ).average( e );
+    }
+  };
+
+  struct pocket_ace_pet_t : public zees_thug_hotline_pet_t
+  {
+    pocket_ace_pet_t( const special_effect_t& e, action_t* parent = nullptr )
+      : base_t( "pocket_ace", e, e.player->find_spell( 1217431 ) )
+    {
+      parent_action               = parent;
+      use_auto_attack             = true;
+      main_hand_weapon.type       = WEAPON_BEAST;
+      main_hand_weapon.swing_time = 2_s;
+    }
+
+    attack_t* create_auto_attack() override
+    {
+      auto a                = new auto_attack_melee_t( this, "main_hand_pocket_ace", parent_action, &effect );
+      a->name_str_reporting = "Melee";
+      return a;
+    }
+
+    action_t* create_action( std::string_view name, std::string_view options_str ) override
+    {
+      if ( name == "gutstab" )
+        return new gutstab_t( effect, this, options_str, parent_action );
+      if ( name == "fan_of_stabs" )
+        return new fan_of_stabs_t( effect, this, options_str, parent_action );
+
+      return base_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      base_t::init_action_list();
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      def->add_action( "gutstab,if=active_enemies=1" );
+      def->add_action( "fan_of_stabs,if=active_enemies>1" );
+    }
+  };
+
+  struct snake_eyes_pet_t : public zees_thug_hotline_pet_t
+  {
+    snake_eyes_pet_t( const special_effect_t& e, action_t* parent = nullptr )
+      : base_t( "snake_eyes", e, e.player->find_spell( 1217432 ) )
+    {
+      parent_action = parent;
+    }
+
+    action_t* create_action( std::string_view name, std::string_view options_str ) override
+    {
+      if ( name == "snipe" )
+        return new snipe_t( effect, this, options_str, parent_action );
+
+      return base_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      base_t::init_action_list();
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      def->add_action( "snipe" );
+    }
+  };
+
+  // TODO: Take is weird, lots of odd spell queing events, missed casts, and long delays between casts.
+  // Figure out exactly whats going on here.
+  // https://www.warcraftlogs.com/reports/PNwkxKmn1cgtMYh3#fight=68&type=damage-done&source=289&view=events
+  struct thwack_jack_pet_t : public zees_thug_hotline_pet_t
+  {
+    thwack_jack_pet_t( const special_effect_t& e, action_t* parent = nullptr )
+      : base_t( "thwack_jack", e, e.player->find_spell( 1217427 ) )
+    {
+      parent_action               = parent;
+      use_auto_attack             = true;
+      main_hand_weapon.type       = WEAPON_BEAST;
+      main_hand_weapon.swing_time = 2_s;
+    }
+
+    attack_t* create_auto_attack() override
+    {
+      auto a                = new auto_attack_melee_t( this, "main_hand_thwack_jack", parent_action, &effect );
+      a->name_str_reporting = "Melee";
+      return a;
+    }
+
+    void update_stats() override
+    {
+      zees_thug_hotline_pet_t::update_stats();
+      // Currently doesnt seem to scale with haste
+      if ( owner->bugs )
+      {
+        current_pet_stats.composite_melee_haste             = 1;
+        current_pet_stats.composite_spell_haste             = 1;
+        current_pet_stats.composite_melee_auto_attack_speed = 1;
+        current_pet_stats.composite_spell_cast_speed        = 1;
+      }
+    }
+
+    action_t* create_action( std::string_view name, std::string_view options_str ) override
+    {
+      if ( name == "thwack" )
+        return new thwack_t( effect, this, options_str, parent_action );
+      if ( name == "thwack_thwack_thwack" )
+        return new thwack_thwack_thwack_t( effect, this, options_str, parent_action );
+
+      return base_t::create_action( name, options_str );
+    }
+
+    void init_action_list() override
+    {
+      base_t::init_action_list();
+      action_priority_list_t* def = get_action_priority_list( "default" );
+      def->add_action( "thwack,if=active_enemies=1" );
+      def->add_action( "thwack_thwack_thwack,if=active_enemies>=2" );
+    }
+  };
+
+  struct zees_thug_hotline_t : public generic_proc_t
+  {
+    spawner::pet_spawner_t<pocket_ace_pet_t> pocket_ace_spawner;
+    spawner::pet_spawner_t<snake_eyes_pet_t> snake_eyes_spawner;
+    spawner::pet_spawner_t<thwack_jack_pet_t> thwack_jack_spawner;
+
+    zees_thug_hotline_t( const special_effect_t& e )
+      : generic_proc_t( e, "zees_thug_hotline", e.driver() ),
+        pocket_ace_spawner( "pocket_ace", e.player ),
+        snake_eyes_spawner( "snake_eyes", e.player ),
+        thwack_jack_spawner( "thwack_jack", e.player )
+    {
+      auto pocket_ace_summon_spell = e.player->find_spell( 1217431 );
+      auto pocket_ace = new action_t( action_e::ACTION_OTHER, "pocket_ace", e.player, pocket_ace_summon_spell );
+      pocket_ace->name_str_reporting = "pocket_ace";
+      pocket_ace_spawner.set_creation_callback(
+          [ &e, pocket_ace ]( player_t* ) { return new pocket_ace_pet_t( e, pocket_ace ); } );
+      pocket_ace_spawner.set_default_duration( pocket_ace_summon_spell->duration() );
+      add_child( pocket_ace );
+
+      auto snake_eyes_summon_spell = e.player->find_spell( 1217432 );
+      auto snake_eyes = new action_t( action_e::ACTION_OTHER, "snake_eyes", e.player, snake_eyes_summon_spell );
+      snake_eyes->name_str_reporting = "snake_eyes";
+      snake_eyes_spawner.set_creation_callback(
+          [ &e, snake_eyes ]( player_t* ) { return new snake_eyes_pet_t( e, snake_eyes ); } );
+      snake_eyes_spawner.set_default_duration( snake_eyes_summon_spell->duration() );
+      add_child( snake_eyes );
+
+      auto thwack_jack_summon_spell = e.player->find_spell( 1217427 );
+      auto thwack_jack = new action_t( action_e::ACTION_OTHER, "thwack_jack", e.player, thwack_jack_summon_spell );
+      thwack_jack->name_str_reporting = "thwack_jack";
+      thwack_jack_spawner.set_creation_callback(
+          [ &e, thwack_jack ]( player_t* ) { return new thwack_jack_pet_t( e, thwack_jack ); } );
+      thwack_jack_spawner.set_default_duration( thwack_jack_summon_spell->duration() );
+      add_child( thwack_jack );
+    }
+
+    void execute() override
+    {
+      generic_proc_t::execute();
+      int pet_id = rng().range( 0, 3 );
+      switch ( pet_id )
+      {
+        case 0:
+          pocket_ace_spawner.spawn();
+          break;
+        case 1:
+          snake_eyes_spawner.spawn();
+          break;
+        case 2:
+          thwack_jack_spawner.spawn();
+          break;
+        default:
+          break;
+      }
+    }
+  };
+
+  effect.execute_action = create_proc_action<zees_thug_hotline_t>( "zees_thug_hotline", effect );
+
+  new dbc_proc_callback_t( effect.player, effect );
+}
+
 // Weapons
 
 // 443384 driver
@@ -9127,6 +9520,7 @@ void register_special_effects()
   register_special_effect( 1214603, DISABLED_EFFECT ); // Funhouse Lens value spell
   register_special_effect( 1216625, items::suspicious_energy_drink );
   register_special_effect( 472120, items::amorphous_relic );
+  register_special_effect( 1217356, items::zees_thug_hotline );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
