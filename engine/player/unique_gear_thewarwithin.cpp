@@ -6696,10 +6696,8 @@ void zees_thug_hotline( special_effect_t& effect )
       this->trigger_gcd                 = 0_ms;
       this->school                      = SCHOOL_PHYSICAL;
       this->stats->school               = SCHOOL_PHYSICAL;
-      double base_damage = e->driver()->effectN( 5 ).average( *e );
-      // Only pocket ace appears to have a reduced melee modifer
-      double mult = p->name_str == "pocket_ace" ? 0.6 : 1.0;
-      this->base_dd_min = this->base_dd_max = base_damage * mult;
+      this->base_multiplier = p->main_hand_weapon.swing_time.total_seconds();
+      this->base_dd_min = this->base_dd_max = e->driver()->effectN( 5 ).average( *e ) * 0.375;
 
       auto proxy = a;
       auto it    = range::find( proxy->child_action, name, &action_t::name );
@@ -6734,7 +6732,7 @@ void zees_thug_hotline( special_effect_t& effect )
       parse_options( options_str );
 
       // Not 100% confident this is correct. Just what it appeared to be at a glance.
-      cooldown->duration = 5_s;
+      cooldown->duration = 4_s;
       cooldown->hasted = true;
     }
   };
@@ -6795,7 +6793,7 @@ void zees_thug_hotline( special_effect_t& effect )
       parent_action               = parent;
       use_auto_attack             = true;
       main_hand_weapon.type       = WEAPON_BEAST;
-      main_hand_weapon.swing_time = 2_s;
+      main_hand_weapon.swing_time = 1.6_s;
     }
 
     attack_t* create_auto_attack() override
@@ -6856,7 +6854,7 @@ void zees_thug_hotline( special_effect_t& effect )
       parent_action               = parent;
       use_auto_attack             = true;
       main_hand_weapon.type       = WEAPON_BEAST;
-      main_hand_weapon.swing_time = 3.6_s;
+      main_hand_weapon.swing_time = 2.6_s;
     }
 
     attack_t* create_auto_attack() override
