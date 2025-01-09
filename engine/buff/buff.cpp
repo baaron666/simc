@@ -449,6 +449,13 @@ std::unique_ptr<expr_t> create_buff_expression( util::string_view buff_name, uti
         return buff->max_stack();
       } );
   }
+  else if ( type == "at_max_stacks" )
+  {
+    return make_buff_expr( "buff_at_max_stacks", 
+      []( buff_t* buff ) { 
+        return buff->at_max_stacks(); 
+      } );
+  }
   else if ( type == "value" )
   {
     return make_buff_expr( "buff_value",
