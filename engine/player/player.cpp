@@ -12860,6 +12860,7 @@ void player_t::create_options()
                         thewarwithin_opts.estimate_skippers_group_benefit ) );
   add_option( opt_float( "thewarwithin.estimate_skippers_group_members",
                          thewarwithin_opts.estimate_skippers_group_members, 0, 999 ) );
+  add_option( opt_string( "thewarwithin.mister_locknstalk_mode", thewarwithin_opts.mister_locknstalk_mode ) );
 }
 
 player_t* player_t::create( sim_t*, const player_description_t& )

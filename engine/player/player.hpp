@@ -886,6 +886,8 @@ struct player_t : public actor_t
     bool personal_estimate_skippers_group_benefit         = false;
     bool estimate_skippers_group_benefit                  = true;
     double estimate_skippers_group_members                = 4;
+    // Mister Lock-n-Stalk mode of operation
+    player_option_t<std::string> mister_locknstalk_mode = "dynamic";
   } thewarwithin_opts;
 
 private:

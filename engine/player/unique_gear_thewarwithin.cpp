@@ -6973,8 +6973,15 @@ void mister_locknstalk( special_effect_t& effect )
     action_t* st_damage;
     action_t* aoe_damage;
     action_t* proxy;
+    enum mister_locknstalk_modes_t
+    {
+      MODE_DYNAMIC,
+      MODE_SINGLE_TARGET,
+      MODE_AOE
+    };
+    mister_locknstalk_modes_t mode;
     mister_locknstalk_cb_t( const special_effect_t& e )
-      : dbc_proc_callback_t( e.player, e ), st_damage( nullptr ), aoe_damage( nullptr ), proxy( nullptr )
+      : dbc_proc_callback_t( e.player, e ), st_damage( nullptr ), aoe_damage( nullptr ), proxy( nullptr ), mode( MODE_DYNAMIC )
     {
       proxy = new action_t( action_e::ACTION_OTHER, "mister_locknstalk", e.player, e.driver() );
       st_damage              = create_proc_action<generic_proc_t>( "precision_targeting", e, 1215690 );
@@ -6986,16 +6993,41 @@ void mister_locknstalk( special_effect_t& effect )
       aoe_damage->base_dd_min = aoe_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
       // aoe_damage->base_multiplier                       = role_mult( e );
       proxy->add_child( aoe_damage );
+
+      const auto& option = e.player->thewarwithin_opts.mister_locknstalk_mode;
+      if ( !option.is_default() )
+      {
+        if ( util::str_compare_ci( option, "dynamic" ) )
+          mode = MODE_DYNAMIC;
+        else if ( util::str_compare_ci( option, "single_target" ) )
+          mode = MODE_SINGLE_TARGET;
+        else if ( util::str_compare_ci( option, "aoe" ) )
+          mode = MODE_AOE;
+        else
+          throw std::invalid_argument( "Valid thewarwithin.mister_locknstalk_mode: dynamic, single_target, aoe" );
+      }
     }
 
     void execute( action_t*, action_state_t* s )
     {
-      // TODO: add options to toggle between modes?
-      // For now, assume people are swapping between modes for ST and AoE
-      if ( listener->sim->target_non_sleeping_list.size() > 1 )
-        aoe_damage->execute_on_target( s->target );
-      else
-        st_damage->execute_on_target( s->target );
+      switch ( mode )
+      {
+        case MODE_DYNAMIC:
+          if ( listener->sim->target_non_sleeping_list.size() > 1 )
+            aoe_damage->execute_on_target( s->target );
+          else
+            st_damage->execute_on_target( s->target );
+          break;
+        case MODE_SINGLE_TARGET:
+          st_damage->execute_on_target( s->target );
+          break;
+        case MODE_AOE:
+          aoe_damage->execute_on_target( s->target );
+          break;
+        default:
+          break;
+      }
+
       proxy->stats->add_execute( 0_ms, listener );
     }
   };
