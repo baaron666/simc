@@ -6734,7 +6734,7 @@ void zees_thug_hotline( special_effect_t& effect )
       parse_options( options_str );
 
       // Not 100% confident this is correct. Just what it appeared to be at a glance.
-      cooldown->duration = 4_s;
+      cooldown->duration = 5_s;
       cooldown->hasted = true;
     }
   };
@@ -6902,6 +6902,8 @@ void zees_thug_hotline( special_effect_t& effect )
       pocket_ace_spawner.set_creation_callback(
           [ &e, pocket_ace ]( player_t* ) { return new pocket_ace_pet_t( e, pocket_ace ); } );
       pocket_ace_spawner.set_default_duration( pocket_ace_summon_spell->duration() );
+      pocket_ace_spawner.set_max_pets( 1 );
+      pocket_ace_spawner.set_replacement_strategy( spawner::pet_replacement_strategy::REPLACE_OLDEST );
       add_child( pocket_ace );
 
       auto snake_eyes_summon_spell = e.player->find_spell( 1217432 );
@@ -6909,6 +6911,8 @@ void zees_thug_hotline( special_effect_t& effect )
       snake_eyes_spawner.set_creation_callback(
           [ &e, snake_eyes ]( player_t* ) { return new snake_eyes_pet_t( e, snake_eyes ); } );
       snake_eyes_spawner.set_default_duration( snake_eyes_summon_spell->duration() );
+      snake_eyes_spawner.set_max_pets( 1 );
+      snake_eyes_spawner.set_replacement_strategy( spawner::pet_replacement_strategy::REPLACE_OLDEST );
       add_child( snake_eyes );
 
       auto thwack_jack_summon_spell = e.player->find_spell( 1217427 );
@@ -6916,6 +6920,8 @@ void zees_thug_hotline( special_effect_t& effect )
       thwack_jack_spawner.set_creation_callback(
           [ &e, thwack_jack ]( player_t* ) { return new thwack_jack_pet_t( e, thwack_jack ); } );
       thwack_jack_spawner.set_default_duration( thwack_jack_summon_spell->duration() );
+      thwack_jack_spawner.set_max_pets( 1 );
+      thwack_jack_spawner.set_replacement_strategy( spawner::pet_replacement_strategy::REPLACE_OLDEST );
       add_child( thwack_jack );
 
       e.player->buffs.bloodlust->add_stack_change_callback( [ & ]( buff_t*, int, int new_ ) {
