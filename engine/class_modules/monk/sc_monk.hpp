@@ -68,6 +68,7 @@ enum class sef_ability_e
   SEF_STRIKE_OF_THE_WINDLORD,
   SEF_STRIKE_OF_THE_WINDLORD_OH,
   SEF_CELESTIAL_CONDUIT,
+  SEF_RJW_TICK,
   SEF_ATTACK_MAX,
   // Attacks end here
 
@@ -1334,9 +1335,7 @@ public:
   struct
   {
     const spell_data_t *jadefire_stomp;
-    const spell_data_t *healing_elixir;
     const spell_data_t *invokers_delight;
-    const spell_data_t *rushing_jade_wind;
     const spell_data_t *teachings_of_the_monastery;
   } shared;
 
@@ -1468,7 +1467,6 @@ public:
   void storm_earth_and_fire_fixate( player_t *target );
   bool storm_earth_and_fire_fixate_ready( player_t *target );
   player_t *storm_earth_and_fire_fixate_target( pets::sef_pet_e sef_pet );
-  void trigger_storm_earth_and_fire_bok_proc( pets::sef_pet_e sef_pet );
 };
 
 struct sef_despawn_cb_t
