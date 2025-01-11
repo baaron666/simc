@@ -2085,6 +2085,7 @@ class SpellDataGenerator(DataGenerator):
           ( 453326, 0 ),                            # Arcane Surge (Arcane Phoenix)
           ( 450421, 0 ),                            # Greater Pyroblast (Arcane Phoenix)
           ( 455137, 0 ),                            # Blessing of the Phoenix missile speed
+          ( 1216988, 0 ),                           # Recently damaged by Blizzard (Freezing Winds talent)
         ),
 
         # Warlock:
