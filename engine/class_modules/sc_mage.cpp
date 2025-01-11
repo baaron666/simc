@@ -266,9 +266,6 @@ public:
   // Ground AoE tracking
   std::array<timespan_t, AOE_MAX> ground_aoe_expiration;
 
-  // Winter's Chill tracking
-  std::vector<action_t*> winters_chill_consumers;
-
   // Data collection
   auto_dispose<std::vector<shatter_source_t*> > shatter_source_list;
 
@@ -470,7 +467,6 @@ public:
     unsigned initial_spellfire_spheres = 5;
     arcane_phoenix_rotation arcane_phoenix_rotation_override = arcane_phoenix_rotation::DEFAULT;
     bool ice_nova_consumes_winters_chill = true;
-    bool fof_ice_lance_consumes_winters_chill = true;
   } options;
 
   // Pets
@@ -504,7 +500,6 @@ public:
     proc_t* fingers_of_frost;
     proc_t* fingers_of_frost_flash_freeze;
     proc_t* fingers_of_frost_freezing_winds;
-    proc_t* fingers_of_frost_wasted;
     proc_t* flurry_cast;
     proc_t* winters_chill_applied;
     proc_t* winters_chill_consumed;
@@ -3126,11 +3121,7 @@ struct frost_mage_spell_t : public mage_spell_t
   void init_finished() override
   {
     if ( consumes_winters_chill )
-    {
       proc_winters_chill_consumed = p()->get_proc( fmt::format( "Winter's Chill stacks consumed by {}", data().name_cstr() ) );
-      assert( !range::contains( p()->winters_chill_consumers, this ) );
-      p()->winters_chill_consumers.push_back( this );
-    }
 
     if ( track_shatter && sim->report_details != 0 )
       shatter_source = p()->get_shatter_source( name_str );
@@ -5457,12 +5448,9 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
 
   bool should_consume_winters_chill( const action_state_t* s, bool execute = false ) const override
   {
-    if ( !p()->options.fof_ice_lance_consumes_winters_chill )
-    {
-      // mage_spell_state_t::frozen isn't available during execute, use ice_lance_data_t::fingers_of_frost instead.
-      if ( ( execute && cast_state( s )->data.fingers_of_frost ) || ( !execute && cast_state( s )->frozen & FF_FINGERS_OF_FROST ) )
-        return false;
-    }
+    // mage_spell_state_t::frozen isn't available during execute, use ice_lance_data_t::fingers_of_frost instead.
+    if ( ( execute && cast_state( s )->data.fingers_of_frost ) || ( !execute && cast_state( s )->frozen & FF_FINGERS_OF_FROST ) )
+      return false;
 
     return custom_state_spell_t::should_consume_winters_chill( s, execute );
   }
@@ -5488,7 +5476,10 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
     custom_state_spell_t::execute();
 
     if ( p()->state.fingers_of_frost_active )
+    {
       p()->buffs.cryopathy->trigger();
+      p()->trigger_splinter( target );
+    }
 
     p()->buffs.fingers_of_frost->decrement();
 
@@ -5525,13 +5516,6 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
         record_shatter_source( s, extension_source );
       }
 
-      if ( p()->options.fof_ice_lance_consumes_winters_chill
-        && frozen &  FF_FINGERS_OF_FROST
-        && frozen & ~FF_FINGERS_OF_FROST )
-      {
-        p()->procs.fingers_of_frost_wasted->occur();
-      }
-
       p()->buffs.chain_reaction->trigger();
     }
 
@@ -5546,11 +5530,6 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
 
     if ( frozen & FF_FINGERS_OF_FROST && frigid_pulse )
       frigid_pulse->execute_on_target( s->target );
-
-    // Trigger splinter only if the Ice Lance didn't attempt to consume Winter's Chill.
-    // TODO 11.1: FoF triggers a splinter on cast, WC triggers one on impact as before, but only if a stack was consumed
-    if ( !should_consume_winters_chill( s ) )
-      p()->trigger_splinter( s->target );
   }
 
   double action_multiplier() const override
@@ -7785,7 +7764,6 @@ void mage_t::create_options()
                 return true;
               } ) );
   add_option( opt_bool( "mage.ice_nova_consumes_winters_chill", options.ice_nova_consumes_winters_chill ) );
-  add_option( opt_bool( "mage.fof_ice_lance_consumes_winters_chill", options.fof_ice_lance_consumes_winters_chill ) );
 
   player_t::create_options();
 }
@@ -8585,7 +8563,6 @@ void mage_t::init_procs()
       procs.fingers_of_frost                = get_proc( "Fingers of Frost" );
       procs.fingers_of_frost_flash_freeze   = get_proc( "Fingers of Frost from Flash Freeze" );
       procs.fingers_of_frost_freezing_winds = get_proc( "Fingers of Frost from Freezing Winds" );
-      procs.fingers_of_frost_wasted         = get_proc( "Fingers of Frost wasted due to Winter's Chill" );
       procs.flurry_cast                     = get_proc( "Flurry cast" );
       procs.winters_chill_applied           = get_proc( "Winter's Chill stacks applied" );
       procs.winters_chill_consumed          = get_proc( "Winter's Chill stacks consumed" );
