@@ -7910,13 +7910,11 @@ void the_jastor_diamond( special_effect_t& effect )
 
     player_t* pick_random_target()
     {
-      player_t* random_target = ally_list[ rng().range( ally_list.size() ) ];
-
-      if ( random_target->is_sleeping() )
-        pick_random_target();
-
-      else
-        return random_target;
+      std::vector<player_t*> eligible;
+      for ( auto p : ally_list )
+        if ( !p->is_sleeping() ) eligible.push_back( p );
+      assert( !eligible.empty() );
+      return rng().range( eligible );
     }
 
     void execute( action_t*, action_state_t* ) override
