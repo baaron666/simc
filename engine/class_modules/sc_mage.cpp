@@ -436,6 +436,7 @@ public:
     cooldown_t* comet_storm;
     cooldown_t* cone_of_cold;
     cooldown_t* dragons_breath;
+    cooldown_t* excess_frost;
     cooldown_t* fire_blast;
     cooldown_t* flurry;
     cooldown_t* from_the_ashes;
@@ -2389,19 +2390,17 @@ public:
       frost->expire();
     }
 
-    int fire_before = fire->check();
-    int frost_before = frost->check();
-
     if ( is_fire )
       fire->trigger( empowerment ? fire->max_stack() : -1 );
 
     if ( is_frost )
       frost->trigger( empowerment ? frost->max_stack() : -1 );
 
-    if ( fire_before < fire->check() && fire->at_max_stacks() )
+    if ( empowerment )
+    {
       p()->buffs.excess_fire->trigger();
-    if ( frost_before < frost->check() && frost->at_max_stacks() )
       p()->buffs.excess_frost->trigger();
+    }
 
     // Frostfire spells don't seem to trigger Severe Temperatures
     if ( !( is_fire && is_frost ) )
@@ -4301,6 +4300,9 @@ struct comet_storm_t final : public frost_mage_spell_t
   {
     frost_mage_spell_t::execute();
 
+    if ( !isothermic )
+      p()->buffs.excess_fire->trigger();
+
     if ( p()->action.isothermic_meteor )
       p()->action.isothermic_meteor->execute_on_target( target );
   }
@@ -4523,11 +4525,7 @@ struct fireball_t final : public fire_mage_spell_t
 
   void impact( action_state_t* s ) override
   {
-    // TODO: FFB is missing the "not a proc" attribute that other impact snapshot spells have
-    bool old_proc = frostfire ? true : proc;
-    std::swap( proc, old_proc );
     fire_mage_spell_t::impact( s );
-    std::swap( proc, old_proc );
 
     if ( result_is_hit( s->result ) )
     {
@@ -4823,10 +4821,11 @@ struct flurry_bolt_t final : public frost_mage_spell_t
     if ( !result_is_hit( s->result ) )
       return;
 
-    if ( s->chain_target == 0 && p()->buffs.excess_frost->check() )
+    if ( s->chain_target == 0 && p()->buffs.excess_frost->check() && p()->cooldowns.excess_frost->up() )
     {
       p()->action.excess_ice_nova->execute_on_target( s->target );
       p()->buffs.excess_frost->decrement();
+      p()->cooldowns.excess_frost->start( p()->buffs.excess_frost->data().internal_cooldown() );
     }
 
     trigger_winters_chill( s );
@@ -5056,11 +5055,7 @@ struct frostbolt_t final : public frost_mage_spell_t
 
   void impact( action_state_t* s ) override
   {
-    // TODO: FFB is missing the "not a proc" attribute that other impact snapshot spells have
-    bool old_proc = frostfire ? true : proc;
-    std::swap( proc, old_proc );
     frost_mage_spell_t::impact( s );
-    std::swap( proc, old_proc );
 
     if ( result_is_hit( s->result ) )
     {
@@ -5536,6 +5531,7 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
     {
       p()->action.frostfire_burst->execute_on_target( s->target );
       p()->buffs.excess_fire->decrement();
+      p()->buffs.excess_frost->trigger();
     }
 
     if ( frozen & FF_FINGERS_OF_FROST && frigid_pulse )
@@ -5724,10 +5720,12 @@ struct fire_blast_t final : public fire_mage_spell_t
 
     if ( result_is_hit( s->result ) && s->chain_target == 0 )
     {
-      if ( p()->buffs.excess_fire->check() )
+      // As of 11.1, only triggers from Fire Blasts cast by Fire Mages.
+      if ( p()->specialization() == MAGE_FIRE && p()->buffs.excess_fire->check() )
       {
         p()->action.frostfire_burst->execute_on_target( s->target );
         p()->buffs.excess_fire->decrement();
+        p()->buffs.excess_frost->trigger();
       }
 
       trigger_glorious_incandescence( s->target );
@@ -5943,10 +5941,12 @@ struct meteor_impact_t final : public fire_mage_spell_t
 struct meteor_t final : public fire_mage_spell_t
 {
   timespan_t meteor_delay;
+  const meteor_type type;
 
-  meteor_t( std::string_view n, mage_t* p, std::string_view options_str, meteor_type type = meteor_type::NORMAL ) :
-    fire_mage_spell_t( n, p, type == meteor_type::NORMAL ? p->talents.meteor : p->find_spell( 153561 ) ),
-    meteor_delay( p->find_spell( 177345 )->duration() )
+  meteor_t( std::string_view n, mage_t* p, std::string_view options_str, meteor_type type_ = meteor_type::NORMAL ) :
+    fire_mage_spell_t( n, p, type_ == meteor_type::NORMAL ? p->talents.meteor : p->find_spell( 153561 ) ),
+    meteor_delay( p->find_spell( 177345 )->duration() ),
+    type( type_ )
   {
     parse_options( options_str );
 
@@ -6000,6 +6000,9 @@ struct meteor_t final : public fire_mage_spell_t
   void execute() override
   {
     fire_mage_spell_t::execute();
+
+    if ( type != meteor_type::ISOTHERMIC )
+      p()->buffs.excess_fire->trigger();
 
     if ( p()->action.isothermic_comet_storm )
       p()->action.isothermic_comet_storm->execute_on_target( target );
@@ -6088,10 +6091,11 @@ struct phoenix_flames_splash_t final : public fire_mage_spell_t
 
     if ( result_is_hit( s->result ) )
     {
-      if ( s->chain_target == 0 && p()->buffs.excess_frost->check() )
+      if ( s->chain_target == 0 && p()->buffs.excess_frost->check() && p()->cooldowns.excess_frost->up() )
       {
         p()->action.excess_ice_nova->execute_on_target( s->target );
         p()->buffs.excess_frost->decrement();
+        p()->cooldowns.excess_frost->start( p()->buffs.excess_frost->data().internal_cooldown() );
       }
     }
   }
@@ -7565,6 +7569,7 @@ mage_t::mage_t( sim_t* sim, std::string_view name, race_e r ) :
   cooldowns.combustion         = get_cooldown( "combustion"         );
   cooldowns.comet_storm        = get_cooldown( "comet_storm"        );
   cooldowns.cone_of_cold       = get_cooldown( "cone_of_cold"       );
+  cooldowns.excess_frost       = get_cooldown( "excess_frost_icd"   );
   cooldowns.dragons_breath     = get_cooldown( "dragons_breath"     );
   cooldowns.fire_blast         = get_cooldown( "fire_blast"         );
   cooldowns.flurry             = get_cooldown( "flurry"             );
