@@ -129,6 +129,7 @@ struct mage_td_t final : public actor_target_data_t
     buff_t* arcane_debilitation;
     buff_t* controlled_destruction;
     buff_t* controlled_instincts;
+    buff_t* freezing_winds;
     buff_t* frozen;
     buff_t* improved_scorch;
     buff_t* magis_spark;
@@ -381,7 +382,6 @@ public:
     buff_t* deaths_chill;
     buff_t* fingers_of_frost;
     buff_t* freezing_rain;
-    buff_t* freezing_winds;
     buff_t* frigid_empowerment;
     buff_t* icicles;
     buff_t* icy_veins;
@@ -499,7 +499,6 @@ public:
     proc_t* brain_freeze_water_jet;
     proc_t* fingers_of_frost;
     proc_t* fingers_of_frost_flash_freeze;
-    proc_t* fingers_of_frost_freezing_winds;
     proc_t* flurry_cast;
     proc_t* winters_chill_applied;
     proc_t* winters_chill_consumed;
@@ -4130,8 +4129,13 @@ struct blizzard_shard_t final : public frost_mage_spell_t
   {
     frost_mage_spell_t::impact( s );
 
-    if ( result_is_hit( s->result ) && p()->talents.controlled_instincts.ok() )
-      get_td( s->target )->debuffs.controlled_instincts->trigger();
+    if ( result_is_hit( s->result ) )
+    {
+      if ( p()->talents.controlled_instincts.ok() )
+        get_td( s->target )->debuffs.controlled_instincts->trigger();
+      if ( p()->talents.freezing_winds.ok() )
+        get_td( s->target )->debuffs.freezing_winds->trigger();
+    }
   }
 };
 
@@ -5156,6 +5160,16 @@ struct frozen_orb_bolt_t final : public frost_mage_spell_t
 
     return am;
   }
+
+  double composite_target_multiplier( player_t* target ) const override
+  {
+    double m = frost_mage_spell_t::composite_target_multiplier( target );
+
+    if ( auto td = find_td( target ) )
+      m *= 1.0 + td->debuffs.freezing_winds->check_value();
+
+    return m;
+  }
 };
 
 struct frozen_orb_t final : public frost_mage_spell_t
@@ -5200,10 +5214,6 @@ struct frozen_orb_t final : public frost_mage_spell_t
 
     p()->buffs.permafrost_lances->trigger();
     if ( !background ) p()->buffs.freezing_rain->trigger();
-    // The Cold Front Frozen Orb seems to trigger Freezing Winds and then (almost always) immediately
-    // expire it. However, if Freezing Winds is already up, it refreshes the buff as normal.
-    // TODO: double check that this is the case, maybe quantify the fail chance as well?
-    if ( !background || !p()->bugs || p()->buffs.freezing_winds->check() ) p()->buffs.freezing_winds->trigger();
   }
 
   void impact( action_state_t* s ) override
@@ -7497,6 +7507,10 @@ mage_td_t::mage_td_t( player_t* target, mage_t* mage ) :
                                      ->set_chance( mage->talents.controlled_destruction.ok() );
   debuffs.controlled_instincts   = make_buff( *this, "controlled_instincts", mage->find_spell( mage->specialization() == MAGE_FROST ? 463192 : 454214 ) )
                                      ->set_chance( mage->talents.controlled_instincts.ok() );
+  debuffs.freezing_winds         = make_buff( *this, "recently_damaged_by_blizzard", mage->find_spell( 1216988 ) )
+                                     ->set_default_value( mage->talents.freezing_winds->effectN( 1 ).percent() )
+                                     ->set_chance( mage->talents.freezing_winds.ok() )
+                                     ->set_quiet( true );
   debuffs.frozen                 = make_buff( *this, "frozen" )
                                      ->set_refresh_behavior( buff_refresh_behavior::MAX );
   debuffs.improved_scorch        = make_buff( *this, "improved_scorch", mage->find_spell( 383608 ) )
@@ -8400,19 +8414,6 @@ void mage_t::create_buffs()
   buffs.freezing_rain      = make_buff( this, "freezing_rain", find_spell( 270232 ) )
                                ->set_default_value_from_effect( 2 )
                                ->set_chance( talents.freezing_rain.ok() );
-  buffs.freezing_winds     = make_buff( this, "freezing_winds", find_spell( 382106 ) )
-                               ->modify_duration( talents.everlasting_frost->effectN( 3 ).time_value() )
-                               ->set_tick_callback( [ this ] ( buff_t*, int, timespan_t )
-                                 { trigger_fof( 1.0, procs.fingers_of_frost_freezing_winds ); } )
-                               ->set_partial_tick( true )
-                               ->set_tick_behavior( buff_tick_behavior::REFRESH )
-                               ->set_refresh_duration_callback( [ this ] ( const buff_t* b, timespan_t new_duration )
-                                 {
-                                   auto rem = b->tick_event ? b->tick_event->remains() : 0_ms;
-                                   if ( !talents.everlasting_frost.ok() && rem < 2.0_s ) rem -= 1.0_s;
-                                   return new_duration + rem;
-                                 } )
-                               ->set_chance( talents.freezing_winds.ok() );
   buffs.frigid_empowerment = make_buff( this, "frigid_empowerment", find_spell( 417488 ) )
                                ->set_default_value_from_effect( 1 );
   buffs.icicles            = make_buff( this, "icicles", find_spell( 205473 ) );
@@ -8562,7 +8563,6 @@ void mage_t::init_procs()
       procs.brain_freeze_water_jet          = get_proc( "Brain Freeze from Water Jet" );
       procs.fingers_of_frost                = get_proc( "Fingers of Frost" );
       procs.fingers_of_frost_flash_freeze   = get_proc( "Fingers of Frost from Flash Freeze" );
-      procs.fingers_of_frost_freezing_winds = get_proc( "Fingers of Frost from Freezing Winds" );
       procs.flurry_cast                     = get_proc( "Flurry cast" );
       procs.winters_chill_applied           = get_proc( "Winter's Chill stacks applied" );
       procs.winters_chill_consumed          = get_proc( "Winter's Chill stacks consumed" );
