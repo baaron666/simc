@@ -1373,7 +1373,7 @@ struct arcane_phoenix_pet_t final : public mage_pet_t
     {
       if ( spells_used % 2 == 1 && exceptional_spells_remaining > 0 )
       {
-        action = exceptional_actions[ rng().range( exceptional_actions.size() ) ];
+        action = rng().range( exceptional_actions );
         // TODO: What happens with Ignite the Future and without Codex of the Sunstriders?
         o()->buffs.spellfire_sphere->decrement();
         o()->buffs.lingering_embers->trigger();
@@ -1385,16 +1385,15 @@ struct arcane_phoenix_pet_t final : public mage_pet_t
         if ( ( o()->options.arcane_phoenix_rotation_override == arcane_phoenix_rotation::DEFAULT && tl.size() > 1 )
           || o()->options.arcane_phoenix_rotation_override == arcane_phoenix_rotation::AOE )
         {
-          action = aoe_actions[ rng().range( aoe_actions.size() ) ];
+          action = rng().range( aoe_actions );
         }
         else
         {
-          action = st_actions[ rng().range( st_actions.size() ) ];
+          action = rng().range( st_actions );
         }
       }
 
-      player_t* t = tl[ rng().range( tl.size() ) ];
-      action->execute_on_target( t );
+      action->execute_on_target( rng().range( tl ) );
     }
 
     spells_used++;
@@ -5947,10 +5946,7 @@ struct meteor_impact_t final : public fire_mage_spell_t
     {
       const auto& tl = target_list();
       if ( !tl.empty() )
-      {
-        player_t* t = tl[ rng().range( tl.size() ) ];
-        p()->action.living_bomb->execute_on_target( t );
-      }
+        p()->action.living_bomb->execute_on_target( rng().range( tl ) );
     }
   }
 };
@@ -7371,8 +7367,7 @@ struct time_anomaly_tick_event_t final : public mage_event_t
 
       if ( !possible_procs.empty() )
       {
-        auto proc = possible_procs[ rng().range( possible_procs.size() ) ];
-        switch ( proc )
+        switch ( rng().range( possible_procs ) )
         {
           case TA_ARCANE_SURGE:
             mage->buffs.arcane_surge->trigger( 1000 * mage->talents.time_anomaly->effectN( 1 ).time_value() );
@@ -7430,7 +7425,7 @@ struct splinterstorm_event_t final : public mage_event_t
     if ( mage->target && !mage->target->is_sleeping() && mage->target->is_enemy() )
       t = mage->target;
     else if ( const auto& tl = sim().target_non_sleeping_list; !tl.empty() )
-      t = tl[ rng().range( tl.size() ) ];
+      t = rng().range( tl );
 
     if ( t && mage->state.embedded_splinters >= as<int>( mage->talents.splinterstorm->effectN( 1 ).base_value() ) )
     {
@@ -9519,10 +9514,7 @@ void mage_t::trigger_splinter( player_t* target, int count )
   {
     player_t* t_ = target;
     if ( !t_ )
-    {
-      const auto& tl = sim->target_non_sleeping_list;
-      t_ = tl[ rng().range( tl.size() ) ];
-    }
+      t_ = rng().range( sim->target_non_sleeping_list );
 
     int per_conjure = ( buffs.icy_veins->check() || buffs.arcane_surge->check() ) && rng().roll( chance ) ? 2 : 1;
     for ( int j = 0; j < per_conjure; j++ )
