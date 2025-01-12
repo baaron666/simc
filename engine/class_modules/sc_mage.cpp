@@ -426,6 +426,8 @@ public:
     buff_t* intuition;
 
     buff_t* blessing_of_the_phoenix;
+
+    buff_t* extended_bankroll;
   } buffs;
 
   // Cooldowns
@@ -5653,6 +5655,8 @@ struct icy_veins_t final : public frost_mage_spell_t
 
     if ( p()->action.frostbolt_volley && !sim->target_non_sleeping_list.empty() )
       p()->action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
+    // TODO: What happens when Extended Bankroll refreshes?
+    p()->buffs.extended_bankroll->trigger();
   }
 };
 
@@ -8567,6 +8571,15 @@ void mage_t::create_buffs()
   buffs.blessing_of_the_phoenix = make_buff( this, "blessing_of_the_phoenix", find_spell( 455134 ) )
                                     ->set_default_value_from_effect( 1 )
                                     ->set_chance( sets->has_set_bonus( MAGE_FIRE, TWW1, B4 ) );
+
+  buffs.extended_bankroll = make_buff( this, "extended_bankroll", find_spell( 1216914 ) )
+                              ->set_chance( sets->has_set_bonus( MAGE_FROST, TWW2, B4 ) )
+                              ->set_tick_callback( [ this ] ( buff_t*, int, timespan_t )
+                                {
+                                  // TODO: Effectiveness? Seems to only matter in PvP
+                                  if ( !sim->target_non_sleeping_list.empty() )
+                                    action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
+                                } );
 
 
   // Buffs that use stack_react or may_react need to be reactable regardless of what the APL does
