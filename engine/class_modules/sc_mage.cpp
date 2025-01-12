@@ -8437,6 +8437,7 @@ void mage_t::create_buffs()
   buffs.excess_fire           = make_buff( this, "excess_fire", find_spell( 438624 ) )
                                   ->set_chance( talents.excess_fire.ok() );
   buffs.excess_frost          = make_buff( this, "excess_frost", find_spell( 438611 ) )
+                                  ->set_cooldown( 0_ms )
                                   ->set_chance( talents.excess_frost.ok() );
   buffs.fire_mastery          = make_buff( this, "fire_mastery", find_spell( 431040 ) )
                                   ->set_pct_buff_type( STAT_PCT_BUFF_HASTE )
