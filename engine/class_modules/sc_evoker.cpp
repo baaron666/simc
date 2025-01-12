@@ -2011,7 +2011,10 @@ public:
   //   (unsigned)       ignore_mask: Bitmask to skip effect# n corresponding to the n'th bit
   void apply_debuffs_effects()
   {
-    parse_target_effects( d_value_fn( &evoker_td_t::debuffs_t::shattering_star ), p()->talent.shattering_star, 1.0 );
+    if ( p()->talent.shattering_star.ok() )
+    {
+      parse_target_effects( d_fn( &evoker_td_t::debuffs_t::shattering_star ), p()->talent.shattering_star );
+    }
 
     if ( p()->talent.scalecommander.melt_armor.ok() )
     {
@@ -4260,6 +4263,7 @@ struct disintegrate_t : public essence_spell_t
     channeled = tick_zero = true;
 
     auto surge = p->get_secondary_action<eternity_surge_t::eternity_surge_damage_t>( "scintillation", "scintillation" );
+    surge->not_a_proc         = true;
     surge->s_data_reporting   = p->talent.scintillation;
     surge->name_str_reporting = "scintillation";
     surge->proc_spell_type    = proc_spell_type_e::SCINTILLATION;
@@ -4999,7 +5003,7 @@ struct shattering_star_t : public evoker_spell_t
     evoker_spell_t::impact( s );
 
     if ( result_is_hit( s->result ) )
-      td( s->target )->debuffs.shattering_star->trigger( -1, td( s->target )->debuffs.shattering_star->default_value );
+      td( s->target )->debuffs.shattering_star->trigger();
   }
 
   double composite_da_multiplier( const action_state_t* s ) const override
@@ -7250,6 +7254,7 @@ evoker_td_t::evoker_td_t( player_t* target, evoker_t* evoker )
                                                 evoker->talent.shattering_star )
                                 ->set_cooldown( 0_ms )
                                 ->apply_affecting_aura( evoker->talent.focusing_iris )
+                                ->set_refresh_behavior( buff_refresh_behavior::EXTEND )
                                 ->set_default_value_from_effect( 3, 0.01 );
 
   debuffs.in_firestorm = make_buff_fallback( evoker->talent.firestorm.ok(), *this, "in_firestorm" )
