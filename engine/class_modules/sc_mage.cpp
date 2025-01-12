@@ -2513,7 +2513,7 @@ struct arcane_mage_spell_t : public mage_spell_t
         cr->decrement();
         if ( cr == p()->buffs.clearcasting )
         {
-          p()->buffs.nether_precision->trigger();
+          p()->buffs.nether_precision->trigger( p()->buffs.nether_precision->max_stack() );
           // Technically, the buff disappears immediately when it reaches max stacks
           // and the Attunement buff is applied with a delay. Here, we just use
           // max stacks of the buff to track the delay.
