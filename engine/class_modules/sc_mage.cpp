@@ -421,6 +421,7 @@ public:
 
 
     // Set Bonuses
+    buff_t* clarity;
     buff_t* intuition;
 
     buff_t* blessing_of_the_phoenix;
@@ -1736,6 +1737,30 @@ struct incanters_flow_t final : public buff_t
   }
 };
 
+struct clarity_buff_t final : public buff_t
+{
+  clarity_buff_t( mage_t* p ) :
+    buff_t( p, "clarity", p->find_spell( 1216178 ) )
+  {
+    set_default_value_from_effect( 1 );
+    set_chance( p->sets->has_set_bonus( MAGE_ARCANE, TWW2, B2 ) );
+  }
+
+  bool trigger( int stacks, double value, double chance, timespan_t duration ) override
+  {
+    bool result = buff_t::trigger( stacks, value, chance, duration );
+    if ( result )
+    {
+      auto mage = debug_cast<mage_t*>( player );
+      mage->trigger_clearcasting( 1.0, 0_ms );
+      // TODO: Effectiveness? Only matters in PvP
+      if ( mage->sets->has_set_bonus( MAGE_ARCANE, TWW2, B4 ) )
+        mage->buffs.aether_attunement->trigger();
+    }
+    return result;
+  }
+};
+
 }  // buffs
 
 
@@ -1875,6 +1900,7 @@ struct mage_spell_t : public spell_t
     bool unleashed_inferno = false;
 
     bool blessing_of_the_phoenix = true;
+    bool clarity = true;
 
     // Misc
     bool combustion = true;
@@ -2038,6 +2064,9 @@ public:
 
     if ( affected_by.spellfire_sphere )
       m *= 1.0 + p()->buffs.spellfire_sphere->check_stack_value();
+
+    if ( affected_by.clarity )
+      m *= 1.0 + p()->buffs.clarity->check_value();
 
     return m;
   }
@@ -6645,6 +6674,7 @@ struct touch_of_the_magi_t final : public arcane_mage_spell_t
 
     p()->trigger_arcane_charge( as<int>( data().effectN( 2 ).base_value() ) );
     p()->buffs.leydrinker->trigger();
+    p()->buffs.clarity->trigger();
   }
 
   void impact( action_state_t* s ) override
@@ -8248,6 +8278,10 @@ void mage_t::init_special_effects()
 
     switch ( specialization() )
     {
+      case MAGE_ARCANE:
+        effect->custom_buff = buffs.clarity;
+        new dbc_proc_callback_t( this, *effect );
+        break;
       case MAGE_FROST:
         effect->execute_action = action.frostbolt_volley;
         new dbc_proc_callback_t( this, *effect );
@@ -8548,6 +8582,7 @@ void mage_t::create_buffs()
   buffs.intuition = make_buff( this, "intuition", find_spell( 455681 ) )
                       ->set_default_value_from_effect( 1 )
                       ->set_chance( sets->set( MAGE_ARCANE, TWW1, B4 )->effectN( 1 ).percent() );
+  buffs.clarity   = make_buff<buffs::clarity_buff_t>( this );
 
   buffs.blessing_of_the_phoenix = make_buff( this, "blessing_of_the_phoenix", find_spell( 455134 ) )
                                     ->set_default_value_from_effect( 1 )
