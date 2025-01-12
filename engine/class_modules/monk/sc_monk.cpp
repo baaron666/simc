@@ -60,7 +60,7 @@ template <class Base>
 template <typename... Args>
 monk_action_t<Base>::monk_action_t( Args &&...args )
   : parse_action_effects_t<Base>( std::forward<Args>( args )... ),
-    sef_ability( actions::sef_ability_e::SEF_NONE ),
+    sef_ability( actions::sef_ability_e::SEF_MIN ),
     ww_mastery( false ),
     may_combo_strike( false ),
     trigger_jadefire_stomp( false ),
@@ -3352,6 +3352,7 @@ struct crackling_jade_lightning_t : public monk_spell_t
       dual = background      = true;
       ww_mastery             = true;
       trigger_jadefire_stomp = true;
+      sef_ability            = actions::sef_ability_e::SEF_CRACKLING_JADE_LIGHTNING_AOE;
 
       parse_effects( p->talent.windwalker.power_of_the_thunder_king, effect_mask_t( true ).disable( 1 ) );
       parse_effects( p->buff.the_emperors_capacitor );
@@ -3415,18 +3416,21 @@ struct crackling_jade_lightning_t : public monk_spell_t
   {
     monk_spell_t::last_tick( dot );
 
-    p()->buff.the_emperors_capacitor->expire();
-
     if ( p()->talent.windwalker.power_of_the_thunder_king->ok() )
-    {
-      const auto &tl = target_list();
-      for ( const auto &t : tl )
-      {
-        get_td( t )->dot.crackling_jade_lightning_aoe->cancel();
-        get_td( t )->dot.crackling_jade_lightning_sef->cancel();
-        get_td( t )->dot.crackling_jade_lightning_sef_aoe->cancel();
-      }
-    }
+      // delay expiration so it occurs after final tick of cjl aoe
+      make_event<events::delayed_cb_event_t>( *sim, p(), 1_ms, [ & ]() {
+        p()->buff.the_emperors_capacitor->expire();
+        const auto &tl = target_list();
+        for ( const auto &t : tl )
+        {
+          get_td( t )->dot.crackling_jade_lightning_aoe->cancel();
+          get_td( t )->dot.crackling_jade_lightning_sef->cancel();
+          get_td( t )->dot.crackling_jade_lightning_sef_aoe->cancel();
+        }
+      } );
+    else
+      p()->buff.the_emperors_capacitor->expire();
+
     // Reset swing timer
     if ( player->main_hand_attack )
     {

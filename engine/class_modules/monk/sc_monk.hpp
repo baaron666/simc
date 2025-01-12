@@ -55,8 +55,7 @@ namespace actions
 {
 enum class sef_ability_e
 {
-  SEF_NONE = -1,
-  // Attacks begin here
+  SEF_MIN = -1,
   SEF_TIGER_PALM,
   SEF_BLACKOUT_KICK,
   SEF_BLACKOUT_KICK_TOTM,
@@ -69,19 +68,9 @@ enum class sef_ability_e
   SEF_STRIKE_OF_THE_WINDLORD_OH,
   SEF_CELESTIAL_CONDUIT,
   SEF_RJW_TICK,
-  SEF_ATTACK_MAX,
-  // Attacks end here
-
-  // Spells begin here
   SEF_CHI_WAVE,
   SEF_CRACKLING_JADE_LIGHTNING,
-  SEF_SPELL_MAX,
-  // Spells end here
-
-  // Misc
-  SEF_SPELL_MIN  = SEF_CHI_WAVE,
-  SEF_ATTACK_MIN = SEF_TIGER_PALM,
-  SEF_MAX
+  SEF_CRACKLING_JADE_LIGHTNING_AOE
 };
 
 template <class Base>
@@ -335,11 +324,6 @@ public:
   bool heal_ticking();
 };
 }  // namespace buffs
-
-inline int sef_spell_index( int x )
-{
-  return x - static_cast<int>( actions::sef_ability_e::SEF_SPELL_MIN );
-}
 
 struct monk_td_t : public actor_target_data_t
 {
@@ -1504,6 +1488,26 @@ struct delayed_execute_event_t : event_t
     if ( target->is_sleeping() )
       return;
     action->execute_on_target( target );
+  }
+};
+
+struct delayed_cb_event_t : event_t
+{
+  std::function<void()> cb;
+
+  delayed_cb_event_t( monk_t *player, timespan_t delay, std::function<void()> cb )
+    : event_t( *player->sim, delay ), cb( std::move( cb ) )
+  {
+  }
+
+  const char *name() const override
+  {
+    return "delayed_cb_event_t";
+  }
+
+  void execute() override
+  {
+    cb();
   }
 };
 }  // namespace events
