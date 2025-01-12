@@ -280,6 +280,7 @@ public:
     action_t* dematerialize;
     action_t* excess_ice_nova;
     action_t* firefall_meteor;
+    action_t* frostbolt_volley;
     action_t* frostfire_burst;
     action_t* frostfire_empowerment;
     action_t* frostfire_infusion;
@@ -935,6 +936,7 @@ public:
 
   // Character Definition
   void init_spells() override;
+  void init_special_effects() override;
   void init_base_stats() override;
   void create_buffs() override;
   void create_options() override;
@@ -5648,6 +5650,9 @@ struct icy_veins_t final : public frost_mage_spell_t
     p()->trigger_flash_freezeburn();
     if ( p()->pets.water_elemental->is_sleeping() )
       p()->pets.water_elemental->summon();
+
+    if ( p()->action.frostbolt_volley && !sim->target_non_sleeping_list.empty() )
+      p()->action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
   }
 };
 
@@ -7103,6 +7108,21 @@ struct splinter_t final : public mage_spell_t
   }
 };
 
+struct frostbolt_volley_t final : public frost_mage_spell_t
+{
+  frostbolt_volley_t( std::string_view n, mage_t* p ) :
+    frost_mage_spell_t( n, p, p->find_spell( 1216910 ) )
+  {
+    background = proc = true;
+    triggers.chill = true;
+    track_shatter = true;
+
+    double m = p->sets->set( MAGE_FROST, TWW2, B2 )->effectN( 2 ).base_value();
+    base_multiplier     *= m;
+    base_aoe_multiplier /= m;
+  }
+};
+
 // ==========================================================================
 // Mage Custom Actions
 // ==========================================================================
@@ -7754,6 +7774,9 @@ void mage_t::create_actions()
   if ( talents.glorious_incandescence.ok() )
     action.meteorite = get_action<meteorite_t>( "meteorite", this );
 
+  if ( specialization() == MAGE_FROST && sets->has_set_bonus( MAGE_FROST, TWW2, B2 ) )
+    action.frostbolt_volley = get_action<frostbolt_volley_t>( "frostbolt_volley", this );
+
   player_t::create_actions();
 
   // Ensure the cooldown of Phoenix Flames is properly initialized.
@@ -8227,6 +8250,31 @@ void mage_t::init_spells()
 
   // Misc
   cooldowns.arcane_echo->duration = find_spell( 464515 )->internal_cooldown();
+}
+
+void mage_t::init_special_effects()
+{
+  auto spell = sets->set( specialization(), TWW2, B2 );
+  if ( spell->ok() )
+  {
+    auto effect = new special_effect_t( this );
+    effect->name_str = "mage_tww2_2pc";
+    effect->spell_id = spell->id();
+    effect->type = SPECIAL_EFFECT_EQUIP;
+    special_effects.push_back( effect );
+
+    switch ( specialization() )
+    {
+      case MAGE_FROST:
+        effect->execute_action = action.frostbolt_volley;
+        new dbc_proc_callback_t( this, *effect );
+        break;
+      default:
+        break;
+    }
+  }
+
+  player_t::init_special_effects();
 }
 
 void mage_t::init_base_stats()
