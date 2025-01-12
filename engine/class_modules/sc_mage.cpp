@@ -5719,10 +5719,10 @@ struct fire_blast_t final : public fire_mage_spell_t
 
     fire_mage_spell_t::impact( s );
 
-    if ( result_is_hit( s->result ) && s->chain_target == 0 )
+    // As of 11.1, only triggers from Fire Blasts cast by Fire Mages.
+    if ( result_is_hit( s->result ) && s->chain_target == 0 && p()->specialization() == MAGE_FIRE )
     {
-      // As of 11.1, only triggers from Fire Blasts cast by Fire Mages.
-      if ( p()->specialization() == MAGE_FIRE && p()->buffs.excess_fire->check() )
+      if ( p()->buffs.excess_fire->check() )
       {
         p()->action.frostfire_burst->execute_on_target( s->target );
         p()->buffs.excess_fire->decrement();
