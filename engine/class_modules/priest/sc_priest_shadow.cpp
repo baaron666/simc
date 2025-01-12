@@ -1222,9 +1222,10 @@ struct void_bolt_base_t : public priest_spell_t
   };
 
   void_bolt_extension_t* void_bolt_extension;
+  bool trigger_shadowy_apparitions;
 
   void_bolt_base_t( priest_t& p, util::string_view name, util::string_view options )
-    : priest_spell_t( name, p, p.specs.void_bolt ), void_bolt_extension( nullptr )
+    : priest_spell_t( name, p, p.specs.void_bolt ), void_bolt_extension( nullptr ), trigger_shadowy_apparitions( true )
   {
     parse_options( options );
     use_off_gcd                = true;
@@ -1252,8 +1253,9 @@ struct void_bolt_base_t : public priest_spell_t
   void impact( action_state_t* s ) override
   {
     priest_spell_t::impact( s );
-
-    priest().trigger_shadowy_apparitions( priest().procs.shadowy_apparition_vb, s->result == RESULT_CRIT );
+    
+    if ( trigger_shadowy_apparitions )
+      priest().trigger_shadowy_apparitions( priest().procs.shadowy_apparition_vb, s->result == RESULT_CRIT );
 
     if ( void_bolt_extension )
     {
@@ -1291,11 +1293,16 @@ struct void_bolt_proc_t final : public void_bolt_base_t
     track_cd_waste     = false;
 
     base_multiplier *= effectiveness;
+    if ( p.bugs )
+    {
+      trigger_shadowy_apparitions = false;
+    }
   }
 
   void_bolt_proc_t( priest_t& p, util::string_view name, bool can_proc_pi = true )
-    : void_bolt_proc_t( p, name, p.is_ptr() ? p.sets->set( PRIEST_SHADOW, TWW2, B2 )->effectN( 1 ).percent() : 0.0,
-                        can_proc_pi )
+    : void_bolt_proc_t(
+          p, name, p.bugs ? 1.2 : ( p.is_ptr() ? p.sets->set( PRIEST_SHADOW, TWW2, B2 )->effectN( 1 ).percent() : 0.0 ),
+          can_proc_pi )
   {
   }
 
@@ -1465,7 +1472,8 @@ struct void_eruption_t final : public priest_spell_t
 
     if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      void_bolt_damage_action->execute_on_target( target );
+      if ( !sim->target_non_sleeping_list.empty() )
+        void_bolt_damage_action->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
     }
   }
 
