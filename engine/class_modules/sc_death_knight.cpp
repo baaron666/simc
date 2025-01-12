@@ -4614,7 +4614,7 @@ struct abomination_pet_t : public death_knight_pet_t
     death_knight_pet_t::arise();
     // Assume precombat abominations have to walk far further than normal
     double dist = precombat_spawn ? 15 : rng().range( 0, dk()->talent.unholy.raise_abomination->effectN( 1 ).radius() );
-    trigger_pet_movement( dk()->base.distance + dist );
+    trigger_pet_movement( dist );
   }
 
   resource_e primary_resource() const override
