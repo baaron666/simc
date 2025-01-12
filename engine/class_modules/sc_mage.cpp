@@ -3416,7 +3416,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
   action_t* orb_barrage = nullptr;
   int snapshot_charges = -1;
   int aethervision_charges = 0;
-  int glorious_incandescence_charges = 0;
   int arcane_soul_charges = 0;
   int intuition_charges = 0;
 
@@ -3429,7 +3428,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     triggers.clearcasting = true;
     base_multiplier *= 1.0 + p->sets->set( MAGE_ARCANE, TWW1, B2 )->effectN( 1 ).percent();
     aethervision_charges = as<int>( p->find_spell( 467636 )->effectN( 1 ).base_value() );
-    glorious_incandescence_charges = as<int>( p->find_spell( 451223 )->effectN( 1 ).base_value() );
     arcane_soul_charges = as<int>( p->find_spell( 453413 )->effectN( 1 ).base_value() );
     intuition_charges = as<int>( p->find_spell( 455683 )->effectN( 1 ).base_value() );
 
@@ -3465,6 +3463,7 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     p()->buffs.arcane_tempo->trigger();
     p()->buffs.arcane_charge->expire();
     p()->buffs.arcane_harmony->expire();
+    p()->consume_burden_of_power();
 
     if ( p()->buffs.arcane_soul->check() )
     {
@@ -3475,13 +3474,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     consume_nether_precision( target );
     p()->trigger_spellfire_spheres();
     p()->trigger_mana_cascade();
-
-    if ( p()->buffs.glorious_incandescence->check() )
-    {
-      p()->buffs.glorious_incandescence->decrement();
-      p()->trigger_arcane_charge( glorious_incandescence_charges );
-      p()->state.trigger_glorious_incandescence = true;
-    }
 
     if ( p()->buffs.intuition->check() )
     {
@@ -3508,8 +3500,8 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     if ( s->target->health_percentage() <= p()->talents.arcane_bombardment->effectN( 1 ).base_value() )
       m *= 1.0 + p()->talents.arcane_bombardment->effectN( 2 ).percent() + p()->talents.sunfury_execution->effectN( 1 ).percent();
 
-    if ( p()->buffs.glorious_incandescence->check() )
-      m *= 1.0 + p()->buffs.glorious_incandescence->data().effectN( 2 ).percent();
+    if ( p()->buffs.burden_of_power->check() )
+      m *= 1.0 + p()->buffs.burden_of_power->data().effectN( 4 ).percent();
 
     return m;
   }
@@ -3637,6 +3629,8 @@ struct arcane_blast_t final : public dematerialize_spell_t
       p()->buffs.leydrinker->decrement();
       p()->action.leydrinker_echo->execute_on_target( s->target, p()->talents.leydrinker->effectN( 2 ).percent() * s->result_total );
     }
+
+    trigger_glorious_incandescence( s->target );
   }
 };
 
@@ -6018,20 +6012,26 @@ struct meteor_t final : public fire_mage_spell_t
 
 struct meteorite_impact_t final : public mage_spell_t
 {
+  int glorious_incandescence_charges;
+
   meteorite_impact_t( std::string_view n, mage_t* p ) :
-    mage_spell_t( n, p, p->find_spell( 449569 ) )
+    mage_spell_t( n, p, p->find_spell( 449569 ) ),
+    glorious_incandescence_charges()
   {
     aoe = -1;
     reduced_aoe_targets = 8; // TODO: Verify this
     background = proc = triggers.ignite = true;
     base_dd_multiplier *= 1.0 + p->spec.arcane_mage->effectN( 10 ).percent();
+    glorious_incandescence_charges = as<int>( p->find_spell( 451223 )->effectN( 1 ).base_value() );
   }
 
   void execute() override
   {
     mage_spell_t::execute();
 
-    p()->cooldowns.fire_blast->adjust( -p()->talents.glorious_incandescence->effectN( 2 ).time_value(), true, false );
+    p()->trigger_arcane_charge( glorious_incandescence_charges );
+    if ( p()->specialization() == MAGE_FIRE )
+      p()->cooldowns.fire_blast->adjust( -p()->talents.glorious_incandescence->effectN( 2 ).time_value(), true, false );
   }
 };
 
@@ -9476,7 +9476,10 @@ void mage_t::consume_burden_of_power()
     return;
 
   buffs.burden_of_power->decrement();
-  buffs.glorious_incandescence->trigger();
+  if ( specialization() == MAGE_FIRE )
+    buffs.glorious_incandescence->trigger();
+  else
+    state.trigger_glorious_incandescence = true;
 }
 
 // If the target isn't specified, picks a random target.
