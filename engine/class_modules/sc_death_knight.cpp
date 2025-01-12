@@ -1703,7 +1703,6 @@ public:
     double average_cs_travel_time      = 0.4;
     timespan_t first_ams_cast          = 20_s;
     double horsemen_ams_absorb_percent = 0.6;
-    bool disable_ghoul_spawn_stun      = false;
   } options;
 
   // Runes
@@ -2524,6 +2523,16 @@ struct death_knight_pet_t : public pet_t
     }
   }
 
+  void trigger_pet_movement( double dist )
+  {
+    if ( dist == 0 )
+      return;
+
+    this->trigger_movement( dist, movement_direction_type::TOWARDS );
+    auto dur = this->time_to_move();
+    make_event( *sim, dur, [ &, dur ] { update_movement( dur ); } );
+  }
+
   void apply_affecting_auras( action_t& action ) override
   {
     player_t::apply_affecting_auras( action );
@@ -2704,6 +2713,14 @@ struct pet_action_t : public parse_action_effects_t<Base>
         this->stats = ( *it )->get_stats( this->name(), this );
       }
     }
+  }
+
+  bool ready() override
+  {
+    if ( this->player->is_moving() )
+      return false;
+
+    return action_base_t::ready();
   }
 };
 
@@ -2914,13 +2931,8 @@ struct base_ghoul_pet_t : public death_knight_pet_t
     resources.base_regen_per_second[ RESOURCE_ENERGY ] = 10;
   }
 
-  void arise() override
+  void trigger_summon_stun( timespan_t dur )
   {
-    death_knight_pet_t::arise();
-    if ( dk()->options.disable_ghoul_spawn_stun )
-      return;
-
-    timespan_t duration = dk()->pet_spell.pet_stun->duration();
     if ( precombat_spawn_adjust > 0_s && precombat_spawn )
     {
       duration = duration - precombat_spawn_adjust;
@@ -2934,6 +2946,22 @@ struct base_ghoul_pet_t : public death_knight_pet_t
     }
   }
 
+  void arise() override
+  {
+    death_knight_pet_t::arise();
+    if ( name_str == "army_ghoul" || !dk()->is_ptr() )
+    {
+      timespan_t duration = dk()->pet_spell.pet_stun->duration();
+      trigger_summon_stun( duration );
+    }
+    else
+    {
+      double dist = precombat_spawn ? 0 : rng().range( -dk()->spell.apocalypse_duration->effectN( 1 ).radius(),
+                                 dk()->spell.apocalypse_duration->effectN( 1 ).radius() );
+      trigger_pet_movement( std::max( 0.0, dk()->base.distance + dist ) );
+    }
+  }
+
   resource_e primary_resource() const override
   {
     return RESOURCE_ENERGY;
@@ -2941,6 +2969,9 @@ struct base_ghoul_pet_t : public death_knight_pet_t
 
   timespan_t available() const override
   {
+    if ( this->is_moving() )
+      return this->time_to_move();
+
     double energy = resources.current[ RESOURCE_ENERGY ];
     timespan_t time_to_next =
         timespan_t::from_seconds( ( 40 - energy ) / resource_regen_per_second( RESOURCE_ENERGY ) );
@@ -4575,6 +4606,15 @@ struct abomination_pet_t : public death_knight_pet_t
     tww1_4pc_proc                     = true;
     owner_coeff.ap_from_ap            = 2.4;
     resource_regeneration             = regen_type::DISABLED;
+    base_movement_speed               = 3.75; // Abomination is SLOWWWW
+  }
+
+  void arise() override
+  {
+    death_knight_pet_t::arise();
+    // Assume precombat abominations have to walk far further than normal
+    double dist = precombat_spawn ? 15 : rng().range( 0, dk()->talent.unholy.raise_abomination->effectN( 1 ).radius() );
+    trigger_pet_movement( dk()->base.distance + dist );
   }
 
   resource_e primary_resource() const override
@@ -11458,7 +11498,6 @@ void death_knight_t::create_options()
   add_option(
       opt_timespan( "deathknight.first_ams_cast", options.first_ams_cast, timespan_t::zero(), timespan_t::max() ) );
   add_option( opt_float( "deathknight.horsemen_ams_absorb_percent", options.horsemen_ams_absorb_percent, 0.0, 1.0 ) );
-  add_option( opt_bool( "deathknight.disable_ghoul_spawn_stun", options.disable_ghoul_spawn_stun ) );
 }
 
 void death_knight_t::copy_from( player_t* source )
