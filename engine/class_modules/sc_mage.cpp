@@ -5653,10 +5653,13 @@ struct icy_veins_t final : public frost_mage_spell_t
     if ( p()->pets.water_elemental->is_sleeping() )
       p()->pets.water_elemental->summon();
 
-    if ( p()->action.frostbolt_volley && !sim->target_non_sleeping_list.empty() )
-      p()->action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
-    // TODO: What happens when Extended Bankroll refreshes?
-    p()->buffs.extended_bankroll->trigger();
+    if ( p()->action.frostbolt_volley )
+    {
+      if ( !sim->target_non_sleeping_list.empty() )
+        p()->action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
+      // TODO: What happens when Extended Bankroll refreshes?
+      p()->buffs.extended_bankroll->trigger();
+    }
   }
 };
 
