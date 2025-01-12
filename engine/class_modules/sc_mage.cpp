@@ -255,7 +255,6 @@ public:
   // Events
   struct events_t
   {
-    event_t* enlightened;
     event_t* flame_accelerant;
     event_t* icicle;
     event_t* merged_buff_execute;
@@ -337,8 +336,7 @@ public:
     buff_t* clearcasting;
     buff_t* clearcasting_channel; // Hidden buff which governs tick and channel time
     buff_t* concentration;
-    buff_t* enlightened_damage;
-    buff_t* enlightened_mana;
+    buff_t* enlightened;
     buff_t* evocation;
     buff_t* high_voltage;
     buff_t* impetus;
@@ -564,7 +562,6 @@ public:
   {
     bool brain_freeze_active;
     bool fingers_of_frost_active;
-    timespan_t last_enlightened_update;
     timespan_t gained_full_icicles;
     bool had_low_mana;
     bool trigger_ff_empowerment;
@@ -957,7 +954,6 @@ public:
   void add_precombat_buff_state( buff_t*, int, double, timespan_t ) override;
   void invalidate_cache( cache_e ) override;
   void init_resources( bool ) override;
-  void do_dynamic_regen( bool = false ) override;
   void recalculate_resource_max( resource_e, gain_t* = nullptr ) override;
   void reset() override;
   std::unique_ptr<expr_t> create_expression( std::string_view ) override;
@@ -1036,7 +1032,6 @@ public:
   void consume_burden_of_power();
   void trigger_splinter( player_t* target, int count = -1 );
   void trigger_time_manipulation();
-  void update_enlightened( bool double_regen = false );
 };
 
 namespace pets {
@@ -7239,25 +7234,6 @@ struct mage_event_t : public event_t
   { }
 };
 
-struct enlightened_event_t final : public mage_event_t
-{
-  enlightened_event_t( mage_t& m, timespan_t delta_time ) :
-    mage_event_t( m, delta_time )
-  { }
-
-  const char* name() const override
-  { return "enlightened_event"; }
-
-  void execute() override
-  {
-    mage->events.enlightened = nullptr;
-    // Do a non-forced regen first to figure out if we have enough mana to swap the buffs.
-    mage->do_dynamic_regen();
-    mage->update_enlightened( true );
-    mage->events.enlightened = make_event<enlightened_event_t>( sim(), *mage, 2.0_s );
-  }
-};
-
 struct icicle_event_t final : public mage_event_t
 {
   player_t* target;
@@ -8360,12 +8336,14 @@ void mage_t::create_buffs()
                                       ->set_default_value_from_effect( 1 )
                                       ->set_activated( false )
                                       ->set_trigger_spell( talents.concentration );
-  buffs.enlightened_damage        = make_buff( this, "enlightened_damage", find_spell( 321388 ) )
-                                      ->set_default_value_from_effect( 1 )
-                                      ->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER );
-  buffs.enlightened_mana          = make_buff( this, "enlightened_mana", find_spell( 321390 ) )
-                                      ->set_default_value_from_effect( 1 )
-                                      ->set_affects_regen( true );
+  buffs.enlightened               = make_buff( this, "enlightened", find_spell( 1217242 ) )
+                                      ->set_schools_from_effect( 4 )
+                                      ->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER )
+                                      ->set_affects_regen( true )
+                                      ->set_freeze_stacks( true ) // We want to bump the buff manually
+                                      ->set_tick_callback( [ this ] ( buff_t* b, int, timespan_t )
+                                        { b->bump( 0, resources.pct( RESOURCE_MANA ) ); } )
+                                      ->set_chance( talents.enlightened.ok() );
   buffs.evocation                 = make_buff( this, "evocation", find_spell( 12051 ) )
                                       ->set_default_value_from_effect( 1 )
                                       ->set_cooldown( 0_ms )
@@ -8776,8 +8754,9 @@ double mage_t::resource_regen_per_second( resource_e rt ) const
   {
     reg *= 1.0 + 0.01 * spec.arcane_mage->effectN( 4 ).average( this );
     reg *= 1.0 + cache.mastery() * spec.savant->effectN( 4 ).mastery_value();
-    reg *= 1.0 + buffs.enlightened_mana->check_value();
     reg *= 1.0 + buffs.evocation->check_value();
+    if ( buffs.enlightened->check() )
+      reg *= 1.0 + ( 1.0 - buffs.enlightened->check_value() ) * buffs.enlightened->data().effectN( 3 ).percent();
   }
 
   return reg;
@@ -8789,15 +8768,6 @@ void mage_t::invalidate_cache( cache_e c )
 
   if ( c == CACHE_MASTERY && spec.savant->ok() )
     recalculate_resource_max( RESOURCE_MANA );
-}
-
-void mage_t::do_dynamic_regen( bool forced )
-{
-  player_t::do_dynamic_regen( forced );
-
-  // Only update Enlightened buffs on resource updates that actually occur in game.
-  if ( forced && talents.enlightened.ok() )
-    make_event( *sim, [ this ] { update_enlightened(); } );
 }
 
 void mage_t::recalculate_resource_max( resource_e rt, gain_t* source )
@@ -8842,8 +8812,8 @@ double mage_t::composite_player_multiplier( school_e school ) const
 {
   double m = player_t::composite_player_multiplier( school );
 
-  if ( buffs.enlightened_damage->has_common_school( school ) )
-    m *= 1.0 + buffs.enlightened_damage->check_value();
+  if ( buffs.enlightened->check() && buffs.enlightened->has_common_school( school ) )
+    m *= 1.0 + buffs.enlightened->check_value() * buffs.enlightened->data().effectN( 2 ).percent();
   if ( buffs.impetus->has_common_school( school ) )
     m *= 1.0 + buffs.impetus->check_value();
 
@@ -9001,17 +8971,10 @@ void mage_t::arise()
 
   buffs.flame_accelerant->trigger();
   buffs.incanters_flow->trigger();
+  buffs.enlightened->trigger( -1, resources.pct( RESOURCE_MANA ) );
 
   if ( options.initial_spellfire_spheres > 0 )
     buffs.spellfire_sphere->trigger( options.initial_spellfire_spheres );
-
-  if ( talents.enlightened.ok() )
-  {
-    update_enlightened();
-
-    timespan_t first_tick = rng().real() * 2.0_s;
-    events.enlightened = make_event<events::enlightened_event_t>( *sim, *this, first_tick );
-  }
 
   if ( talents.flame_accelerant.ok() )
   {
@@ -9333,30 +9296,6 @@ stat_e mage_t::convert_hybrid_stat( stat_e s ) const
     default:
       return s;
   }
-}
-
-void mage_t::update_enlightened( bool double_regen )
-{
-  if ( !talents.enlightened.ok() )
-    return;
-
-  bool damage_buff = resources.pct( RESOURCE_MANA ) > talents.enlightened->effectN( 1 ).percent();
-  if ( damage_buff && !buffs.enlightened_damage->check() )
-  {
-    // Periodic mana regen happens twice whenever the mana regen buff from Enlightened expires.
-    if ( bugs && double_regen && sim->current_time() > state.last_enlightened_update )
-      regen( sim->current_time() - state.last_enlightened_update );
-
-    buffs.enlightened_damage->trigger();
-    buffs.enlightened_mana->expire();
-  }
-  else if ( !damage_buff && !buffs.enlightened_mana->check() )
-  {
-    buffs.enlightened_damage->expire();
-    buffs.enlightened_mana->trigger();
-  }
-
-  state.last_enlightened_update = sim->current_time();
 }
 
 action_t* mage_t::get_icicle()
