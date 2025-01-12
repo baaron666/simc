@@ -4904,7 +4904,7 @@ struct rip_t final : public trigger_thriving_growth_t<trigger_waning_twilight_t<
   {
     base_t::tick( d );
 
-    auto c = apex_pct / std::pow( p()->get_active_dots( d ), 0.3 );
+    auto c = apex_pct / std::pow( p()->get_active_dots( d ), 0.25 );
 
     if ( rng().roll( c ) )
       p()->buff.apex_predators_craving->trigger();
