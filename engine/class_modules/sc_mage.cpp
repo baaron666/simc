@@ -4912,7 +4912,9 @@ struct flurry_t final : public frost_mage_spell_t
     p()->trigger_icicle_gain( target, p()->action.icicle.flurry );
     p()->trigger_icicle_gain( target, p()->action.icicle.flurry, p()->talents.splintering_cold->effectN( 2 ).percent() );
     p()->expression_support.remaining_winters_chill = 2;
-    p()->expression_support.remaining_winters_chill_expire = sim->current_time() + winters_chill_duration + ( pulses - 1 ) * pulse_time( execute_state );
+    // Add a bit of a leeway for spells with slower travel time.
+    p()->expression_support.remaining_winters_chill_expire =
+      sim->current_time() + winters_chill_duration + ( pulses - 1 ) * pulse_time( execute_state ) - 0.2_s;
 
     p()->state.brain_freeze_active = p()->buffs.brain_freeze->up();
     p()->buffs.brain_freeze->decrement();
