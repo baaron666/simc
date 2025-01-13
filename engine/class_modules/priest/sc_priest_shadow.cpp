@@ -1381,7 +1381,8 @@ struct dark_ascension_t final : public priest_spell_t
   {
     if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      void_bolt_damage_action->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
+      if ( !sim->target_non_sleeping_list.empty() )
+        void_bolt_damage_action->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
     }
 
     priest_spell_t::execute();
@@ -1461,8 +1462,8 @@ struct void_eruption_t final : public priest_spell_t
   {  
     if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      if ( !sim->target_non_sleeping_list.empty() )
-        void_bolt_damage_action->execute_on_target( target );
+      if ( pre_execute_state )
+        void_bolt_damage_action->execute_on_target( pre_execute_state->target );
     }
 
     priest_spell_t::execute();
