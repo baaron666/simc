@@ -6505,6 +6505,33 @@ void suspicious_energy_drink( special_effect_t& effect )
   new dbc_proc_callback_t( effect.player, effect );
 }
 
+// Mug's Moxie Jug
+// 471548 Driver
+// 474376 Hidden Buff Driver
+// 474285 Buff
+void mugs_moxie_jug( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  auto crit_buff = create_buff<stat_buff_t>( effect.player, effect.player->find_spell( 474285 ) )
+                       ->add_stat_from_effect( 1, effect.driver()->effectN( 1 ).average( effect ) )
+                       ->set_refresh_behavior( buff_refresh_behavior::DISABLED );
+
+  auto buff_driver      = new special_effect_t( effect.player );
+  buff_driver->name_str = util::tokenize_fn( effect.driver()->effectN( 1 ).trigger()->name_cstr() );
+  buff_driver->spell_id = effect.driver()->effectN( 1 ).trigger_spell_id();
+  buff_driver->proc_flags2_ = PF2_ALL_HIT;
+  buff_driver->custom_buff  = crit_buff;
+  effect.player->special_effects.push_back( buff_driver );
+
+  auto second_proc = new dbc_proc_callback_t( effect.player, *buff_driver );
+  second_proc->activate_with_buff( crit_buff, true );
+  
+  effect.proc_flags2_ = PF2_ALL_HIT;
+  effect.custom_buff   = crit_buff;
+  auto main_proc = new dbc_proc_callback_t( effect.player, effect );
+}
 // Amorphous Relic
 // 472120 Driver
 // 472195 Periodic Trigger
@@ -9614,6 +9641,7 @@ void register_special_effects()
   register_special_effect( 1217356, items::zees_thug_hotline );
   register_special_effect( 467469, items::mister_locknstalk );
   register_special_effect( 467485, DISABLED_EFFECT );
+  register_special_effect( 471548, items::mugs_moxie_jug );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
