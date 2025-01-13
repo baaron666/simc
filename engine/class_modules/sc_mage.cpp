@@ -425,6 +425,7 @@ public:
     buff_t* intuition;
 
     buff_t* blessing_of_the_phoenix;
+    buff_t* rollin_hot;
 
     buff_t* extended_bankroll;
   } buffs;
@@ -1034,6 +1035,7 @@ public:
   void consume_burden_of_power();
   void trigger_splinter( player_t* target, int count = -1 );
   void trigger_time_manipulation();
+  void trigger_jackpot( bool guaranteed = false );
 };
 
 namespace pets {
@@ -1738,30 +1740,6 @@ struct incanters_flow_t final : public buff_t
   }
 };
 
-struct clarity_buff_t final : public buff_t
-{
-  clarity_buff_t( mage_t* p ) :
-    buff_t( p, "clarity", p->find_spell( 1216178 ) )
-  {
-    set_default_value_from_effect( 1 );
-    set_chance( p->sets->has_set_bonus( MAGE_ARCANE, TWW2, B2 ) );
-  }
-
-  bool trigger( int stacks, double value, double chance, timespan_t duration ) override
-  {
-    bool result = buff_t::trigger( stacks, value, chance, duration );
-    if ( result )
-    {
-      auto mage = debug_cast<mage_t*>( player );
-      mage->trigger_clearcasting( 1.0, 0_ms );
-      // TODO: Effectiveness? Only matters in PvP
-      if ( mage->sets->has_set_bonus( MAGE_ARCANE, TWW2, B4 ) )
-        mage->buffs.aether_attunement->trigger();
-    }
-    return result;
-  }
-};
-
 }  // buffs
 
 
@@ -1902,6 +1880,7 @@ struct mage_spell_t : public spell_t
 
     bool blessing_of_the_phoenix = true;
     bool clarity = true;
+    bool rollin_hot = true;
 
     // Misc
     bool combustion = true;
@@ -2068,6 +2047,10 @@ public:
 
     if ( affected_by.clarity )
       m *= 1.0 + p()->buffs.clarity->check_value();
+
+    // TODO (11.1 PTR): the second effect affects spell effects rather than periodic damage
+    if ( affected_by.rollin_hot )
+      m *= 1.0 + p()->buffs.rollin_hot->check_value();
 
     return m;
   }
@@ -4253,6 +4236,7 @@ struct combustion_t final : public fire_mage_spell_t
     }
     if ( p()->pets.arcane_phoenix )
       p()->pets.arcane_phoenix->summon( combustion_duration ); // TODO: The extra random pet duration can sometimes result in an extra cast.
+    p()->trigger_jackpot( true );
 
     p()->expression_support.kindling_reduction = 0_ms;
   }
@@ -5682,13 +5666,7 @@ struct icy_veins_t final : public frost_mage_spell_t
     if ( p()->pets.water_elemental->is_sleeping() )
       p()->pets.water_elemental->summon();
 
-    if ( p()->action.frostbolt_volley )
-    {
-      if ( !sim->target_non_sleeping_list.empty() )
-        p()->action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
-      // TODO: What happens when Extended Bankroll refreshes?
-      p()->buffs.extended_bankroll->trigger();
-    }
+    p()->trigger_jackpot( true );
   }
 };
 
@@ -6685,7 +6663,7 @@ struct touch_of_the_magi_t final : public arcane_mage_spell_t
 
     p()->trigger_arcane_charge( as<int>( data().effectN( 2 ).base_value() ) );
     p()->buffs.leydrinker->trigger();
-    p()->buffs.clarity->trigger();
+    p()->trigger_jackpot( true );
   }
 
   void impact( action_state_t* s ) override
@@ -8282,24 +8260,21 @@ void mage_t::init_special_effects()
   if ( spell->ok() )
   {
     auto effect = new special_effect_t( this );
-    effect->name_str = "mage_tww2_2pc";
+    effect->name_str = "mage_jackpot_proc";
     effect->spell_id = spell->id();
-    effect->type = SPECIAL_EFFECT_EQUIP;
     special_effects.push_back( effect );
 
-    switch ( specialization() )
+    struct jackpot_proc_t final : public dbc_proc_callback_t
     {
-      case MAGE_ARCANE:
-        effect->custom_buff = buffs.clarity;
-        new dbc_proc_callback_t( this, *effect );
-        break;
-      case MAGE_FROST:
-        effect->execute_action = action.frostbolt_volley;
-        new dbc_proc_callback_t( this, *effect );
-        break;
-      default:
-        break;
-    }
+      jackpot_proc_t( mage_t* m, const special_effect_t* effect ) :
+        dbc_proc_callback_t( m, *effect )
+      { }
+
+      void execute( action_t*, action_state_t* ) override
+      { debug_cast<mage_t*>( listener )->trigger_jackpot(); }
+    };
+
+    new jackpot_proc_t( this, effect );
   }
 
   player_t::init_special_effects();
@@ -8593,20 +8568,20 @@ void mage_t::create_buffs()
   buffs.intuition = make_buff( this, "intuition", find_spell( 455681 ) )
                       ->set_default_value_from_effect( 1 )
                       ->set_chance( sets->set( MAGE_ARCANE, TWW1, B4 )->effectN( 1 ).percent() );
-  buffs.clarity   = make_buff<buffs::clarity_buff_t>( this );
+  buffs.clarity   = make_buff( this, "clarity", find_spell( 1216178 ) )
+                      ->set_default_value_from_effect( 1 )
+                      ->set_chance( sets->has_set_bonus( MAGE_ARCANE, TWW2, B2 ) );
 
   buffs.blessing_of_the_phoenix = make_buff( this, "blessing_of_the_phoenix", find_spell( 455134 ) )
                                     ->set_default_value_from_effect( 1 )
                                     ->set_chance( sets->has_set_bonus( MAGE_FIRE, TWW1, B4 ) );
+  buffs.rollin_hot              = make_buff( this, "rollin_hot", find_spell( 1219035 ) )
+                                    ->set_default_value_from_effect( 1 )
+                                    ->set_chance( sets->has_set_bonus( MAGE_FIRE, TWW2, B4 ) );
 
   buffs.extended_bankroll = make_buff( this, "extended_bankroll", find_spell( 1216914 ) )
                               ->set_chance( sets->has_set_bonus( MAGE_FROST, TWW2, B4 ) )
-                              ->set_tick_callback( [ this ] ( buff_t*, int, timespan_t )
-                                {
-                                  // TODO: Effectiveness? Seems to only matter in PvP
-                                  if ( !sim->target_non_sleeping_list.empty() )
-                                    action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
-                                } );
+                              ->set_tick_callback( [ this ] ( buff_t*, int, timespan_t ) { trigger_jackpot(); } );
 
 
   // Buffs that use stack_react or may_react need to be reactable regardless of what the APL does
@@ -9388,6 +9363,47 @@ void mage_t::trigger_time_manipulation()
 
   timespan_t t = talents.time_manipulation->effectN( 1 ).time_value();
   for ( auto cd : time_manipulation_cooldowns ) cd->adjust( t, false );
+}
+
+void mage_t::trigger_jackpot( bool guaranteed )
+{
+  if ( !sets->has_set_bonus( specialization(), TWW2, B2 ) )
+    return;
+
+  bool has_4pc = sets->has_set_bonus( specialization(), TWW2, B4 );
+  switch ( specialization() )
+  {
+    case MAGE_ARCANE:
+      buffs.clarity->trigger();
+      trigger_clearcasting( 1.0, 0_ms );
+      if ( has_4pc )
+        buffs.aether_attunement->trigger();
+      break;
+    case MAGE_FIRE:
+    {
+      auto set_2pc = sets->set( MAGE_FIRE, TWW2, B2 );
+      timespan_t cdr = -1000 * set_2pc->effectN( 1 ).time_value();
+      if ( guaranteed )
+        cdr *= set_2pc->effectN( 2 ).percent();
+      cooldowns.combustion->adjust( cdr );
+      if ( has_4pc )
+      {
+        timespan_t duration = buffs.rollin_hot->buff_duration();
+        if ( guaranteed )
+          duration *= 1.0 + sets->set( MAGE_FIRE, TWW2, B4 )->effectN( 2 ).percent();
+        buffs.rollin_hot->trigger( duration );
+      }
+      break;
+    }
+    case MAGE_FROST:
+      if ( !sim->target_non_sleeping_list.empty() )
+        action.frostbolt_volley->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
+      if ( has_4pc && guaranteed )
+        buffs.extended_bankroll->trigger();
+      break;
+    default:
+      break;
+  }
 }
 
 void mage_t::trigger_mana_cascade()
