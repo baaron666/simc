@@ -5796,7 +5796,7 @@ void eye_of_kezan( special_effect_t& effect )
           stat_buff->trigger( out_of_combat_buff->check() );
           out_of_combat_buff->expire();
         }
-        if ( !c && stat_buff->check() && !out_of_combat_buff->check() )
+        if ( !c && !p->sim->event_mgr.canceled && stat_buff->check() && !out_of_combat_buff->check() )
         {
           out_of_combat_buff->trigger( stat_buff->check() );
           stat_buff->expire();
