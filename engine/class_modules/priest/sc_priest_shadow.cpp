@@ -1300,9 +1300,8 @@ struct void_bolt_proc_t final : public void_bolt_base_t
   }
 
   void_bolt_proc_t( priest_t& p, util::string_view name, bool can_proc_pi = true )
-    : void_bolt_proc_t(
-          p, name, p.bugs ? 1.2 : ( p.is_ptr() ? p.sets->set( PRIEST_SHADOW, TWW2, B2 )->effectN( 1 ).percent() : 0.0 ),
-          can_proc_pi )
+    : void_bolt_proc_t( p, name, p.is_ptr() ? p.sets->set( PRIEST_SHADOW, TWW2, B2 )->effectN( 1 ).percent() : 0.0,
+                        can_proc_pi )
   {
   }
 
@@ -1368,8 +1367,17 @@ struct dark_ascension_t final : public priest_spell_t
 
     if ( p.is_ptr() && p.sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>( "void_bolt_tww2_2pc_dark_ascension",
-                                                                          "void_bolt_tww2_2pc_dark_ascension", false );
+      if ( p.bugs )
+      {
+        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
+            "void_bolt_tww2_2pc_dark_ascension", "void_bolt_tww2_2pc_dark_ascension", false, 1.475 );
+      }
+      else
+      {
+        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
+            "void_bolt_tww2_2pc_dark_ascension", "void_bolt_tww2_2pc_dark_ascension", false );
+      
+      }
       if ( void_bolt_damage_action )
       {
         add_child( void_bolt_damage_action );
@@ -1447,8 +1455,17 @@ struct void_eruption_t final : public priest_spell_t
 
     if ( p.is_ptr() && p.sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>( "void_bolt_tww2_2pc_void_eruption",
-                                                                               "void_bolt_tww2_2pc_void_eruption", false );
+      if ( p.bugs )
+      {
+        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
+            "void_bolt_tww2_2pc_void_eruption", "void_bolt_tww2_2pc_void_eruption", false, 1.075 );
+      }
+      else
+      {
+        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>( "void_bolt_tww2_2pc_void_eruption",
+                                                                            "void_bolt_tww2_2pc_void_eruption", false );
+      }
+
       if ( void_bolt_damage_action )
       {
         add_child( void_bolt_damage_action );
