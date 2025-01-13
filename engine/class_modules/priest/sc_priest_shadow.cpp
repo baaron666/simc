@@ -1367,17 +1367,9 @@ struct dark_ascension_t final : public priest_spell_t
 
     if ( p.is_ptr() && p.sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      if ( p.bugs )
-      {
-        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
-            "void_bolt_tww2_2pc_dark_ascension", "void_bolt_tww2_2pc_dark_ascension", false, 1.475 );
-      }
-      else
-      {
-        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
-            "void_bolt_tww2_2pc_dark_ascension", "void_bolt_tww2_2pc_dark_ascension", false );
-      
-      }
+      void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>( "void_bolt_tww2_2pc_dark_ascension",
+                                                                          "void_bolt_tww2_2pc_dark_ascension", false );
+
       if ( void_bolt_damage_action )
       {
         add_child( void_bolt_damage_action );
@@ -1387,6 +1379,11 @@ struct dark_ascension_t final : public priest_spell_t
   
   void execute() override
   {
+    if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
+    {
+      void_bolt_damage_action->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
+    }
+
     priest_spell_t::execute();
 
     priest().buffs.dark_ascension->trigger();
@@ -1402,11 +1399,6 @@ struct dark_ascension_t final : public priest_spell_t
     if ( priest().talents.shadow.ancient_madness.enabled() )
     {
       priest().buffs.ancient_madness->trigger();
-    }
-        
-    if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
-    {
-      void_bolt_damage_action->execute_on_target( target );
     }
   }
 
@@ -1455,16 +1447,8 @@ struct void_eruption_t final : public priest_spell_t
 
     if ( p.is_ptr() && p.sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      if ( p.bugs )
-      {
-        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
-            "void_bolt_tww2_2pc_void_eruption", "void_bolt_tww2_2pc_void_eruption", false, 1.075 );
-      }
-      else
-      {
-        void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>( "void_bolt_tww2_2pc_void_eruption",
-                                                                            "void_bolt_tww2_2pc_void_eruption", false );
-      }
+      void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
+          "void_bolt_tww2_2pc_void_eruption", "void_bolt_tww2_2pc_void_eruption", false, 1.075 );
 
       if ( void_bolt_damage_action )
       {
@@ -1474,7 +1458,13 @@ struct void_eruption_t final : public priest_spell_t
   }
 
   void execute() override
-  {
+  {  
+    if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
+    {
+      if ( !sim->target_non_sleeping_list.empty() )
+        void_bolt_damage_action->execute_on_target( target );
+    }
+
     priest_spell_t::execute();
 
     priest().buffs.voidform->trigger();
@@ -1485,12 +1475,6 @@ struct void_eruption_t final : public priest_spell_t
                                                 timespan_t::from_seconds( priest().buffs.sustained_potency->check() ) );
 
       priest().buffs.sustained_potency->expire();
-    }
-
-    if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
-    {
-      if ( !sim->target_non_sleeping_list.empty() )
-        void_bolt_damage_action->execute_on_target( rng().range( sim->target_non_sleeping_list ) );
     }
   }
 
