@@ -2641,7 +2641,10 @@ void priest_t::init_special_effects_shadow()
     auto set_effect          = new special_effect_t( this );
     set_effect->name_str     = util::tokenize_fn( set_spell->name_cstr() );
     set_effect->type         = SPECIAL_EFFECT_EQUIP;
-    set_effect->proc_flags2_ = PF2_ALL_HIT;
+    set_effect->proc_flags2_ = bugs ? PF2_ALL_HIT : PF2_ALL_HIT | PF2_PERIODIC_DAMAGE;
+    if ( !bugs )
+      set_effect->proc_flags_ = PF_MAGIC_SPELL | PF_PERIODIC;
+
     set_effect->spell_id     = set_spell->id();
     special_effects.push_back( set_effect );
 
