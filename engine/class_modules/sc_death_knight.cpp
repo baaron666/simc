@@ -2911,11 +2911,22 @@ struct auto_attack_melee_t : public pet_melee_attack_t<T>
 
 struct base_ghoul_pet_t : public death_knight_pet_t
 {
+  timespan_t stun_duration;
+  double spawn_distance;
+  double spawn_radius;
   base_ghoul_pet_t( death_knight_t* owner, std::string_view name, bool guardian = false, bool dynamic = true )
-    : death_knight_pet_t( owner, name, guardian, true, dynamic )
+    : death_knight_pet_t( owner, name, guardian, true, dynamic ), stun_duration( 4.5_s ), spawn_distance( 0 ), spawn_radius ( 0 )
   {
     main_hand_weapon.swing_time = 2.0_s;
     main_hand_weapon.type       = WEAPON_BEAST;
+    stun_duration               = dk()->pet_spell.pet_stun->duration();
+    spawn_radius = dk()->spell.apocalypse_duration->effectN( 1 ).radius();
+  }
+
+  void init_finished() override
+  {
+    death_knight_pet_t::init_finished();
+    buffs.stunned->set_expire_callback( [ & ]( buff_t*, int, timespan_t ) { trigger_pet_movement( spawn_distance ); } );
   }
 
   attack_t* create_main_hand_auto_attack() override
@@ -2935,13 +2946,13 @@ struct base_ghoul_pet_t : public death_knight_pet_t
   {
     if ( precombat_spawn_adjust > 0_s && precombat_spawn )
     {
-      duration = duration - precombat_spawn_adjust;
-      buffs.stunned->trigger( duration );
+      timespan_t stun_dur = dur - precombat_spawn_adjust;
+      buffs.stunned->trigger( stun_dur );
       stun();
     }
-    else if ( !precombat_spawn )
+    else
     {
-      buffs.stunned->trigger( duration );
+      buffs.stunned->trigger( dur );
       stun();
     }
   }
@@ -2949,16 +2960,15 @@ struct base_ghoul_pet_t : public death_knight_pet_t
   void arise() override
   {
     death_knight_pet_t::arise();
+    double dist    = precombat_spawn ? 0 : rng().range( -spawn_radius, spawn_radius );
+    spawn_distance = std::max( 0.0, dk()->base.distance + dist );
     if ( name_str == "army_ghoul" || !dk()->is_ptr() )
     {
-      timespan_t duration = dk()->pet_spell.pet_stun->duration();
-      trigger_summon_stun( duration );
+      trigger_summon_stun( stun_duration );
     }
     else
     {
-      double dist = precombat_spawn ? 0 : rng().range( -dk()->spell.apocalypse_duration->effectN( 1 ).radius(),
-                                 dk()->spell.apocalypse_duration->effectN( 1 ).radius() );
-      trigger_pet_movement( std::max( 0.0, dk()->base.distance + dist ) );
+      trigger_pet_movement( spawn_distance );
     }
   }
 
@@ -2969,8 +2979,8 @@ struct base_ghoul_pet_t : public death_knight_pet_t
 
   timespan_t available() const override
   {
-    if ( this->is_moving() )
-      return this->time_to_move();
+    if ( is_moving() )
+      return time_to_move();
 
     double energy = resources.current[ RESOURCE_ENERGY ];
     timespan_t time_to_next =
