@@ -1449,7 +1449,7 @@ struct void_eruption_t final : public priest_spell_t
     if ( p.is_ptr() && p.sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
       void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
-          "void_bolt_tww2_2pc_void_eruption", "void_bolt_tww2_2pc_void_eruption", false, 1.075 );
+          "void_bolt_tww2_2pc_void_eruption", "void_bolt_tww2_2pc_void_eruption", false );
 
       if ( void_bolt_damage_action )
       {
@@ -1462,8 +1462,7 @@ struct void_eruption_t final : public priest_spell_t
   {  
     if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      if ( pre_execute_state )
-        void_bolt_damage_action->execute_on_target( pre_execute_state->target );
+      void_bolt_damage_action->execute_on_target( target );
     }
 
     priest_spell_t::execute();
