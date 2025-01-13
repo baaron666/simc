@@ -577,6 +577,7 @@ public:
   {
     timespan_t kindling_reduction; // Cumulative reduction from Kindling not counting guaranteed crits from Combustion
     int remaining_winters_chill; // Estimation of remaining Winter's Chill stacks, accounting for travel time
+    timespan_t remaining_winters_chill_expire; // When to reset the above to 0
   } expression_support;
 
   // Talents
@@ -4872,9 +4873,15 @@ struct flurry_t final : public frost_mage_spell_t
 {
   action_t* flurry_bolt;
 
+  const int pulses;
+  const timespan_t base_pulse_time = 0.4_s;
+  const timespan_t winters_chill_duration;
+
   flurry_t( std::string_view n, mage_t* p, std::string_view options_str ) :
     frost_mage_spell_t( n, p, p->talents.flurry ),
-    flurry_bolt( get_action<flurry_bolt_t>( "flurry_bolt", p ) )
+    flurry_bolt( get_action<flurry_bolt_t>( "flurry_bolt", p ) ),
+    pulses( as<int>( data().effectN( 1 ).base_value() ) ),
+    winters_chill_duration( p->find_spell( 228358 )->duration() )
   {
     parse_options( options_str );
     may_miss = affected_by.shatter = false;
@@ -4895,6 +4902,9 @@ struct flurry_t final : public frost_mage_spell_t
     snapshot_flags |= STATE_HASTE;
   }
 
+  timespan_t pulse_time( const action_state_t* s ) const
+  { return ( s ? s->haste : p()->cache.spell_cast_speed() ) * base_pulse_time; }
+
   void execute() override
   {
     frost_mage_spell_t::execute();
@@ -4902,6 +4912,7 @@ struct flurry_t final : public frost_mage_spell_t
     p()->trigger_icicle_gain( target, p()->action.icicle.flurry );
     p()->trigger_icicle_gain( target, p()->action.icicle.flurry, p()->talents.splintering_cold->effectN( 2 ).percent() );
     p()->expression_support.remaining_winters_chill = 2;
+    p()->expression_support.remaining_winters_chill_expire = sim->current_time() + winters_chill_duration + ( pulses - 1 ) * pulse_time( execute_state );
 
     p()->state.brain_freeze_active = p()->buffs.brain_freeze->up();
     p()->buffs.brain_freeze->decrement();
@@ -4913,12 +4924,10 @@ struct flurry_t final : public frost_mage_spell_t
   {
     frost_mage_spell_t::impact( s );
 
-    timespan_t pulse_time = s->haste * 0.4_s;
-
     make_event<ground_aoe_event_t>( *sim, p(), ground_aoe_params_t()
-      .pulse_time( pulse_time )
+      .pulse_time( pulse_time( s ) )
       .target( s->target )
-      .n_pulses( as<int>( data().effectN( 1 ).base_value() ) )
+      .n_pulses( pulses )
       .action( flurry_bolt ), true );
 
     // Flurry only triggers one stack of Cold Front, but it happens after the first
@@ -9130,7 +9139,13 @@ std::unique_ptr<expr_t> mage_t::create_expression( std::string_view name )
   if ( util::str_compare_ci( name, "remaining_winters_chill" ) )
   {
     return make_fn_expr( name, [ this ]
-    { return expression_support.remaining_winters_chill; } );
+    { return sim->current_time() < expression_support.remaining_winters_chill_expire ? expression_support.remaining_winters_chill : 0; } );
+  }
+
+  if ( util::str_compare_ci( name, "remaining_winters_chill_duration" ) )
+  {
+    return make_fn_expr( name, [ this ]
+    { return expression_support.remaining_winters_chill ? std::max( expression_support.remaining_winters_chill_expire - sim->current_time(), 0_ms ) : 0_ms ; } );
   }
 
   if ( util::str_compare_ci( name, "comet_storm_remains" ) )
