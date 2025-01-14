@@ -347,6 +347,7 @@ struct hunter_td_t: public actor_target_data_t
     buff_t* basilisk_collar;
     buff_t* outland_venom;
     buff_t* kill_zone;
+    buff_t* spotters_mark;
     buff_t* sentinel;
     buff_t* crescent_steel;
     buff_t* lunar_storm;
@@ -883,7 +884,13 @@ public:
     spell_data_ptr_t steady_shot;
     spell_data_ptr_t flare;
     spell_data_ptr_t serpent_sting;
+
     spell_data_ptr_t harpoon;
+
+    spell_data_ptr_t multishot;
+    spell_data_ptr_t eyes_in_the_sky; // TODO
+    spell_data_ptr_t spotters_mark_debuff;
+    spell_data_ptr_t harriers_cry; // TODO
   } specs;
 
   struct mastery_spells_t
@@ -5567,15 +5574,17 @@ struct rapid_fire_t: public hunter_spell_t
 
 // Multi-Shot =================================================================
 
-struct multishot_mm_base_t: public hunter_ranged_attack_t
+struct multishot_mm_t: public hunter_ranged_attack_t
 {
   struct salvo {
     explosive_shot_background_t* explosive = nullptr;
     int targets = 0;
   } salvo;
 
-  multishot_mm_base_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( n, p, p -> talents.multishot_mm )
+  multishot_mm_t( hunter_t* p, util::string_view options_str ) : hunter_ranged_attack_t( "multishot", p, p->specs.multishot )
   {
+    parse_options( options_str );
+
     aoe = -1;
     reduced_aoe_targets = p -> find_spell( 2643 ) -> effectN( 1 ).base_value();
 
@@ -5602,6 +5611,8 @@ struct multishot_mm_base_t: public hunter_ranged_attack_t
       p() -> buffs.trick_shots -> trigger();
 
     p()->buffs.salvo->expire();
+
+    p()->trigger_symphonic_arsenal();
   }
 
   void schedule_travel( action_state_t* s ) override
@@ -5619,21 +5630,6 @@ struct multishot_mm_base_t: public hunter_ranged_attack_t
     m *= 1.0 + p() -> buffs.bulletstorm -> check_stack_value();
 
     return m;
-  }
-};
-
-struct multishot_mm_t : public multishot_mm_base_t
-{
-  multishot_mm_t( hunter_t* p, util::string_view options_str ) : multishot_mm_base_t( "multishot", p )
-  {
-    parse_options( options_str );
-  }
-
-  void execute() override
-  {
-    multishot_mm_base_t::execute();
-
-    p()->trigger_symphonic_arsenal();
   }
 };
 
@@ -7395,6 +7391,9 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
     -> set_schools_from_effect( 2 )
     -> set_chance( p->talents.kill_zone.ok() );
 
+  debuffs.spotters_mark = make_buff( *this, "spotters_mark", p->specs.spotters_mark_debuff )
+    -> set_default_value_from_effect( 1 );
+
   debuffs.sentinel = make_buff( *this, "sentinel", p->talents.sentinel_debuff );
 
   debuffs.crescent_steel = make_buff( *this, "crescent_steel", p->talents.crescent_steel_debuff )
@@ -7659,6 +7658,10 @@ void hunter_t::init_spells()
   // Marksmanship Tree
   if ( specialization() == HUNTER_MARKSMANSHIP )
   {
+    specs.multishot                           = find_specialization_spell( "Multi-Shot" );
+    specs.eyes_in_the_sky                     = find_specialization_spell( "Eyes in the Sky" );
+    specs.spotters_mark_debuff                = specs.eyes_in_the_sky.ok() ? find_spell( 466872 ) : spell_data_t::not_found();
+
     talents.aimed_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Aimed Shot", HUNTER_MARKSMANSHIP );
 
     talents.rapid_fire                        = find_talent_spell( talent_tree::SPECIALIZATION, "Rapid Fire", HUNTER_MARKSMANSHIP );
