@@ -619,7 +619,7 @@ public:
     spell_data_ptr_t rapid_fire;
     spell_data_ptr_t rapid_fire_tick;
     spell_data_ptr_t multishot_mm;
-    spell_data_ptr_t precise_shot;
+    spell_data_ptr_t precise_shots;
     spell_data_ptr_t precise_shots_buff;
 
     spell_data_ptr_t surging_shots;
@@ -1106,8 +1106,6 @@ public:
     // mm
     bool bullseye_crit_chance = false;
     damage_affected_by lone_wolf;
-    bool precise_shots = false;
-    bool precise_shots_cost = false;
     damage_affected_by sniper_training;
 
     // surv
@@ -1530,10 +1528,22 @@ public:
 
 struct hunter_ranged_attack_t : public hunter_action_t<ranged_attack_t>
 {
+  struct
+  {
+    double effectiveness = 0.0;
+    double cost_reduction = 0.0;
+  } precise_shots;
+
   hunter_ranged_attack_t( util::string_view n, hunter_t* p, const spell_data_t* s = spell_data_t::nil() ) : hunter_action_t( n, p, s )
   {
-    affected_by.precise_shots = p -> talents.precise_shot.ok() && parse_damage_affecting_aura( this, p -> talents.precise_shots_buff ).direct;
-    affected_by.precise_shots_cost = check_affected_by( this, p->talents.precise_shots_buff->effectN( 6 ) ); 
+    if ( p->talents.precise_shots.ok() )
+    {
+      if ( check_affected_by( this, p->talents.precise_shots_buff->effectN( 3 ) ) )
+        precise_shots.cost_reduction = p->talents.precise_shots_buff->effectN( 3 ).percent();
+
+      if ( parse_damage_affecting_aura( this, p->talents.precise_shots_buff ).direct > 0 )
+        precise_shots.effectiveness = 1.0;
+    }
   }
 
   bool usable_moving() const override
@@ -1543,8 +1553,7 @@ struct hunter_ranged_attack_t : public hunter_action_t<ranged_attack_t>
   {
     double am = hunter_action_t::composite_da_multiplier( s );
 
-    if ( affected_by.precise_shots )
-      am *= 1 + p() -> buffs.precise_shots -> check_value();
+    am *= 1 + p()->buffs.precise_shots->check_value() * precise_shots.effectiveness;
 
     return am;
   }
@@ -1553,8 +1562,7 @@ struct hunter_ranged_attack_t : public hunter_action_t<ranged_attack_t>
   {
     double c = hunter_action_t::cost_pct_multiplier();
 
-    if ( affected_by.precise_shots_cost && p()->buffs.precise_shots->check() )
-      c *= 1 + p()->talents.precise_shots_buff->effectN( 6 ).percent();
+    c *= 1 + p()->talents.precise_shots_buff->effectN( 3 ).percent();
 
     return c;
   }
@@ -3695,6 +3703,12 @@ struct auto_shot_t : public auto_attack_base_t<ranged_attack_t>
     bleak_arrows_chance = p->talents.bleak_arrows->effectN( p->specialization() == HUNTER_MARKSMANSHIP ? 2 : 1 ).percent();
     school = p->talents.bleak_arrows->ok() ? SCHOOL_SHADOW : SCHOOL_PHYSICAL;
     ignores_armor = p->talents.bleak_arrows->ok();
+
+    if ( p->talents.precise_shots.ok() )
+    {
+      base_multiplier *= 1 + p->talents.precise_shots->effectN( 2 ).percent();
+      base_execute_time += p->talents.precise_shots->effectN( 1 ).time_value();
+    }
   }
 
   action_state_t* new_state() override
@@ -5003,7 +5017,7 @@ struct master_marksman_t : residual_bleed_base_t
 
 // Chimaera Shot ======================================================================
 
-struct chimaera_shot_base_t : public hunter_ranged_attack_t
+struct chimaera_shot_t : public hunter_ranged_attack_t
 {
   struct impact_t final : public hunter_ranged_attack_t
   {
@@ -5023,11 +5037,19 @@ struct chimaera_shot_base_t : public hunter_ranged_attack_t
   impact_t* nature = nullptr;
   impact_t* frost = nullptr;
 
-  chimaera_shot_base_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( n, p, p -> talents.chimaera_shot )
+  chimaera_shot_t( hunter_t* p, util::string_view options_str ) : hunter_ranged_attack_t( "chimaera_shot", p, p -> talents.chimaera_shot )
   {
+    parse_options( options_str );
+
     aoe = 2;
     radius = 5;
     school = SCHOOL_FROSTSTRIKE; // Just so the report shows a mixture of the two colors.
+
+    nature = p->get_background_action<impact_t>( "chimaera_shot_nature", p->talents.chimaera_shot_nature );
+    frost  = p->get_background_action<impact_t>( "chimaera_shot_frost", p->talents.chimaera_shot_frost );
+
+    add_child( nature );
+    add_child( frost );
   }
 
   void execute() override
@@ -5053,20 +5075,6 @@ struct chimaera_shot_base_t : public hunter_ranged_attack_t
   // Don't bother, the results will be discarded anyway.
   result_e calculate_result( action_state_t* ) const override { return RESULT_NONE; }
   double calculate_direct_amount( action_state_t* ) const override { return 0.0; }
-};
-
-struct chimaera_shot_t : public chimaera_shot_base_t
-{
-  chimaera_shot_t( hunter_t* p, util::string_view options_str ) : chimaera_shot_base_t( "chimaera_shot", p )
-  {
-    parse_options( options_str );
-
-    nature = p->get_background_action<impact_t>( "chimaera_shot_nature", p->talents.chimaera_shot_nature );
-    frost = p->get_background_action<impact_t>( "chimaera_shot_frost", p->talents.chimaera_shot_frost );
-
-    add_child( nature );
-    add_child( frost );
-  }
 };
 
 // Bursting Shot ======================================================================
@@ -7667,8 +7675,8 @@ void hunter_t::init_spells()
     talents.rapid_fire                        = find_talent_spell( talent_tree::SPECIALIZATION, "Rapid Fire", HUNTER_MARKSMANSHIP );
     talents.rapid_fire_tick                   = find_spell( 257045 );
     talents.multishot_mm                      = find_talent_spell( talent_tree::SPECIALIZATION, "Multi-Shot", HUNTER_MARKSMANSHIP );
-    talents.precise_shot                      = find_talent_spell( talent_tree::SPECIALIZATION, "Precise Shot", HUNTER_MARKSMANSHIP );
-    talents.precise_shots_buff                = find_spell( 260242 );
+    talents.precise_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Precise Shots", HUNTER_MARKSMANSHIP );
+    talents.precise_shots_buff                = talents.precise_shots.ok() ? find_spell( 260242 ) : spell_data_t::not_found();
 
     talents.surging_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Surging Shots", HUNTER_MARKSMANSHIP );
     talents.streamline                        = find_talent_spell( talent_tree::SPECIALIZATION, "Streamline", HUNTER_MARKSMANSHIP );
@@ -8071,10 +8079,9 @@ void hunter_t::create_buffs()
 
   // Marksmanship Tree
 
-  buffs.precise_shots =
+  buffs.precise_shots = 
     make_buff( this, "precise_shots", talents.precise_shots_buff )
-      -> set_default_value( talents.precise_shot->effectN( 1 ).percent() )
-      -> set_chance( talents.precise_shot.ok() );
+      ->set_default_value_from_effect( 1 );
 
   buffs.streamline =
     make_buff( this, "streamline", find_spell( 342076 ) )
