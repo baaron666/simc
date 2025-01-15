@@ -618,12 +618,12 @@ public:
 
     spell_data_ptr_t rapid_fire;
     spell_data_ptr_t rapid_fire_tick;
-    spell_data_ptr_t multishot_mm;
     spell_data_ptr_t precise_shots;
     spell_data_ptr_t precise_shots_buff;
 
-    spell_data_ptr_t surging_shots;
     spell_data_ptr_t streamline;
+    spell_data_ptr_t streamline_buff;
+    spell_data_ptr_t surging_shots;
     spell_data_ptr_t improved_steady_shot;
     spell_data_ptr_t pin_cushion;
     spell_data_ptr_t crack_shot;
@@ -5221,6 +5221,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     if ( p()->buffs.trueshot->check() )
       c *= 1 + p()->talents.trueshot->effectN( 7 ).percent();
 
+    c *= 1 + p()->buffs.streamline->check_value();
+
     return c;
   }
 
@@ -5259,8 +5261,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     }
 
     // XXX: 2020-10-22 Lock and Load completely supresses consumption of Streamline
-    if ( ! p() -> buffs.lock_and_load -> check() )
-      p() -> buffs.streamline -> decrement();
+    if ( !p()->buffs.lock_and_load->check() )
+      p()->buffs.streamline->expire();
 
     if ( lock_and_loaded )
       p() -> buffs.lock_and_load -> decrement();
@@ -5296,8 +5298,7 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
     auto et = hunter_ranged_attack_t::execute_time_pct_multiplier();
 
-    if ( p() -> buffs.streamline -> check() )
-      et *= 1 + p() -> buffs.streamline -> check_value();
+    et *= 1 + p()->buffs.streamline->check_value();
 
     if ( p() -> buffs.trueshot -> check() )
       et *= 1 + p() -> buffs.trueshot -> check_value();
@@ -5526,7 +5527,8 @@ struct rapid_fire_t: public hunter_spell_t
   {
     hunter_spell_t::execute();
 
-    p() -> buffs.streamline -> trigger();
+    p()->buffs.streamline->trigger();
+
     if ( rng().roll( deathblow.chance ) )
       p()->trigger_deathblow( target );
   }
@@ -7674,12 +7676,12 @@ void hunter_t::init_spells()
 
     talents.rapid_fire                        = find_talent_spell( talent_tree::SPECIALIZATION, "Rapid Fire", HUNTER_MARKSMANSHIP );
     talents.rapid_fire_tick                   = find_spell( 257045 );
-    talents.multishot_mm                      = find_talent_spell( talent_tree::SPECIALIZATION, "Multi-Shot", HUNTER_MARKSMANSHIP );
     talents.precise_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Precise Shots", HUNTER_MARKSMANSHIP );
     talents.precise_shots_buff                = talents.precise_shots.ok() ? find_spell( 260242 ) : spell_data_t::not_found();
 
     talents.surging_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Surging Shots", HUNTER_MARKSMANSHIP );
     talents.streamline                        = find_talent_spell( talent_tree::SPECIALIZATION, "Streamline", HUNTER_MARKSMANSHIP );
+    talents.streamline_buff                   = talents.streamline.ok() ? find_spell( 342076 ) : spell_data_t::not_found();
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
     talents.crack_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Crack Shot", HUNTER_MARKSMANSHIP );
@@ -8084,9 +8086,8 @@ void hunter_t::create_buffs()
       ->set_default_value_from_effect( 1 );
 
   buffs.streamline =
-    make_buff( this, "streamline", find_spell( 342076 ) )
-      -> set_default_value( talents.streamline -> effectN( 3 ).percent() )
-      -> set_chance( talents.streamline.ok() );
+    make_buff( this, "streamline", talents.streamline_buff )
+      ->set_default_value_from_effect( 1 );
 
   buffs.in_the_rhythm = 
     make_buff( this, "in_the_rhythm", find_spell( 407405 ) )
