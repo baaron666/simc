@@ -8745,7 +8745,7 @@ struct roaring_warqueen_citrine_t : public spell_t
   roaring_warqueen_citrine_t( const special_effect_t& e )
     : spell_t( "roaring_warqueens_citrine", e.player, e.player->find_spell( 462964 ) ),
       citrine_data{ true },
-      estimate_group_value( e.player->thewarwithin_opts.estimate_roaring_warqueens_citrine ),
+      estimate_group_value( false ),
       thunder_gem( create_citrine_action( e, THUNDERLORDS_CRACKLING_CITRINE ) )
   {
     background = true;
