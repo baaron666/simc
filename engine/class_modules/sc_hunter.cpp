@@ -623,14 +623,17 @@ public:
 
     spell_data_ptr_t streamline;
     spell_data_ptr_t streamline_buff;
+    spell_data_ptr_t trick_shots;
+    spell_data_ptr_t trick_shots_data;
+    spell_data_ptr_t trick_shots_buff;
+    spell_data_ptr_t aspect_of_the_hydra;
+
     spell_data_ptr_t surging_shots;
     spell_data_ptr_t improved_steady_shot;
     spell_data_ptr_t pin_cushion;
     spell_data_ptr_t crack_shot;
 
     spell_data_ptr_t penetrating_shots;
-    spell_data_ptr_t trick_shots;
-    spell_data_ptr_t trick_shots_data;
     spell_data_ptr_t master_marksman;
     spell_data_ptr_t master_marksman_bleed;
 
@@ -3823,7 +3826,7 @@ struct wind_arrow_t final : public hunter_ranged_attack_t
 
 // Rapid Fire/Rapid Fire Barrage (Marksmanship Talent) ========================================================
 
-struct rapid_fire_tick_t final : public hunter_ranged_attack_t
+struct rapid_fire_tick_t : public hunter_ranged_attack_t
 {
   const int trick_shots_targets;
 
@@ -4005,12 +4008,41 @@ struct arcane_shot_base_t: public hunter_ranged_attack_t
 
 struct arcane_shot_t : public arcane_shot_base_t
 {
+  struct arcane_shot_aspect_of_the_hydra_t : arcane_shot_base_t
+  {
+    arcane_shot_aspect_of_the_hydra_t( util::string_view n, hunter_t* p ) : arcane_shot_base_t( n, p )
+    {
+      background = dual = true;
+      base_costs[ RESOURCE_FOCUS ] = 0;
+      base_multiplier *= p->talents.aspect_of_the_hydra->effectN( 1 ).percent();
+    }
+  };
+
+  arcane_shot_aspect_of_the_hydra_t* aspect_of_the_hydra = nullptr;
+
   arcane_shot_t( hunter_t* p, util::string_view options_str ) : arcane_shot_base_t( "arcane_shot", p )
   {
     parse_options( options_str );
 
-    if ( p->specialization() == HUNTER_MARKSMANSHIP && p->talents.chimaera_shot.ok() )
-      background = true;
+    if ( p->talents.aspect_of_the_hydra.ok() )
+      aspect_of_the_hydra = p->get_background_action<arcane_shot_aspect_of_the_hydra_t>( "arcane_shot_aspect_of_the_hydra" );
+  }
+
+  void execute() override
+  {
+    arcane_shot_base_t::execute();
+
+    // TODO 15/1/25: secondary cast is using primary target if no secondary target is near
+    // note (not modeled): there is some kind of dead zone where a secondary target is too far to get hit by the
+    // secondary cast but close enough to cause the primary cast target to not be used as the secondary cast target
+    if ( aspect_of_the_hydra )
+    {
+      auto tl = target_list();
+      if ( target_list().size() > 1 )
+        aspect_of_the_hydra->execute_on_target( tl[1] );
+      else
+        aspect_of_the_hydra->execute_on_target( target );
+    }
   }
 };
 
@@ -5354,15 +5386,47 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
 struct aimed_shot_t : public aimed_shot_base_t
 {
+  struct aimed_shot_aspect_of_the_hydra_t : aimed_shot_base_t
+  {
+    aimed_shot_aspect_of_the_hydra_t( util::string_view n, hunter_t* p ) : aimed_shot_base_t( n, p, p->talents.aimed_shot )
+    {
+      background = dual = true;
+      base_costs[ RESOURCE_FOCUS ] = 0;
+      base_multiplier *= p->talents.aspect_of_the_hydra->effectN( 1 ).percent();
+    }
+  };
+
+  aimed_shot_aspect_of_the_hydra_t* aspect_of_the_hydra = nullptr;
+
   aimed_shot_t( hunter_t* p, util::string_view options_str ) : 
     aimed_shot_base_t( "aimed_shot", p, p->talents.aimed_shot )
   {
     parse_options( options_str );
+
+    if ( p->talents.aspect_of_the_hydra.ok() )
+      aspect_of_the_hydra = p->get_background_action<aimed_shot_aspect_of_the_hydra_t>( "aimed_shot_aspect_of_the_hydra" );
   }
 
   bool ready() override
   {
     return !p()->buffs.wailing_arrow_override->check() && aimed_shot_base_t::ready();
+  }
+
+  void execute() override
+  {
+    hunter_ranged_attack_t::execute();
+
+    // TODO 15/1/25: secondary cast is using primary target if no secondary target is near
+    // note (not modeled): there is some kind of dead zone where a secondary target is too far to get hit by the
+    // secondary cast but close enough to cause the primary cast target to not be used as the secondary cast target
+    if ( aspect_of_the_hydra )
+    {
+      auto tl = target_list();
+      if ( target_list().size() > 1 )
+        aspect_of_the_hydra->execute_on_target( tl[1] );
+      else
+        aspect_of_the_hydra->execute_on_target( target );
+    }
   }
 };
 
@@ -5489,7 +5553,16 @@ struct steady_shot_t: public hunter_ranged_attack_t
 
 struct rapid_fire_t: public hunter_spell_t
 {
+  struct rapid_fire_tick_aspect_of_the_hydra : rapid_fire_tick_t
+  {
+    rapid_fire_tick_aspect_of_the_hydra( util::string_view n, hunter_t* p ) : rapid_fire_tick_t( n, p )
+    {
+      base_multiplier *= p->talents.aspect_of_the_hydra->effectN( 1 ).percent();
+    }
+  };
+
   rapid_fire_tick_t* damage;
+  rapid_fire_tick_aspect_of_the_hydra* aspect_of_the_hydra;
   int base_num_ticks;
 
   struct {
@@ -5518,7 +5591,7 @@ struct rapid_fire_t: public hunter_spell_t
   {
     hunter_spell_t::init();
 
-    damage -> gain  = gain;
+    damage -> gain = gain;
     damage -> stats = stats;
     stats -> action_list.push_back( damage );
   }
@@ -5537,8 +5610,10 @@ struct rapid_fire_t: public hunter_spell_t
   {
     hunter_spell_t::tick( d );
 
-    damage -> parent_dot = d; // BfA Surging Shots shenanigans
-    damage -> execute_on_target( d -> target );
+    damage -> execute_on_target( d->target );
+    // TODO 15/1/25: secondary cast is using primary target in all situations
+    if ( aspect_of_the_hydra )
+      aspect_of_the_hydra->execute_on_target( d->target );
 
     if ( p() -> talents.bulletstorm -> ok() && d -> current_tick == 1 && damage -> execute_state && damage -> execute_state -> chain_target > 0 )
       p() -> buffs.bulletstorm -> increment( damage -> execute_state -> chain_target );
@@ -7679,16 +7754,19 @@ void hunter_t::init_spells()
     talents.precise_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Precise Shots", HUNTER_MARKSMANSHIP );
     talents.precise_shots_buff                = talents.precise_shots.ok() ? find_spell( 260242 ) : spell_data_t::not_found();
 
-    talents.surging_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Surging Shots", HUNTER_MARKSMANSHIP );
     talents.streamline                        = find_talent_spell( talent_tree::SPECIALIZATION, "Streamline", HUNTER_MARKSMANSHIP );
     talents.streamline_buff                   = talents.streamline.ok() ? find_spell( 342076 ) : spell_data_t::not_found();
+    talents.trick_shots                       = find_talent_spell( talent_tree::SPECIALIZATION, "Trick Shots", HUNTER_MARKSMANSHIP );
+    talents.trick_shots_data                  = find_spell( 257621 );
+    talents.trick_shots_buff                  = find_spell( 257622 );
+    talents.aspect_of_the_hydra               = find_talent_spell( talent_tree::SPECIALIZATION, "Aspect of the Hydra", HUNTER_MARKSMANSHIP );
+    
+    talents.surging_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Surging Shots", HUNTER_MARKSMANSHIP );
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
     talents.crack_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Crack Shot", HUNTER_MARKSMANSHIP );
 
     talents.penetrating_shots                 = find_talent_spell( talent_tree::SPECIALIZATION, "Penetrating Shots", HUNTER_MARKSMANSHIP );
-    talents.trick_shots                       = find_talent_spell( talent_tree::SPECIALIZATION, "Trick Shots", HUNTER_MARKSMANSHIP );
-    talents.trick_shots_data                  = find_spell( 257621 );
     talents.master_marksman                   = find_talent_spell( talent_tree::SPECIALIZATION, "Master Marksman", HUNTER_MARKSMANSHIP );
     talents.master_marksman_bleed             = talents.master_marksman.ok() ? find_spell( 269576 ) : spell_data_t::not_found();
 
@@ -8106,8 +8184,7 @@ void hunter_t::create_buffs()
       -> set_period( 0_ms ) // disable ticks as an optimization
       -> set_refresh_behavior( buff_refresh_behavior::DURATION );
 
-  buffs.trick_shots =
-    make_buff<buffs::trick_shots_t>( this, "trick_shots", find_spell( 257622 ) );
+  buffs.trick_shots = make_buff<buffs::trick_shots_t>( this, "trick_shots", talents.trick_shots_buff );
 
   buffs.steady_focus =
     make_buff( this, "steady_focus", find_spell( 193534 ) )
