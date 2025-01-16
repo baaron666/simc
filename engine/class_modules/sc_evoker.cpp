@@ -485,6 +485,11 @@ struct simplified_player_t : public player_t
       return debug_cast<simplified_player_t*>( player );
     }
 
+    simplified_player_t* p() const
+    {
+      return debug_cast<simplified_player_t*>( player );
+    }
+
     action_t* damage_proc;
     double haste_modifier;
 
@@ -497,6 +502,26 @@ struct simplified_player_t : public player_t
       may_crit                               = true;
 
       set_action_stats( settings, p );
+    }
+
+    double composite_da_multiplier( const action_state_t* s ) const override
+    {
+      double m = spell_t::composite_da_multiplier( s );
+
+      m *= 1.0 + p()->cache.mastery_value();
+
+      for ( auto* b : p()->damage_buffs )
+      {
+        if ( b->check() )
+        {
+          m *= 1.0 + b->check_stack_value();
+        }
+      }
+
+      if ( haste_modifier > 0 )
+        m *= 1.0 - haste_modifier + haste_modifier / p()->cache.spell_cast_speed();
+
+      return m;
     }
 
     void set_action_stats( bob_settings_t settings, simplified_player_t* p )
@@ -635,26 +660,6 @@ struct simplified_player_t : public player_t
 
     ability = new simple_ability_t( this, get_variant_settings() );
     snapshot_stats = new snapshot_stats_t( this, "" );
-  }
-
-  double composite_player_multiplier( school_e school ) const override
-  {
-    double m = player_t::composite_player_multiplier( school );
-
-    m *= 1.0 + cache.mastery_value();
-
-    for ( auto* b : damage_buffs )
-    {
-      if ( b->check() )
-      {
-        m *= 1.0 + b->check_stack_value();
-      }
-    }
-
-    if ( haste_modifier > 0 )
-      m *= 1.0 - haste_modifier + haste_modifier / cache.spell_cast_speed();
-
-    return m;
   }
 
   void acquire_target( retarget_source event, player_t* context ) override
