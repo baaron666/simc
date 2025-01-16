@@ -9333,21 +9333,17 @@ struct glacial_advance_damage_t final : public death_knight_spell_t
         p()->buffs.icy_vigor->trigger();
       }
 
-      // TODO: Check of Arctic Assault can trigger these two
-      if ( !is_arctic_assault )
+      if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ) &&
+           rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B2 )->effectN( 1 ).percent() ) )
       {
-        if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ) &&
-             rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B2 )->effectN( 1 ).percent() ) )
-        {
-          p()->buffs.winning_streak_frost->expire();
-        }
+        p()->buffs.winning_streak_frost->expire();
+      }
 
-        if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ) &&
-             p()->rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 2 ).percent() *
-                              p()->buffs.winning_streak_frost->check() ) )
-        {
-          p()->active_spells.frostscythe_proc->execute();
-        }
+      if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ) &&
+           p()->rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 2 ).percent() *
+                            p()->buffs.winning_streak_frost->check() ) )
+      {
+        p()->active_spells.frostscythe_proc->execute();
       }
     }
   }
