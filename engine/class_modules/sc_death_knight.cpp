@@ -14374,7 +14374,7 @@ void death_knight_t::create_buffs()
                                               "winning_streak", spell.winning_streak_frost )
                                    ->set_chance( 1.01 )
                                    ->set_expire_callback( [ this ]( buff_t*, int, timespan_t ) {
-                                     if ( !sim->event_mgr.canceled )
+                                     if ( !sim->event_mgr.canceled && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ) )
                                      {
                                        buffs.murderous_frenzy->trigger();
                                        double old_mult = active_spells.frostscythe_proc->base_multiplier;
