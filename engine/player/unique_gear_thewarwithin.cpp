@@ -8778,7 +8778,7 @@ struct roaring_warqueen_citrine_t : public spell_t
       }
     }
 
-    if ( citrine == CITRINE_DRIVER_NONE )
+    if ( citrine == CITRINE_DRIVER_NONE || citrine == ROARING_WARQUEENS_CITRINE )
       return;
 
     if ( auto proc_buff = find_citrine_proc_buff( t, citrine ) )
