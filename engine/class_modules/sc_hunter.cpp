@@ -78,7 +78,7 @@ static damage_affected_by parse_damage_affecting_aura( action_t* a, spell_data_p
     {
       affected_by.direct = as<uint8_t>( effect.spell_effect_num() + 1 );
       affected_by.tick   = as<uint8_t>( effect.spell_effect_num() + 1 );
-      print_affected_by( a, effect, "damage increase" );
+      print_affected_by( a, effect, "spell damage taken increase" );
       return affected_by;
     }
     
@@ -627,13 +627,16 @@ public:
     spell_data_ptr_t trick_shots_data;
     spell_data_ptr_t trick_shots_buff;
     spell_data_ptr_t aspect_of_the_hydra;
+    spell_data_ptr_t ammo_conservation;
+    
+    spell_data_ptr_t penetrating_shots;
+    spell_data_ptr_t improved_spotters_mark;
 
     spell_data_ptr_t surging_shots;
     spell_data_ptr_t improved_steady_shot;
     spell_data_ptr_t pin_cushion;
     spell_data_ptr_t crack_shot;
 
-    spell_data_ptr_t penetrating_shots;
     spell_data_ptr_t master_marksman;
     spell_data_ptr_t master_marksman_bleed;
 
@@ -891,7 +894,7 @@ public:
     spell_data_ptr_t harpoon;
 
     spell_data_ptr_t multishot;
-    spell_data_ptr_t eyes_in_the_sky; // TODO
+    spell_data_ptr_t eyes_in_the_sky;
     spell_data_ptr_t spotters_mark_debuff;
     spell_data_ptr_t harriers_cry; // TODO
   } specs;
@@ -1166,8 +1169,10 @@ public:
     ab::apply_affecting_aura( p -> talents.lone_survivor );
 
     // Marksmanship Tree passives
-    ab::apply_affecting_aura( p -> talents.crack_shot );
     ab::apply_affecting_aura( p -> talents.streamline );
+    ab::apply_affecting_aura( p -> talents.ammo_conservation );
+
+    ab::apply_affecting_aura( p -> talents.crack_shot );
     ab::apply_affecting_aura( p -> talents.killer_accuracy );
     ab::apply_affecting_aura( p -> talents.surging_shots );
     ab::apply_affecting_aura( p -> talents.focused_aim );
@@ -1531,43 +1536,13 @@ public:
 
 struct hunter_ranged_attack_t : public hunter_action_t<ranged_attack_t>
 {
-  struct
-  {
-    double effectiveness = 0.0;
-    double cost_reduction = 0.0;
-  } precise_shots;
-
   hunter_ranged_attack_t( util::string_view n, hunter_t* p, const spell_data_t* s = spell_data_t::nil() ) : hunter_action_t( n, p, s )
   {
-    if ( p->talents.precise_shots.ok() )
-    {
-      if ( check_affected_by( this, p->talents.precise_shots_buff->effectN( 3 ) ) )
-        precise_shots.cost_reduction = p->talents.precise_shots_buff->effectN( 3 ).percent();
-
-      if ( parse_damage_affecting_aura( this, p->talents.precise_shots_buff ).direct > 0 )
-        precise_shots.effectiveness = 1.0;
-    }
   }
 
   bool usable_moving() const override
-  { return true; }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
   {
-    double am = hunter_action_t::composite_da_multiplier( s );
-
-    am *= 1 + p()->buffs.precise_shots->check_value() * precise_shots.effectiveness;
-
-    return am;
-  }
-
-  double cost_pct_multiplier() const override
-  {
-    double c = hunter_action_t::cost_pct_multiplier();
-
-    c *= 1 + p()->talents.precise_shots_buff->effectN( 3 ).percent();
-
-    return c;
+    return true;
   }
 };
 
@@ -3983,6 +3958,17 @@ struct barrage_t: public hunter_spell_t
 
 struct arcane_shot_base_t: public hunter_ranged_attack_t
 {
+  struct state_data_t
+  {
+    bool empowered_by_precise_shots = false;
+
+    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out )
+    {
+      fmt::format_to( out, "empowered_by_precise_shots={}", data.empowered_by_precise_shots );
+    }
+  };
+  using state_t = hunter_action_state_t<state_data_t>;
+
   arcane_shot_base_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( n, p, p->specs.arcane_shot )
   {
   }
@@ -3994,8 +3980,7 @@ struct arcane_shot_base_t: public hunter_ranged_attack_t
     if ( p()->tier_set.tww_s1_mm_4pc.ok() && p()->buffs.precise_shots->check() )
       p()->buffs.moving_target->trigger();
 
-    p() -> buffs.precise_shots -> up(); // Benefit tracking
-    p() -> buffs.precise_shots -> decrement();
+    p() -> buffs.precise_shots -> expire();
 
     p()->buffs.sulfur_lined_pockets->trigger();
     if ( p()->buffs.sulfur_lined_pockets->at_max_stacks() )
@@ -4003,6 +3988,45 @@ struct arcane_shot_base_t: public hunter_ranged_attack_t
       p()->buffs.sulfur_lined_pockets_explosive->trigger();
       p()->buffs.sulfur_lined_pockets->expire();
     }
+  }
+
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double am = hunter_ranged_attack_t::composite_da_multiplier( s );
+
+    am *= 1 + p()->buffs.precise_shots->check_stack_value();
+
+    return am;
+  }
+
+  double cost_pct_multiplier() const override
+  {
+    double c = hunter_ranged_attack_t::cost_pct_multiplier();
+
+    if ( p()->buffs.precise_shots->check() )
+      c *= 1 + p()->talents.precise_shots_buff->effectN( 3 ).percent();
+
+    return c;
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    hunter_ranged_attack_t::impact( s );
+
+    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots && rng().roll( p()->specs.eyes_in_the_sky->effectN( 1 ).percent() ) )
+      td( s->target )->debuffs.spotters_mark->trigger();
+  }
+
+  action_state_t* new_state() override
+  {
+    return new state_t( this, target );
+  }
+
+  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+  {
+    hunter_ranged_attack_t::snapshot_internal( s, flags, rt );
+
+    debug_cast<state_t*>( s )->empowered_by_precise_shots = p()->buffs.precise_shots->up();
   }
 };
 
@@ -5234,6 +5258,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
         m *= 1 + careful_aim.multiplier;
     }
 
+    m *= 1 + td( target )->debuffs.spotters_mark->check_value();
+
     return m;
   }
 
@@ -5363,6 +5389,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
         }
       }
     }
+
+    td( s->target )->debuffs.spotters_mark->expire();
   }
 
   double recharge_rate_multiplier( const cooldown_t& cd ) const override
@@ -5579,7 +5607,7 @@ struct rapid_fire_t: public hunter_spell_t
     may_miss = may_crit = false;
     channeled = reset_auto_attack = true;
 
-    base_num_ticks += p -> talents.fan_the_hammer.ok() ? as<int>( p -> talents.fan_the_hammer -> effectN( 2 ).base_value() ) : 0;
+    base_num_ticks += p -> talents.ammo_conservation.ok() ? as<int>( p -> talents.ammo_conservation -> effectN( 2 ).base_value() ) : 0;
 
     if ( p->talents.improved_deathblow.ok() )
     {
@@ -5661,6 +5689,17 @@ struct rapid_fire_t: public hunter_spell_t
 
 struct multishot_mm_t: public hunter_ranged_attack_t
 {
+  struct state_data_t
+  {
+    bool empowered_by_precise_shots = false;
+
+    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out )
+    {
+      fmt::format_to( out, "empowered_by_precise_shots={}", data.empowered_by_precise_shots );
+    }
+  };
+  using state_t = hunter_action_state_t<state_data_t>;
+
   struct salvo {
     explosive_shot_background_t* explosive = nullptr;
     int targets = 0;
@@ -5689,8 +5728,7 @@ struct multishot_mm_t: public hunter_ranged_attack_t
       p()->buffs.moving_target->trigger();
     }
 
-    p() -> buffs.precise_shots -> up(); // Benefit tracking
-    p() -> buffs.precise_shots -> decrement();
+    p() -> buffs.precise_shots -> expire();
 
     if ( ( p() -> talents.trick_shots.ok() && num_targets_hit >= p() -> talents.trick_shots -> effectN( 2 ).base_value() ) )
       p() -> buffs.trick_shots -> trigger();
@@ -5708,13 +5746,44 @@ struct multishot_mm_t: public hunter_ranged_attack_t
       salvo.explosive->execute_on_target( s->target );
   }
 
+  void impact( action_state_t* s ) override
+  {
+    hunter_ranged_attack_t::impact( s );
+
+    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots && rng().roll( p()->specs.eyes_in_the_sky->effectN( 1 ).percent() ) )
+      td( s->target )->debuffs.spotters_mark->trigger();
+  }
+
   double composite_da_multiplier( const action_state_t* s ) const override
   {
     double m = hunter_ranged_attack_t::composite_da_multiplier( s );
 
-    m *= 1.0 + p() -> buffs.bulletstorm -> check_stack_value();
+    m *= 1 + p()->buffs.bulletstorm->check_stack_value();
+    m *= 1 + p()->buffs.precise_shots->check_stack_value();
 
     return m;
+  }
+
+  double cost_pct_multiplier() const override
+  {
+    double c = hunter_ranged_attack_t::cost_pct_multiplier();
+
+    if ( p()->buffs.precise_shots->check() )
+      c *= 1 + p()->talents.precise_shots_buff->effectN( 3 ).percent();
+
+    return c;
+  }
+
+  action_state_t* new_state() override
+  {
+    return new state_t( this, target );
+  }
+
+  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+  {
+    hunter_ranged_attack_t::snapshot_internal( s, flags, rt );
+
+    debug_cast<state_t*>( s )->empowered_by_precise_shots = p()->buffs.precise_shots->up();
   }
 };
 
@@ -7477,7 +7546,7 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
     -> set_chance( p->talents.kill_zone.ok() );
 
   debuffs.spotters_mark = make_buff( *this, "spotters_mark", p->specs.spotters_mark_debuff )
-    -> set_default_value_from_effect( 1 );
+    ->set_default_value( p->specs.spotters_mark_debuff->effectN( 1 ).percent() + p->talents.improved_spotters_mark->effectN( 1 ).percent() );
 
   debuffs.sentinel = make_buff( *this, "sentinel", p->talents.sentinel_debuff );
 
@@ -7760,13 +7829,16 @@ void hunter_t::init_spells()
     talents.trick_shots_data                  = find_spell( 257621 );
     talents.trick_shots_buff                  = find_spell( 257622 );
     talents.aspect_of_the_hydra               = find_talent_spell( talent_tree::SPECIALIZATION, "Aspect of the Hydra", HUNTER_MARKSMANSHIP );
+    talents.ammo_conservation                 = find_talent_spell( talent_tree::SPECIALIZATION, "Ammo Conservation", HUNTER_MARKSMANSHIP );
+
+    talents.penetrating_shots                 = find_talent_spell( talent_tree::SPECIALIZATION, "Penetrating Shots", HUNTER_MARKSMANSHIP );
+    talents.improved_spotters_mark            = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Spotter's Mark", HUNTER_MARKSMANSHIP );
     
     talents.surging_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Surging Shots", HUNTER_MARKSMANSHIP );
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
     talents.crack_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Crack Shot", HUNTER_MARKSMANSHIP );
 
-    talents.penetrating_shots                 = find_talent_spell( talent_tree::SPECIALIZATION, "Penetrating Shots", HUNTER_MARKSMANSHIP );
     talents.master_marksman                   = find_talent_spell( talent_tree::SPECIALIZATION, "Master Marksman", HUNTER_MARKSMANSHIP );
     talents.master_marksman_bleed             = talents.master_marksman.ok() ? find_spell( 269576 ) : spell_data_t::not_found();
 
