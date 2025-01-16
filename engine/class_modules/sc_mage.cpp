@@ -387,6 +387,7 @@ public:
     buff_t* permafrost_lances;
     buff_t* ray_of_frost;
     buff_t* slick_ice;
+    buff_t* wintertide;
 
 
     // Frostfire
@@ -471,6 +472,7 @@ public:
     unsigned initial_spellfire_spheres = 5;
     arcane_phoenix_rotation arcane_phoenix_rotation_override = arcane_phoenix_rotation::DEFAULT;
     bool ice_nova_consumes_winters_chill = true;
+    bool consume_wintertide = true;
   } options;
 
   // Pets
@@ -3253,8 +3255,21 @@ struct icicle_t final : public frost_mage_spell_t
   {
     frost_mage_spell_t::impact( s );
 
-    if ( result_is_hit( s->result ) )
-      p()->trigger_fof( p()->talents.flash_freeze->effectN( 1 ).percent(), p()->procs.fingers_of_frost_flash_freeze );
+    if ( !result_is_hit( s->result ) )
+      return;
+
+    p()->trigger_fof( p()->talents.flash_freeze->effectN( 1 ).percent(), p()->procs.fingers_of_frost_flash_freeze );
+    if ( p()->options.consume_wintertide )
+      p()->buffs.wintertide->expire();
+  }
+
+  double action_multiplier() const override
+  {
+    double am = frost_mage_spell_t::action_multiplier();
+
+    am *= p()->buffs.wintertide->check_stack_value();
+
+    return am;
   }
 
   double spell_direct_power_coefficient( const action_state_t* s ) const override
@@ -4840,6 +4855,8 @@ struct flurry_bolt_t final : public frost_mage_spell_t
 
     if ( rng().roll( p()->talents.glacial_assault->effectN( 1 ).percent() ) )
       make_event( *sim, 1.0_s, [ this, t = s->target ] { p()->action.glacial_assault->execute_on_target( t ); } );
+
+    p()->buffs.wintertide->trigger();
   }
 
   double action_multiplier() const override
@@ -4952,7 +4969,6 @@ struct frostbolt_t final : public frost_mage_spell_t
     track_shatter = consumes_winters_chill = true;
     triggers.chill = true;
     base_dd_multiplier *= 1.0 + p->talents.lonely_winter->effectN( 1 ).percent();
-    base_dd_multiplier *= 1.0 + p->talents.wintertide->effectN( 1 ).percent();
     crit_bonus_multiplier *= 1.0 + p->talents.piercing_cold->effectN( 1 ).percent();
 
     const auto& ft = p->talents.frozen_touch;
@@ -5078,6 +5094,8 @@ struct frostbolt_t final : public frost_mage_spell_t
     {
       if ( p()->buffs.icy_veins->check() )
         p()->buffs.deaths_chill->trigger();
+
+      p()->buffs.wintertide->trigger();
 
       if ( frostfire )
       {
@@ -5315,6 +5333,8 @@ struct glacial_spike_t final : public frost_mage_spell_t
     am *= 1.0 + p()->cache.mastery() * p()->spec.icicles_2->effectN( 3 ).mastery_value()
               + icicle_coef / spell_power_mod.direct;
 
+    am *= 1.0 + p()->buffs.wintertide->check_stack_value();
+
     return am;
   }
 
@@ -5354,6 +5374,9 @@ struct glacial_spike_t final : public frost_mage_spell_t
 
     if ( consumed_wc )
       p()->trigger_splinter( s->target, as<int>( p()->talents.signature_spell->effectN( 2 ).base_value() ) );
+
+    if ( p()->options.consume_wintertide )
+      p()->buffs.wintertide->expire();
   }
 };
 
@@ -5570,13 +5593,6 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
     double fm = custom_state_spell_t::frozen_multiplier( s );
 
     fm *= 3.0;
-
-    unsigned frozen = cast_state( s )->frozen;
-    if ( frozen &  FF_FINGERS_OF_FROST
-      && frozen & ~FF_FINGERS_OF_FROST )
-    {
-      fm *= 1.0 + p()->talents.wintertide->effectN( 2 ).percent();
-    }
 
     return fm;
   }
@@ -7808,6 +7824,7 @@ void mage_t::create_options()
                 return true;
               } ) );
   add_option( opt_bool( "mage.ice_nova_consumes_winters_chill", options.ice_nova_consumes_winters_chill ) );
+  add_option( opt_bool( "mage.consume_wintertide", options.consume_wintertide ) );
 
   player_t::create_options();
 }
@@ -8484,6 +8501,9 @@ void mage_t::create_buffs()
   buffs.slick_ice          = make_buff( this, "slick_ice", find_spell( 382148 ) )
                                ->set_default_value_from_effect( 1 )
                                ->set_chance( talents.slick_ice.ok() );
+  buffs.wintertide         = make_buff( this, "wintertide", find_spell( 1222865 ) )
+                               ->set_default_value_from_effect( 1 )
+                               ->set_chance( talents.wintertide.ok() );
 
 
   // Frostfire
