@@ -11671,8 +11671,7 @@ bool druid_t::validate_fight_style( fight_style_e style ) const
       break;
 
     case DRUID_RESTORATION:
-      sim->error( "Restoration Druid does not yet have an Action Priority List (APL)." );
-      return false;
+      break;
 
     default:
       break;
