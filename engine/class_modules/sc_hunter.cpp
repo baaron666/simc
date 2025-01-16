@@ -631,21 +631,25 @@ public:
     
     spell_data_ptr_t penetrating_shots;
     spell_data_ptr_t improved_spotters_mark;
-
+    spell_data_ptr_t lock_and_load;
+    
+    spell_data_ptr_t in_the_rhythm;
+    spell_data_ptr_t in_the_rhythm_buff;
     spell_data_ptr_t surging_shots;
+    spell_data_ptr_t master_marksman;
+    spell_data_ptr_t master_marksman_bleed;
+    spell_data_ptr_t quickdraw;
+
     spell_data_ptr_t improved_steady_shot;
     spell_data_ptr_t pin_cushion;
     spell_data_ptr_t crack_shot;
 
-    spell_data_ptr_t master_marksman;
-    spell_data_ptr_t master_marksman_bleed;
 
     spell_data_ptr_t fan_the_hammer;
     spell_data_ptr_t careful_aim;
     spell_data_ptr_t light_ammo;
     spell_data_ptr_t heavy_ammo;
     spell_data_ptr_t bulletstorm;
-    spell_data_ptr_t lock_and_load;
     spell_data_ptr_t steady_focus;
 
     spell_data_ptr_t improved_deathblow;
@@ -659,7 +663,6 @@ public:
     spell_data_ptr_t killer_accuracy;
     spell_data_ptr_t rapid_fire_barrage;
     spell_data_ptr_t rapid_fire_barrage_override;
-    spell_data_ptr_t in_the_rhythm;
     spell_data_ptr_t lone_wolf;
     spell_data_ptr_t bullseye;
     spell_data_ptr_t hydras_bite;
@@ -3733,6 +3736,15 @@ struct auto_shot_t : public auto_attack_base_t<ranged_attack_t>
 
     return am;
   }
+
+  timespan_t execute_time_flat_modifier() const override
+  {
+    timespan_t m = auto_attack_base_t::execute_time_flat_modifier();
+
+    m + timespan_t::from_millis( p()->buffs.in_the_rhythm->check_value() );
+
+    return m;
+  }
 };
 
 //==============================
@@ -5245,6 +5257,16 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
     if ( p->talents.hydras_bite.ok() )
       hydras_bite = p->get_background_action<serpent_sting_hydras_bite_t>( "serpent_sting_hydras_bite" );
+  }
+
+  double action_multiplier() const override
+  {
+    double am = hunter_ranged_attack_t::action_multiplier();
+
+    if ( lock_and_loaded )
+      am *= 1 + p()->talents.quickdraw->effectN( 1 ).percent();
+
+    return am;
   }
 
   double composite_target_da_multiplier( player_t* t ) const override
@@ -7833,21 +7855,25 @@ void hunter_t::init_spells()
 
     talents.penetrating_shots                 = find_talent_spell( talent_tree::SPECIALIZATION, "Penetrating Shots", HUNTER_MARKSMANSHIP );
     talents.improved_spotters_mark            = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Spotter's Mark", HUNTER_MARKSMANSHIP );
+    talents.lock_and_load                     = find_talent_spell( talent_tree::SPECIALIZATION, "Lock and Load", HUNTER_MARKSMANSHIP );
     
+    talents.in_the_rhythm                     = find_talent_spell( talent_tree::SPECIALIZATION, "In the Rhythm", HUNTER_MARKSMANSHIP );
+    talents.in_the_rhythm_buff                = talents.in_the_rhythm.ok() ? find_spell( 407405 ) : spell_data_t::not_found();
     talents.surging_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Surging Shots", HUNTER_MARKSMANSHIP );
+    talents.master_marksman                   = find_talent_spell( talent_tree::SPECIALIZATION, "Master Marksman", HUNTER_MARKSMANSHIP );
+    talents.master_marksman_bleed             = talents.master_marksman.ok() ? find_spell( 269576 ) : spell_data_t::not_found();
+    talents.quickdraw                         = find_talent_spell( talent_tree::SPECIALIZATION, "Quickdraw", HUNTER_MARKSMANSHIP );
+    
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
     talents.crack_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Crack Shot", HUNTER_MARKSMANSHIP );
 
-    talents.master_marksman                   = find_talent_spell( talent_tree::SPECIALIZATION, "Master Marksman", HUNTER_MARKSMANSHIP );
-    talents.master_marksman_bleed             = talents.master_marksman.ok() ? find_spell( 269576 ) : spell_data_t::not_found();
 
     talents.fan_the_hammer                    = find_talent_spell( talent_tree::SPECIALIZATION, "Fan the Hammer", HUNTER_MARKSMANSHIP );
     talents.careful_aim                       = find_talent_spell( talent_tree::SPECIALIZATION, "Careful Aim", HUNTER_MARKSMANSHIP );
     talents.light_ammo                        = find_talent_spell( talent_tree::SPECIALIZATION, "Light Ammo", HUNTER_MARKSMANSHIP );
     talents.heavy_ammo                        = find_talent_spell( talent_tree::SPECIALIZATION, "Heavy Ammo", HUNTER_MARKSMANSHIP );
     talents.bulletstorm                       = find_talent_spell( talent_tree::SPECIALIZATION, "Bulletstorm", HUNTER_MARKSMANSHIP );
-    talents.lock_and_load                     = find_talent_spell( talent_tree::SPECIALIZATION, "Lock and Load", HUNTER_MARKSMANSHIP );
     talents.steady_focus                      = find_talent_spell( talent_tree::SPECIALIZATION, "Steady Focus", HUNTER_MARKSMANSHIP );
 
     talents.improved_deathblow                = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Deathblow", HUNTER_MARKSMANSHIP );
@@ -7862,7 +7888,6 @@ void hunter_t::init_spells()
     talents.killer_accuracy                   = find_talent_spell( talent_tree::SPECIALIZATION, "Killer Accuracy", HUNTER_MARKSMANSHIP );
     talents.rapid_fire_barrage                = find_talent_spell( talent_tree::SPECIALIZATION, "Rapid Fire Barrage", HUNTER_MARKSMANSHIP );
     talents.rapid_fire_barrage_override       = talents.rapid_fire_barrage.ok() ? find_spell( 459796 ) : spell_data_t::not_found();
-    talents.in_the_rhythm                     = find_talent_spell( talent_tree::SPECIALIZATION, "In the Rhythm", HUNTER_MARKSMANSHIP );
     talents.lone_wolf                         = find_talent_spell( talent_tree::SPECIALIZATION, "Lone Wolf", HUNTER_MARKSMANSHIP );
     talents.bullseye                          = find_talent_spell( talent_tree::SPECIALIZATION, "Bullseye", HUNTER_MARKSMANSHIP );
     talents.hydras_bite                       = find_talent_spell( talent_tree::SPECIALIZATION, "Hydra's Bite", HUNTER_MARKSMANSHIP );
@@ -8240,10 +8265,8 @@ void hunter_t::create_buffs()
       ->set_default_value_from_effect( 1 );
 
   buffs.in_the_rhythm = 
-    make_buff( this, "in_the_rhythm", find_spell( 407405 ) )
-      -> set_default_value_from_effect( 1 )
-      -> set_pct_buff_type( STAT_PCT_BUFF_HASTE )
-      -> set_chance( talents.in_the_rhythm.ok() );
+    make_buff( this, "in_the_rhythm", talents.in_the_rhythm_buff )
+      -> set_default_value( talents.in_the_rhythm_buff->effectN( 1 ).base_value() );
 
   buffs.bullseye =
     make_buff( this, "bullseye", talents.bullseye -> effectN( 1 ).trigger() )
@@ -8293,7 +8316,7 @@ void hunter_t::create_buffs()
 
   buffs.lock_and_load =
     make_buff( this, "lock_and_load", talents.lock_and_load -> effectN( 1 ).trigger() )
-      -> set_trigger_spell( talents.lock_and_load );
+      ->set_trigger_spell( talents.lock_and_load );
 
   buffs.deathblow =
     make_buff( this, "deathblow", find_spell( 378770 ) )
