@@ -1572,7 +1572,6 @@ public:
     real_ppm_t* carnage;
     real_ppm_t* blood_beast;
     real_ppm_t* tww1_fdk_4pc;
-    real_ppm_t* tww2_frostscythe;
   } rppm;
 
   // Pets and Guardians
@@ -13101,7 +13100,6 @@ void death_knight_t::init_rng()
   rppm.carnage           = get_rppm( "carnage", talent.blood.carnage );
   rppm.blood_beast       = get_rppm( "blood_beast", talent.sanlayn.the_blood_is_life );
   rppm.tww1_fdk_4pc      = get_rppm( "tww1_fdk_4pc", sets->set( DEATH_KNIGHT_FROST, TWW1, B4 ) );
-  rppm.tww2_frostscythe  = get_rppm( "tww2_frostscythe", spell.winning_streak_frostscythe );
 }
 
 // death_knight_t::init_base ================================================
