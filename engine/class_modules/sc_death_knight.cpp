@@ -771,6 +771,7 @@ public:
     // Tier Sets
     propagate_const<buff_t*> icy_vigor;
     propagate_const<buff_t*> winning_streak_frost;
+    propagate_const<buff_t*> murderous_frenzy;
 
     // Unholy
     propagate_const<buff_t*> dark_transformation;
@@ -1423,6 +1424,7 @@ public:
     const spell_data_t* icy_vigor;
     const spell_data_t* winning_streak_frost;
     const spell_data_t* winning_streak_frostscythe;
+    const spell_data_t* murderous_frenzy;
 
     // Unholy
     const spell_data_t* runic_corruption;  // buff
@@ -8998,6 +9000,17 @@ struct frostscythe_base_t : public death_knight_melee_attack_t
     }
   }
 
+  // TODO: Check if this modifies the proc only, or all frostscythe casts.
+  double composite_target_multiplier( player_t* t ) const override
+  {
+    double m = death_knight_melee_attack_t::composite_target_multiplier( t );
+
+    if ( p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ) && t == target )
+      m *= 1.0 + p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 4 ).percent();
+
+    return m;
+  }
+
   void execute() override
   {
     death_knight_melee_attack_t::execute();
@@ -9024,7 +9037,7 @@ struct frostscythe_proc_t : public frostscythe_base_t
   frostscythe_proc_t( util::string_view n, death_knight_t* p ) : frostscythe_base_t( n, p, p->find_spell( 207230 ) )
   {
     background         = true;
-    base_multiplier    = p->sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 3 ).percent();
+    base_multiplier    = p->sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 1 ).percent();
     cooldown->duration = 0_ms;  // Override Spell data as this is a proc
   }
 
@@ -9256,9 +9269,16 @@ struct frost_strike_t final : public death_knight_melee_attack_t
     }
 
     if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ) &&
-         p()->buffs.winning_streak_frost->check() && p()->rppm.tww2_frostscythe->trigger() )
+         p()->rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 2 ).percent() *
+                          p()->buffs.winning_streak_frost->check() ) )
     {
       p()->active_spells.frostscythe_proc->execute();
+    }
+
+    if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ) &&
+         rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B2 )->effectN( 1 ).percent() ) )
+    {
+      p()->buffs.winning_streak_frost->expire();
     }
   }
 
@@ -9314,10 +9334,21 @@ struct glacial_advance_damage_t final : public death_knight_spell_t
         p()->buffs.icy_vigor->trigger();
       }
 
-      if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ) &&
-           p()->buffs.winning_streak_frost->check() && p()->rppm.tww2_frostscythe->trigger() )
+      // TODO: Check of Arctic Assault can trigger these two
+      if ( !is_arctic_assault )
       {
-        p()->active_spells.frostscythe_proc->execute();
+        if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ) &&
+             rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B2 )->effectN( 1 ).percent() ) )
+        {
+          p()->buffs.winning_streak_frost->expire();
+        }
+
+        if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ) &&
+             p()->rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 2 ).percent() *
+                              p()->buffs.winning_streak_frost->check() ) )
+        {
+          p()->active_spells.frostscythe_proc->execute();
+        }
       }
     }
   }
@@ -10049,12 +10080,6 @@ struct obliterate_t final : public death_knight_melee_attack_t
         make_event<delayed_execute_event_t>( *sim, p(), p()->buffs.killing_machine->check() ? km_oh : oh, execute_state->target, oh_delay );
 
       p()->buffs.rime->trigger();
-    }
-
-    if ( p()->is_ptr() && p()->sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ) &&
-         rng().roll( p()->sets->set( DEATH_KNIGHT_FROST, TWW2, B2 )->effectN( 1 ).percent() ) )
-    {
-      p()->buffs.winning_streak_frost->expire();
     }
 
     if ( p()->buffs.exterminate->up() )
@@ -13544,6 +13569,7 @@ void death_knight_t::spell_lookups()
       conditional_spell_lookup( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ), 1217897 );
   spell.winning_streak_frostscythe =
       conditional_spell_lookup( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ), 1217956 );
+  spell.murderous_frenzy = conditional_spell_lookup( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ), 1222698 );
 
   // Unholy
   spell.runic_corruption_chance        = conditional_spell_lookup( spec.unholy_death_knight->ok(), 51462 );
@@ -14352,7 +14378,23 @@ void death_knight_t::create_buffs()
 
   buffs.winning_streak_frost = make_fallback( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ), this,
                                               "winning_streak", spell.winning_streak_frost )
-                                   ->set_chance( 1.01 );
+                                   ->set_chance( 1.01 )
+                                   ->set_expire_callback( [ this ]( buff_t*, int, timespan_t ) {
+                                     if ( !sim->event_mgr.canceled )
+                                     {
+                                       buffs.murderous_frenzy->trigger();
+                                       double old_mult = active_spells.frostscythe_proc->base_multiplier;
+                                       active_spells.frostscythe_proc->base_multiplier =
+                                           sets->set( DEATH_KNIGHT_FROST, TWW2, B4 )->effectN( 3 ).percent();
+                                       active_spells.frostscythe_proc->execute();
+                                       active_spells.frostscythe_proc->base_multiplier = old_mult;
+                                     }
+                                   } );
+
+  buffs.murderous_frenzy = make_fallback( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ), this,
+                                          "murderous_frenzy", spell.murderous_frenzy )
+                               ->set_default_value_from_effect_type( A_HASTE_ALL )
+                               ->set_pct_buff_type( STAT_PCT_BUFF_HASTE );
 
   // Unholy
   buffs.dark_transformation = make_fallback<dark_transformation_buff_t>(
