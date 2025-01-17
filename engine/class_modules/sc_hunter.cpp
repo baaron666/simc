@@ -417,15 +417,17 @@ public:
 
     // Marksmanship Tree
     buff_t* precise_shots;
-    buff_t* lone_wolf;
     buff_t* streamline;
-    buff_t* in_the_rhythm;
-    buff_t* razor_fragments;
     buff_t* trick_shots;
+    buff_t* lock_and_load;
+    buff_t* in_the_rhythm;
+    buff_t* on_target;
+    buff_t* trueshot;
+    
+    buff_t* lone_wolf;
+    buff_t* razor_fragments;
     buff_t* volley;
     buff_t* steady_focus;
-    buff_t* trueshot;
-    buff_t* lock_and_load;
     buff_t* bullseye;
     buff_t* bulletstorm;
     buff_t* salvo;
@@ -526,8 +528,6 @@ public:
   // Gains
   struct gains_t
   {
-    gain_t* trueshot;
-
     gain_t* barbed_shot;
     gain_t* dire_beast;
 
@@ -640,6 +640,13 @@ public:
     spell_data_ptr_t master_marksman_bleed;
     spell_data_ptr_t quickdraw;
 
+    spell_data_ptr_t improved_deathblow;
+    spell_data_ptr_t obsidian_arrowhead;
+    spell_data_ptr_t on_target;
+    spell_data_ptr_t on_target_buff;
+    spell_data_ptr_t trueshot;
+
+
     spell_data_ptr_t improved_steady_shot;
     spell_data_ptr_t pin_cushion;
     spell_data_ptr_t crack_shot;
@@ -652,7 +659,6 @@ public:
     spell_data_ptr_t bulletstorm;
     spell_data_ptr_t steady_focus;
 
-    spell_data_ptr_t improved_deathblow;
     spell_data_ptr_t night_hunter;
     spell_data_ptr_t tactical_reload;
     spell_data_ptr_t serpentstalkers_trickery;
@@ -672,7 +678,6 @@ public:
 
     spell_data_ptr_t legacy_of_the_windrunners;
     spell_data_ptr_t legacy_of_the_windrunners_wind_arrow;
-    spell_data_ptr_t trueshot;
     spell_data_ptr_t focused_aim;
 
     spell_data_ptr_t razor_fragments;
@@ -1113,6 +1118,7 @@ public:
     damage_affected_by master_of_beasts;
 
     // mm
+    bool trueshot_crit_damage_bonus = false;
     bool bullseye_crit_chance = false;
     damage_affected_by lone_wolf;
     damage_affected_by sniper_training;
@@ -1146,6 +1152,7 @@ public:
     if ( p->talents.unnatural_causes.ok() )
       affected_by.unnatural_causes      = parse_damage_affecting_aura( this, p->talents.unnatural_causes_debuff );
 
+    affected_by.trueshot_crit_damage_bonus = check_affected_by( this, p -> talents.trueshot -> effectN( 5 ) );
     affected_by.bullseye_crit_chance  = check_affected_by( this, p -> talents.bullseye -> effectN( 1 ).trigger() -> effectN( 1 ) );
     affected_by.lone_wolf             = parse_damage_affecting_aura( this, p -> talents.lone_wolf );
     affected_by.sniper_training       = parse_damage_affecting_aura( this, p -> mastery.sniper_training );
@@ -1174,17 +1181,18 @@ public:
     // Marksmanship Tree passives
     ab::apply_affecting_aura( p -> talents.streamline );
     ab::apply_affecting_aura( p -> talents.ammo_conservation );
+    ab::apply_affecting_aura( p -> talents.surging_shots );
+    ab::apply_affecting_aura( p -> talents.improved_deathblow );
+    ab::apply_affecting_aura( p -> talents.obsidian_arrowhead );
 
     ab::apply_affecting_aura( p -> talents.crack_shot );
     ab::apply_affecting_aura( p -> talents.killer_accuracy );
-    ab::apply_affecting_aura( p -> talents.surging_shots );
     ab::apply_affecting_aura( p -> talents.focused_aim );
     ab::apply_affecting_aura( p -> talents.tactical_reload );
     ab::apply_affecting_aura( p -> talents.night_hunter );
     ab::apply_affecting_aura( p -> talents.small_game_hunter );
     ab::apply_affecting_aura( p -> talents.fan_the_hammer );
     ab::apply_affecting_aura( p -> talents.rapid_fire_barrage );
-    ab::apply_affecting_aura( p -> talents.improved_deathblow );
 
     // Beast Mastery Tree passives
     ab::apply_affecting_aura( p -> talents.war_orders );
@@ -1405,6 +1413,16 @@ public:
     return cc;
   }
 
+  double composite_crit_damage_bonus_multiplier() const override
+  {
+    double cm = ab::composite_crit_damage_bonus_multiplier();
+
+    if ( affected_by.trueshot_crit_damage_bonus && p()->buffs.trueshot->check() )
+      cm *= 1 + p()->talents.trueshot->effectN( 5 ).percent();
+
+    return cm;
+  }
+
   double composite_target_crit_chance( player_t* target ) const override
   {
     double c = ab::composite_target_crit_chance( target );
@@ -1467,17 +1485,6 @@ public:
 
     double total_regen = regen * cast_time.total_seconds();
     double total_energize = energize_cast_regen( s );
-
-    if ( p() -> buffs.trueshot -> check() )
-    {
-      const timespan_t remains = p() -> buffs.trueshot -> remains();
-
-      total_regen += regen * std::min( cast_time, remains ).total_seconds() *
-                     p() -> talents.trueshot -> effectN( 6 ).percent();
-
-      if ( execute_time < remains )
-        total_energize *= 1 + p() -> talents.trueshot -> effectN( 5 ).percent();
-    }
 
     return total_regen + floor( total_energize );
   }
@@ -3857,15 +3864,6 @@ struct rapid_fire_tick_t : public hunter_ranged_attack_t
 
     p()->buffs.trick_shots->up();  // Benefit tracking
 
-    /* This is not mentioned anywhere but testing shows that Rapid Fire inside
-     * Trueshot has a 50% chance of energizing twice. Presumably to account for the
-     * fact that focus is integral and 1 * 1.5 = 1. It's still affected by the
-     * generic focus gen increase from Trueshot as each energize gives 3 focus when
-     * combined with Nesingwary's Trapping Apparatus buff.
-     */
-    if ( p()->buffs.trueshot->check() && rng().roll( .5 ) )
-      p()->resource_gain( RESOURCE_FOCUS, composite_energize_amount( execute_state ), p()->gains.trueshot, this );
-
     if ( p()->cooldowns.lunar_storm->up() )
       p()->trigger_lunar_storm( target );
   }
@@ -5298,9 +5296,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
   {
     double c = hunter_ranged_attack_t::cost_pct_multiplier();
 
-    if ( p()->buffs.trueshot->check() )
-      c *= 1 + p()->talents.trueshot->effectN( 7 ).percent();
-
     c *= 1 + p()->buffs.streamline->check_value();
 
     return c;
@@ -5380,9 +5375,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
     et *= 1 + p()->buffs.streamline->check_value();
 
-    if ( p() -> buffs.trueshot -> check() )
-      et *= 1 + p() -> buffs.trueshot -> check_value();
-
     return et;
   }
 
@@ -5412,16 +5404,18 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       }
     }
 
-    td( s->target )->debuffs.spotters_mark->expire();
+    buff_t* spotters_mark = td( s->target )->debuffs.spotters_mark;
+    if ( spotters_mark->check() )
+    {
+      spotters_mark->expire();
+      p()->buffs.on_target->trigger();
+    }
   }
 
   double recharge_rate_multiplier( const cooldown_t& cd ) const override
   {
     double m = hunter_ranged_attack_t::recharge_rate_multiplier( cd );
 
-    // XXX [8.1]: Spell Data indicates that it's reducing Aimed Shot recharge rate by 225% (12s/3.25 = 3.69s)
-    // m /= 1 + .6;  // The information from the bluepost
-    // m /= 1 + 2.25; // The bugged (in spelldata) value for Aimed Shot.
     if ( p() -> buffs.trueshot -> check() )
       m /= 1 + p() -> talents.trueshot -> effectN( 3 ).percent();
 
@@ -5697,9 +5691,6 @@ struct rapid_fire_t: public hunter_spell_t
   {
     double m = hunter_spell_t::recharge_rate_multiplier( cd );
 
-    // XXX [8.1]: Spell Data indicates that it's reducing Rapid Fire by 240% (20s/3.4 = 5.88s)
-    // m /= 1 + .6;  // The information from the bluepost
-    // m /= 1 + 2.4; // The bugged (in spelldata) value for Rapid Fire.
     if ( p() -> buffs.trueshot -> check() )
       m /= 1 + p() -> talents.trueshot -> effectN( 1 ).percent();
 
@@ -7863,6 +7854,13 @@ void hunter_t::init_spells()
     talents.master_marksman                   = find_talent_spell( talent_tree::SPECIALIZATION, "Master Marksman", HUNTER_MARKSMANSHIP );
     talents.master_marksman_bleed             = talents.master_marksman.ok() ? find_spell( 269576 ) : spell_data_t::not_found();
     talents.quickdraw                         = find_talent_spell( talent_tree::SPECIALIZATION, "Quickdraw", HUNTER_MARKSMANSHIP );
+
+    talents.improved_deathblow                = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Deathblow", HUNTER_MARKSMANSHIP );
+    talents.obsidian_arrowhead                = find_talent_spell( talent_tree::SPECIALIZATION, "Obsidian Arrowhead", HUNTER_MARKSMANSHIP );
+    talents.on_target                         = find_talent_spell( talent_tree::SPECIALIZATION, "On Target", HUNTER_MARKSMANSHIP );
+    talents.on_target_buff                    = talents.on_target.ok() ? find_spell( 474257 ) : spell_data_t::not_found();
+    talents.trueshot                          = find_talent_spell( talent_tree::SPECIALIZATION, "Trueshot", HUNTER_MARKSMANSHIP );
+
     
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
@@ -7876,7 +7874,6 @@ void hunter_t::init_spells()
     talents.bulletstorm                       = find_talent_spell( talent_tree::SPECIALIZATION, "Bulletstorm", HUNTER_MARKSMANSHIP );
     talents.steady_focus                      = find_talent_spell( talent_tree::SPECIALIZATION, "Steady Focus", HUNTER_MARKSMANSHIP );
 
-    talents.improved_deathblow                = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Deathblow", HUNTER_MARKSMANSHIP );
     talents.barrage                           = find_talent_spell( talent_tree::SPECIALIZATION, "Barrage", HUNTER_MARKSMANSHIP );
     talents.night_hunter                      = find_talent_spell( talent_tree::SPECIALIZATION, "Night Hunter", HUNTER_MARKSMANSHIP );
     talents.tactical_reload                   = find_talent_spell( talent_tree::SPECIALIZATION, "Tactical Reload", HUNTER_MARKSMANSHIP );
@@ -7897,7 +7894,6 @@ void hunter_t::init_spells()
 
     talents.legacy_of_the_windrunners         = find_talent_spell( talent_tree::SPECIALIZATION, "Legacy of the Windrunners", HUNTER_MARKSMANSHIP );
     talents.legacy_of_the_windrunners_wind_arrow = talents.legacy_of_the_windrunners.ok() ? find_spell( 191043 ) : spell_data_t::not_found();
-    talents.trueshot                          = find_talent_spell( talent_tree::SPECIALIZATION, "Trueshot", HUNTER_MARKSMANSHIP );
     talents.focused_aim                       = find_talent_spell( talent_tree::SPECIALIZATION, "Focused Aim", HUNTER_MARKSMANSHIP );
 
     talents.razor_fragments                   = find_talent_spell( talent_tree::SPECIALIZATION, "Razor Fragments", HUNTER_MARKSMANSHIP );
@@ -8264,41 +8260,26 @@ void hunter_t::create_buffs()
     make_buff( this, "streamline", talents.streamline_buff )
       ->set_default_value_from_effect( 1 );
 
+  buffs.trick_shots = make_buff<buffs::trick_shots_t>( this, "trick_shots", talents.trick_shots_buff );
+  
+  buffs.lock_and_load =
+    make_buff( this, "lock_and_load", talents.lock_and_load -> effectN( 1 ).trigger() )
+      ->set_trigger_spell( talents.lock_and_load );
+
   buffs.in_the_rhythm = 
     make_buff( this, "in_the_rhythm", talents.in_the_rhythm_buff )
-      -> set_default_value( talents.in_the_rhythm_buff->effectN( 1 ).base_value() );
+      ->set_default_value( talents.in_the_rhythm_buff->effectN( 1 ).base_value() );
 
-  buffs.bullseye =
-    make_buff( this, "bullseye", talents.bullseye -> effectN( 1 ).trigger() )
-      -> set_default_value_from_effect( 1 )
-      -> set_max_stack( std::max( as<int>( talents.bullseye -> effectN( 2 ).base_value() ), 1 ) )
-      -> set_chance( talents.bullseye.ok() );
-
-  buffs.volley = make_buff( this, "volley", talents.volley_data )
-      -> set_cooldown( 0_ms )
-      -> set_period( 0_ms ) // disable ticks as an optimization
-      -> set_refresh_behavior( buff_refresh_behavior::DURATION );
-
-  buffs.trick_shots = make_buff<buffs::trick_shots_t>( this, "trick_shots", talents.trick_shots_buff );
-
-  buffs.steady_focus =
-    make_buff( this, "steady_focus", find_spell( 193534 ) )
-    -> set_default_value( talents.steady_focus -> effectN( 1 ).percent() )
-    -> set_pct_buff_type( STAT_PCT_BUFF_HASTE )
-    -> set_chance( talents.steady_focus.ok() );
-
-  buffs.lone_wolf =
-    make_buff( this, "lone_wolf", find_spell( 164273 ) )
-    -> set_default_value( talents.lone_wolf -> effectN( 1 ).percent() )
-    -> set_period( 0_ms ) // disable ticks as an optimization
-    -> set_chance( talents.lone_wolf.ok() );
+  buffs.on_target =
+    make_buff( this, "on_target", talents.on_target_buff )
+      ->set_default_value_from_effect( 1 )
+      ->set_pct_buff_type( STAT_PCT_BUFF_HASTE )
+      ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS );
 
   buffs.trueshot =
-    make_buff( this, "trueshot", find_spell( 288613 ) )
+    make_buff( this, "trueshot", talents.trueshot )
       -> set_cooldown( 0_ms )
-      -> set_default_value_from_effect( 4 )
       -> set_refresh_behavior( buff_refresh_behavior::EXTEND )
-      -> set_affects_regen( true )
       -> set_stack_change_callback(
         [ this ]( buff_t*, int /*ol*/, int cur ) {
           cooldowns.aimed_shot -> adjust_recharge_multiplier();
@@ -8314,9 +8295,29 @@ void hunter_t::create_buffs()
           }
         } );
 
-  buffs.lock_and_load =
-    make_buff( this, "lock_and_load", talents.lock_and_load -> effectN( 1 ).trigger() )
-      ->set_trigger_spell( talents.lock_and_load );
+  buffs.bullseye =
+    make_buff( this, "bullseye", talents.bullseye -> effectN( 1 ).trigger() )
+      -> set_default_value_from_effect( 1 )
+      -> set_max_stack( std::max( as<int>( talents.bullseye -> effectN( 2 ).base_value() ), 1 ) )
+      -> set_chance( talents.bullseye.ok() );
+
+  buffs.volley = make_buff( this, "volley", talents.volley_data )
+      -> set_cooldown( 0_ms )
+      -> set_period( 0_ms ) // disable ticks as an optimization
+      -> set_refresh_behavior( buff_refresh_behavior::DURATION );
+
+
+  buffs.steady_focus =
+    make_buff( this, "steady_focus", find_spell( 193534 ) )
+    -> set_default_value( talents.steady_focus -> effectN( 1 ).percent() )
+    -> set_pct_buff_type( STAT_PCT_BUFF_HASTE )
+    -> set_chance( talents.steady_focus.ok() );
+
+  buffs.lone_wolf =
+    make_buff( this, "lone_wolf", find_spell( 164273 ) )
+    -> set_default_value( talents.lone_wolf -> effectN( 1 ).percent() )
+    -> set_period( 0_ms ) // disable ticks as an optimization
+    -> set_chance( talents.lone_wolf.ok() );
 
   buffs.deathblow =
     make_buff( this, "deathblow", find_spell( 378770 ) )
@@ -8622,8 +8623,6 @@ void hunter_t::create_buffs()
 void hunter_t::init_gains()
 {
   player_t::init_gains();
-
-  gains.trueshot                  = get_gain( "Trueshot" );
 
   gains.barbed_shot               = get_gain( "Barbed Shot" );
   gains.dire_beast                = get_gain( "Dire Beast" );
@@ -8998,6 +8997,9 @@ double hunter_t::composite_melee_crit_chance() const
   crit += talents.keen_eyesight -> effectN( 1 ).percent();
   crit += buffs.unerring_vision -> stack() * buffs.unerring_vision -> data().effectN( 1 ).percent();
 
+  if ( buffs.trueshot->check() )
+    crit += talents.trueshot->effectN( 4 ).percent();
+
   return crit;
 }
 
@@ -9170,13 +9172,7 @@ void hunter_t::regen( timespan_t periodicity )
     return;
 
   double total_regen = periodicity.total_seconds() * resource_regen_per_second( RESOURCE_FOCUS );
-  if ( buffs.trueshot -> check() )
-  {
-    double regen = total_regen * talents.trueshot -> effectN( 6 ).percent();
-    resource_gain( RESOURCE_FOCUS, regen, gains.trueshot );
-    total_regen += regen;
-  }
-
+  
   if ( buffs.terms_of_engagement -> check() )
     resource_gain( RESOURCE_FOCUS, buffs.terms_of_engagement -> check_value() * periodicity.total_seconds(), gains.terms_of_engagement );
 }
@@ -9212,9 +9208,6 @@ double hunter_t::resource_gain( resource_e type, double amount, gain_t* g, actio
       amount *= 1.0 + mul;
       mul_gains[ mul_gains_count++ ] = { mul, gain };
     };
-
-    if ( buffs.trueshot -> check() )
-      add_gain( talents.trueshot -> effectN( 5 ).percent(), gains.trueshot );
 
     const double additional_amount = floor( amount ) - initial_amount;
     if ( additional_amount > 0 )
