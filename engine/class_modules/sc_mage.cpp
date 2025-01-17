@@ -713,6 +713,7 @@ public:
     player_talent_t enlightened;
     player_talent_t arcane_bombardment;
     player_talent_t leysight;
+    player_talent_t aether_fragment;
     player_talent_t concentration;
 
     // Row 10
@@ -8066,6 +8067,7 @@ void mage_t::init_spells()
   talents.enlightened                = find_talent_spell( talent_tree::SPECIALIZATION, "Enlightened"                );
   talents.arcane_bombardment         = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Bombardment"         );
   talents.leysight                   = find_talent_spell( talent_tree::SPECIALIZATION, "Leysight"                   );
+  talents.aether_fragment            = find_talent_spell( talent_tree::SPECIALIZATION, "Aether Fragment"            );
   talents.concentration              = find_talent_spell( talent_tree::SPECIALIZATION, "Concentration"              );
   // Row 10
   talents.high_voltage               = find_talent_spell( talent_tree::SPECIALIZATION, "High Voltage"               );
@@ -8328,6 +8330,7 @@ void mage_t::create_buffs()
                                       ->set_chance( talents.aether_attunement.ok() );
   buffs.aethervision              = make_buff( this, "aethervision", find_spell( 467634 ) )
                                       ->set_default_value_from_effect( 1 )
+                                      ->modify_default_value( talents.aether_fragment->effectN( 1 ).percent() )
                                       ->set_chance( talents.aethervision.ok() );
   buffs.arcane_charge             = make_buff( this, "arcane_charge", find_spell( 36032 ) )
                                       ->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
