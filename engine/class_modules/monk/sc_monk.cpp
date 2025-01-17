@@ -7950,7 +7950,8 @@ void monk_t::create_buffs()
             if ( old && !new_ )
               tier.tww2.cashout->trigger( old );
           } );
-  tier.tww2.cashout = make_buff_fallback( tier.tww2.ww_4pc->ok(), this, "cashout", tier.tww2.ww_4pc_cashout );
+  tier.tww2.cashout = make_buff_fallback( tier.tww2.ww_4pc->ok(), this, "cashout", tier.tww2.ww_4pc_cashout )
+      ->set_max_stack( 59 ); // Spell says it caps at 8, but have screenshots of it stacking to at least 59.
   // BrM
   tier.tww2.luck_of_the_draw =
       make_buff_fallback( tier.tww2.brm_2pc->ok(), this, "luck_of_the_draw", tier.tww2.brm_2pc_luck_of_the_draw )
