@@ -3522,6 +3522,8 @@ struct arcane_barrage_t final : public dematerialize_spell_t
 
     if ( int av_stack = p()->buffs.aethervision->check() )
     {
+      if ( p()->buffs.aethervision->at_max_stacks() )
+        p()->trigger_splinter( target );
       p()->buffs.aethervision->expire();
       p()->trigger_arcane_charge( av_stack * aethervision_charges );
     }
