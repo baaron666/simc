@@ -2599,6 +2599,7 @@ struct arcane_mage_spell_t : public mage_spell_t
     }
   }
 
+  // TODO 11.1: Second parameter is no longer necessary, remove later
   void consume_nether_precision( player_t* t, bool aethervision = false )
   {
     int old_stack = p()->buffs.nether_precision->check();
@@ -3439,6 +3440,7 @@ struct arcane_orb_t final : public arcane_mage_spell_t
   }
 };
 
+// TODO 11.1: Still triggers demat as long as NP is up, despite no longer interacting with it
 struct arcane_barrage_t final : public dematerialize_spell_t
 {
   action_t* orb_barrage = nullptr;
@@ -3500,7 +3502,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
       p()->trigger_arcane_charge( arcane_soul_charges );
     }
 
-    consume_nether_precision( target );
     p()->trigger_spellfire_spheres();
     p()->trigger_mana_cascade();
 
@@ -3549,7 +3550,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     am *= arcane_charge_multiplier( true );
     am *= 1.0 + p()->buffs.aethervision->check_stack_value();
     am *= 1.0 + p()->buffs.arcane_harmony->check_stack_value();
-    am *= 1.0 + p()->buffs.nether_precision->check_value();
     am *= 1.0 + p()->buffs.intuition->check_value();
 
     return am;
