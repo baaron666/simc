@@ -652,6 +652,11 @@ public:
     spell_data_ptr_t precision_detonation;
     spell_data_ptr_t precision_detonation_buff;
 
+    spell_data_ptr_t razor_fragments;
+    spell_data_ptr_t razor_fragments_bleed;
+    spell_data_ptr_t razor_fragments_buff;
+    spell_data_ptr_t headshot;
+
 
     spell_data_ptr_t improved_steady_shot;
     spell_data_ptr_t pin_cushion;
@@ -686,9 +691,6 @@ public:
     spell_data_ptr_t legacy_of_the_windrunners_wind_arrow;
     spell_data_ptr_t focused_aim;
 
-    spell_data_ptr_t razor_fragments;
-    spell_data_ptr_t razor_fragments_bleed;
-    spell_data_ptr_t razor_fragments_buff;
     spell_data_ptr_t wailing_arrow;
     spell_data_ptr_t wailing_arrow_counter_buff;
     spell_data_ptr_t wailing_arrow_override_buff;
@@ -4340,9 +4342,10 @@ struct kill_shot_base_t : hunter_ranged_attack_t
   struct state_data_t
   {
     bool razor_fragments_up = false;
+    bool empowered_by_precise_shots = false;
 
     friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out ) {
-      fmt::format_to( out, "razor_fragments_up={:d}", data.razor_fragments_up );
+      fmt::format_to( out, "razor_fragments_up={}, empowered_by_precise_shots={}", data.razor_fragments_up, data.empowered_by_precise_shots );
     }
   };
   using state_t = hunter_action_state_t<state_data_t>;
@@ -4381,6 +4384,9 @@ struct kill_shot_base_t : hunter_ranged_attack_t
 
     p()->buffs.deathblow->expire();
     p()->buffs.razor_fragments->decrement();
+
+    if ( p()->talents.headshot.ok() )
+      p()->consume_precise_shots();
   }
 
   void impact( action_state_t* s ) override
@@ -4408,6 +4414,9 @@ struct kill_shot_base_t : hunter_ranged_attack_t
 
     if ( venoms_bite )
       venoms_bite->execute_on_target( s->target );
+
+    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots && rng().roll( p()->specs.eyes_in_the_sky->effectN( 1 ).percent() ) )
+      td( s->target )->debuffs.spotters_mark->trigger();
   }
 
   int n_targets() const override
@@ -4458,6 +4467,16 @@ struct kill_shot_base_t : hunter_ranged_attack_t
     return am;
   }
 
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double am = hunter_ranged_attack_t::composite_da_multiplier( s );
+
+    if ( p()->talents.headshot.ok() )
+      am *= 1 + p()->buffs.precise_shots->check_stack_value() * p()->talents.headshot->effectN( 1 ).percent();
+
+    return am;
+  }
+
   action_state_t* new_state() override
   {
     return new state_t( this, target );
@@ -4466,7 +4485,8 @@ struct kill_shot_base_t : hunter_ranged_attack_t
   void snapshot_state( action_state_t* s, result_amount_type type ) override
   {
     hunter_ranged_attack_t::snapshot_state( s, type );
-    debug_cast<state_t*>( s ) -> razor_fragments_up = p() -> buffs.razor_fragments -> check();
+    debug_cast<state_t*>( s )->razor_fragments_up = p()->buffs.razor_fragments->check();
+    debug_cast<state_t*>( s )->empowered_by_precise_shots = p()->talents.headshot.ok() && p()->buffs.precise_shots->up();
   }
 };
 
@@ -5442,15 +5462,15 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     // TODO 17/1/25: secondary targets of a trick shots aimed shot consistently trigger the immediate detonation (modeled)
     // it is wildly inconsistent though whether they are all affected by the damage increase (not modeled, pray for fixes and buff all for now)
     // perhaps tied to the trigger and expiration timing of the hidden buff 474199
-    if ( p()->talents.precision_detonation->ok() && target_data->dots.explosive_shot->is_ticking() )
+    if ( p()->talents.precision_detonation->ok() )
     {
-      target_data->dots.explosive_shot->cancel();
       if ( s->chain_target == 0 )
       {
         p()->buffs.precision_detonation_hidden->trigger();
         // Expire after other bounces hit
         make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
       }
+      target_data->dots.explosive_shot->cancel();
     }
   }
 
@@ -7901,6 +7921,12 @@ void hunter_t::init_spells()
     talents.moving_target_buff                = talents.moving_target.ok() ? find_spell( 474293 ) : spell_data_t::not_found();
     talents.precision_detonation              = find_talent_spell( talent_tree::SPECIALIZATION, "Precision Detonation", HUNTER_MARKSMANSHIP );
     talents.precision_detonation_buff         = talents.precision_detonation.ok() ? find_spell( 474199 ) : spell_data_t::not_found();
+
+    talents.razor_fragments                   = find_talent_spell( talent_tree::SPECIALIZATION, "Razor Fragments", HUNTER_MARKSMANSHIP );
+    talents.razor_fragments_bleed             = talents.razor_fragments.ok() ? find_spell( 385638 ) : spell_data_t::not_found();
+    talents.razor_fragments_buff              = talents.razor_fragments.ok() ? find_spell( 388998 ) : spell_data_t::not_found();
+    talents.headshot                          = find_talent_spell( talent_tree::SPECIALIZATION, "Headshot", HUNTER_MARKSMANSHIP );
+
     
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
@@ -7936,9 +7962,6 @@ void hunter_t::init_spells()
     talents.legacy_of_the_windrunners_wind_arrow = talents.legacy_of_the_windrunners.ok() ? find_spell( 191043 ) : spell_data_t::not_found();
     talents.focused_aim                       = find_talent_spell( talent_tree::SPECIALIZATION, "Focused Aim", HUNTER_MARKSMANSHIP );
 
-    talents.razor_fragments                   = find_talent_spell( talent_tree::SPECIALIZATION, "Razor Fragments", HUNTER_MARKSMANSHIP );
-    talents.razor_fragments_bleed             = talents.razor_fragments.ok() ? find_spell( 385638 ) : spell_data_t::not_found();
-    talents.razor_fragments_buff              = talents.razor_fragments.ok() ? find_spell( 388998 ) : spell_data_t::not_found();
     talents.wailing_arrow                     = find_talent_spell( talent_tree::SPECIALIZATION, "Wailing Arrow", HUNTER_MARKSMANSHIP );
     talents.wailing_arrow_counter_buff        = talents.wailing_arrow.ok() ? find_spell( 459805 ) : spell_data_t::not_found();
     talents.wailing_arrow_override_buff       = talents.wailing_arrow.ok() ? find_spell( 459808 ) : spell_data_t::not_found();
