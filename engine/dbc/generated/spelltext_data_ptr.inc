@@ -1,5 +1,5 @@
 // Spell text, wow build 11.1.0.58626
-static const std::array<spelltext_data_t, 27222> __ptr_spelltext_data { {
+static const std::array<spelltext_data_t, 27223> __ptr_spelltext_data { {
   {      17, "Shields an ally for $d, absorbing $s1 damage.", "Absorbs $w1 damage.", 0 },
   {      53, "Stab the target, causing ${$s2*$<mult>} Physical damage. Damage increased by $s4% when you are behind your target$?s319949[, and critical strikes apply Find Weakness for $319949s1 sec][].\r\n\r\n|cFFFFFFFFAwards $s3 combo $lpoint:points;.|r", 0, 0 },
   {      56, "Stuns target for $d.", "Stunned.", 0 },
@@ -26685,6 +26685,7 @@ static const std::array<spelltext_data_t, 27222> __ptr_spelltext_data { {
   {  474121, "|CFFFFFFFF- Ground targeted|R\r\n|CFFFFFFFF- Knockback|R\r\n|CFFFFFFFF- Persistent effect|R\r\n\r\n|CFFFFFFFF22 sec cooldown|R\r\nCall forth Galefeather to knock enemies back with heavy winds for a short duration.", 0, "Utility" },
   {  474257, "$@spelldesc471348", "Haste increased by $s1%.", 0 },
   {  474285, "$@spelldesc471548", "Critical Strike increased by $w1.", 0 },
+  {  474293, 0, "The damage of your next Aimed Shot is increased by $s1%.", 0 },
   {  474296, "Consuming Precise Shots increases the damage of your next Aimed Shot by $s1% and grants Streamline.\r\n\r\n $@spellicon342076 $@spellname342076\r\n$@spellaura342076 Stacks up to $342076u times.", 0, 0 },
   {  474310, "$@spelldesc473520", "Damage taken from your next Arcane Shot or Multi-Shot is increased by $s1%.", 0 },
   {  474339, "$@spelldesc442806", 0, 0 },

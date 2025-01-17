@@ -423,6 +423,7 @@ public:
     buff_t* in_the_rhythm;
     buff_t* on_target;
     buff_t* trueshot;
+    buff_t* moving_target;
     
     buff_t* lone_wolf;
     buff_t* razor_fragments;
@@ -474,7 +475,7 @@ public:
     // Tier Set Bonuses
     //TWW - S1
     buff_t* harmonize; //BM 4pc
-    buff_t* moving_target; //MM 4pc
+    buff_t* tww_s1_mm_4pc_moving_target; //MM 4pc
 
     // Hero Talents 
 
@@ -645,6 +646,8 @@ public:
     spell_data_ptr_t on_target;
     spell_data_ptr_t on_target_buff;
     spell_data_ptr_t trueshot;
+    spell_data_ptr_t moving_target;
+    spell_data_ptr_t moving_target_buff;
 
 
     spell_data_ptr_t improved_steady_shot;
@@ -1094,6 +1097,7 @@ public:
   void trigger_sentinel_implosion( hunter_td_t* td );
   void trigger_symphonic_arsenal();
   void trigger_lunar_storm( player_t* target );
+  void consume_precise_shots();
 };
 
 // Template for common hunter action code.
@@ -1119,6 +1123,7 @@ public:
 
     // mm
     bool trueshot_crit_damage_bonus = false;
+    damage_affected_by moving_target;
     bool bullseye_crit_chance = false;
     damage_affected_by lone_wolf;
     damage_affected_by sniper_training;
@@ -1153,6 +1158,7 @@ public:
       affected_by.unnatural_causes      = parse_damage_affecting_aura( this, p->talents.unnatural_causes_debuff );
 
     affected_by.trueshot_crit_damage_bonus = check_affected_by( this, p -> talents.trueshot -> effectN( 5 ) );
+    affected_by.moving_target         = parse_damage_affecting_aura( this, p -> talents.moving_target_buff );
     affected_by.bullseye_crit_chance  = check_affected_by( this, p -> talents.bullseye -> effectN( 1 ).trigger() -> effectN( 1 ) );
     affected_by.lone_wolf             = parse_damage_affecting_aura( this, p -> talents.lone_wolf );
     affected_by.sniper_training       = parse_damage_affecting_aura( this, p -> mastery.sniper_training );
@@ -1355,10 +1361,11 @@ public:
       am *= 1 + tip_bonus;
     }
 
-    if ( affected_by.tww_s1_mm_4pc.direct && p()->buffs.moving_target->check() )
-    {
+    if ( affected_by.tww_s1_mm_4pc.direct )
+      am *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
+
+    if ( affected_by.moving_target.direct )
       am *= 1 + p()->buffs.moving_target->value();
-    }
 
     return am;
   }
@@ -3508,6 +3515,17 @@ void hunter_t::consume_trick_shots()
   buffs.trick_shots -> decrement();
 }
 
+void hunter_t::consume_precise_shots()
+{
+  if ( tier_set.tww_s1_mm_4pc.ok() && buffs.precise_shots->check() )
+    buffs.tww_s1_mm_4pc_moving_target->trigger();
+
+  if ( talents.moving_target.ok() && buffs.precise_shots->check() )
+    buffs.moving_target->trigger();
+
+  buffs.precise_shots->expire();
+}
+
 void hunter_t::trigger_deathblow( player_t* target )
 {
   if ( !talents.deathblow.ok() )
@@ -3987,10 +4005,7 @@ struct arcane_shot_base_t: public hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::execute();
 
-    if ( p()->tier_set.tww_s1_mm_4pc.ok() && p()->buffs.precise_shots->check() )
-      p()->buffs.moving_target->trigger();
-
-    p() -> buffs.precise_shots -> expire();
+    p()->consume_precise_shots();
 
     p()->buffs.sulfur_lined_pockets->trigger();
     if ( p()->buffs.sulfur_lined_pockets->at_max_stacks() )
@@ -5122,13 +5137,7 @@ struct chimaera_shot_t : public hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::execute();
 
-    if ( p()->tier_set.tww_s1_mm_4pc.ok() && p()->buffs.precise_shots->check() )
-    {
-      p()->buffs.moving_target->trigger();
-    }
-
-    p() -> buffs.precise_shots -> up(); // Benefit tracking
-    p() -> buffs.precise_shots -> decrement();
+    p()->consume_precise_shots();
   }
 
   void schedule_travel( action_state_t* s ) override
@@ -5324,7 +5333,7 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     if ( serpentstalkers_trickery )
       serpentstalkers_trickery->execute_on_target( target );
 
-    p() -> buffs.precise_shots -> trigger();
+    p()->buffs.precise_shots->trigger();
 
     if ( rng().roll( deathblow.chance ) )
       p()->trigger_deathblow( target );
@@ -5736,12 +5745,7 @@ struct multishot_mm_t: public hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::execute();
 
-    if ( p()->tier_set.tww_s1_mm_4pc.ok() && p()->buffs.precise_shots->check() )
-    {
-      p()->buffs.moving_target->trigger();
-    }
-
-    p() -> buffs.precise_shots -> expire();
+    p()->consume_precise_shots();
 
     if ( ( p() -> talents.trick_shots.ok() && num_targets_hit >= p() -> talents.trick_shots -> effectN( 2 ).base_value() ) )
       p() -> buffs.trick_shots -> trigger();
@@ -7860,6 +7864,8 @@ void hunter_t::init_spells()
     talents.on_target                         = find_talent_spell( talent_tree::SPECIALIZATION, "On Target", HUNTER_MARKSMANSHIP );
     talents.on_target_buff                    = talents.on_target.ok() ? find_spell( 474257 ) : spell_data_t::not_found();
     talents.trueshot                          = find_talent_spell( talent_tree::SPECIALIZATION, "Trueshot", HUNTER_MARKSMANSHIP );
+    talents.moving_target                     = find_talent_spell( talent_tree::SPECIALIZATION, "Moving Target", HUNTER_MARKSMANSHIP );
+    talents.moving_target_buff                = talents.moving_target.ok() ? find_spell( 474293 ) : spell_data_t::not_found();
 
     
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
@@ -8295,6 +8301,10 @@ void hunter_t::create_buffs()
           }
         } );
 
+  buffs.moving_target =
+    make_buff( this, "moving_target", talents.moving_target_buff )
+      ->set_default_value_from_effect( 1 );
+
   buffs.bullseye =
     make_buff( this, "bullseye", talents.bullseye -> effectN( 1 ).trigger() )
       -> set_default_value_from_effect( 1 )
@@ -8571,8 +8581,8 @@ void hunter_t::create_buffs()
     make_buff( this, "harmonize", find_spell( 457072 ) )
       -> set_default_value_from_effect( 1 );
 
-  buffs.moving_target
-    = make_buff( this, "moving_target", tier_set.tww_s1_mm_4pc_buff )
+  buffs.tww_s1_mm_4pc_moving_target
+    = make_buff( this, "tww_s1_mm_4pc_moving_target", tier_set.tww_s1_mm_4pc_buff )
       -> set_default_value_from_effect( 1 );
 
   // Hero Talents
