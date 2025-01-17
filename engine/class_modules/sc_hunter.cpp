@@ -424,6 +424,7 @@ public:
     buff_t* on_target;
     buff_t* trueshot;
     buff_t* moving_target;
+    buff_t* precision_detonation_hidden;
     
     buff_t* lone_wolf;
     buff_t* razor_fragments;
@@ -648,6 +649,8 @@ public:
     spell_data_ptr_t trueshot;
     spell_data_ptr_t moving_target;
     spell_data_ptr_t moving_target_buff;
+    spell_data_ptr_t precision_detonation;
+    spell_data_ptr_t precision_detonation_buff;
 
 
     spell_data_ptr_t improved_steady_shot;
@@ -3521,7 +3524,10 @@ void hunter_t::consume_precise_shots()
     buffs.tww_s1_mm_4pc_moving_target->trigger();
 
   if ( talents.moving_target.ok() && buffs.precise_shots->check() )
+  {
     buffs.moving_target->trigger();
+    buffs.streamline->trigger();
+  }
 
   buffs.precise_shots->expire();
 }
@@ -4177,6 +4183,15 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
       if ( flags & STATE_MUL_SPELL_DA )
         s->da_multiplier *= debug_cast<state_t*>( s )->effectiveness;
     }
+
+    double composite_da_multiplier( const action_state_t* s ) const override
+    {
+      double m = hunter_ranged_attack_t::composite_da_multiplier( s );
+    
+      m *= 1.0 + p()->buffs.precision_detonation_hidden->check_value();
+
+      return m;
+    }
   };
 
   timespan_t grenade_juggler_reduction = 0_s;
@@ -4302,6 +4317,9 @@ struct explosive_shot_t : public explosive_shot_base_t
       p()->buffs.tip_of_the_spear->decrement();
       p()->buffs.tip_of_the_spear_explosive->trigger();
     }
+
+    if ( p()->talents.precision_detonation.ok() )
+      p()->buffs.streamline->trigger();
   }
 };
 
@@ -5413,11 +5431,26 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       }
     }
 
-    buff_t* spotters_mark = td( s->target )->debuffs.spotters_mark;
-    if ( spotters_mark->check() )
+    hunter_td_t* target_data = td( s-> target );
+
+    if ( target_data->debuffs.spotters_mark->check() )
     {
-      spotters_mark->expire();
+      target_data->debuffs.spotters_mark->expire();
       p()->buffs.on_target->trigger();
+    }
+
+    // TODO 17/1/25: secondary targets of a trick shots aimed shot consistently trigger the immediate detonation (modeled)
+    // it is wildly inconsistent though whether they are all affected by the damage increase (not modeled, pray for fixes and buff all for now)
+    // perhaps tied to the trigger and expiration timing of the hidden buff 474199
+    if ( p()->talents.precision_detonation->ok() && target_data->dots.explosive_shot->is_ticking() )
+    {
+      target_data->dots.explosive_shot->cancel();
+      if ( s->chain_target == 0 )
+      {
+        p()->buffs.precision_detonation_hidden->trigger();
+        // Expire after other bounces hit
+        make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+      }
     }
   }
 
@@ -7866,7 +7899,8 @@ void hunter_t::init_spells()
     talents.trueshot                          = find_talent_spell( talent_tree::SPECIALIZATION, "Trueshot", HUNTER_MARKSMANSHIP );
     talents.moving_target                     = find_talent_spell( talent_tree::SPECIALIZATION, "Moving Target", HUNTER_MARKSMANSHIP );
     talents.moving_target_buff                = talents.moving_target.ok() ? find_spell( 474293 ) : spell_data_t::not_found();
-
+    talents.precision_detonation              = find_talent_spell( talent_tree::SPECIALIZATION, "Precision Detonation", HUNTER_MARKSMANSHIP );
+    talents.precision_detonation_buff         = talents.precision_detonation.ok() ? find_spell( 474199 ) : spell_data_t::not_found();
     
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
@@ -8304,6 +8338,12 @@ void hunter_t::create_buffs()
   buffs.moving_target =
     make_buff( this, "moving_target", talents.moving_target_buff )
       ->set_default_value_from_effect( 1 );
+
+  buffs.precision_detonation_hidden =
+    make_buff( this, "precision_detonation_hidden", talents.precision_detonation_buff )
+      ->set_default_value_from_effect( 1 )
+      ->set_quiet( true );
+
 
   buffs.bullseye =
     make_buff( this, "bullseye", talents.bullseye -> effectN( 1 ).trigger() )
