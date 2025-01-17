@@ -346,8 +346,11 @@ struct hunter_td_t: public actor_target_data_t
     buff_t* wild_instincts;
     buff_t* basilisk_collar;
     buff_t* outland_venom;
-    buff_t* kill_zone;
+
     buff_t* spotters_mark;
+    buff_t* shrapnel_shot;
+    buff_t* kill_zone;
+
     buff_t* sentinel;
     buff_t* crescent_steel;
     buff_t* lunar_storm;
@@ -500,15 +503,18 @@ public:
   // Cooldowns
   struct cooldowns_t
   {
-    cooldown_t* kill_command;
     cooldown_t* kill_shot;
     cooldown_t* explosive_shot;
-
-    cooldown_t* rapid_fire;
+    
     cooldown_t* aimed_shot;
+    cooldown_t* rapid_fire;
     cooldown_t* trueshot;
-    cooldown_t* legacy_of_the_windrunners;
+    cooldown_t* target_acquisition;
 
+
+    cooldown_t* legacy_of_the_windrunners;
+    
+    cooldown_t* kill_command;
     cooldown_t* barbed_shot;
     cooldown_t* bestial_wrath;
 
@@ -656,6 +662,13 @@ public:
     spell_data_ptr_t razor_fragments_bleed;
     spell_data_ptr_t razor_fragments_buff;
     spell_data_ptr_t headshot;
+    spell_data_ptr_t deadeye;
+    spell_data_ptr_t no_scope;
+    spell_data_ptr_t feathered_frenzy;
+    spell_data_ptr_t target_acquisition;
+    spell_data_ptr_t shrapnel_shot;
+    spell_data_ptr_t shrapnel_shot_debuff;
+    spell_data_ptr_t magnetic_gunpowder;
 
 
     spell_data_ptr_t improved_steady_shot;
@@ -969,15 +982,17 @@ public:
     gains(),
     procs()
   {
-    cooldowns.kill_command    = get_cooldown( "kill_command" );
     cooldowns.kill_shot       = get_cooldown( "kill_shot" );
     cooldowns.explosive_shot  = get_cooldown( "explosive_shot" );
 
     cooldowns.aimed_shot                = get_cooldown( "aimed_shot" );
     cooldowns.rapid_fire                = get_cooldown( "rapid_fire" );
     cooldowns.trueshot                  = get_cooldown( "trueshot" );
-    cooldowns.legacy_of_the_windrunners = get_cooldown( "legacy_of_the_windrunners" );
+    cooldowns.target_acquisition        = get_cooldown( "target_acquisition_icd" );
 
+    cooldowns.legacy_of_the_windrunners = get_cooldown( "legacy_of_the_windrunners" );
+    
+    cooldowns.kill_command    = get_cooldown( "kill_command" );
     cooldowns.barbed_shot   = get_cooldown( "barbed_shot" );
     cooldowns.bestial_wrath = get_cooldown( "bestial_wrath" );
 
@@ -1103,6 +1118,7 @@ public:
   void trigger_symphonic_arsenal();
   void trigger_lunar_storm( player_t* target );
   void consume_precise_shots();
+  void trigger_spotters_mark( player_t* target );
 };
 
 // Template for common hunter action code.
@@ -1129,6 +1145,7 @@ public:
     // mm
     bool trueshot_crit_damage_bonus = false;
     damage_affected_by moving_target;
+
     bool bullseye_crit_chance = false;
     damage_affected_by lone_wolf;
     damage_affected_by sniper_training;
@@ -1164,6 +1181,7 @@ public:
 
     affected_by.trueshot_crit_damage_bonus = check_affected_by( this, p -> talents.trueshot -> effectN( 5 ) );
     affected_by.moving_target         = parse_damage_affecting_aura( this, p -> talents.moving_target_buff );
+
     affected_by.bullseye_crit_chance  = check_affected_by( this, p -> talents.bullseye -> effectN( 1 ).trigger() -> effectN( 1 ) );
     affected_by.lone_wolf             = parse_damage_affecting_aura( this, p -> talents.lone_wolf );
     affected_by.sniper_training       = parse_damage_affecting_aura( this, p -> mastery.sniper_training );
@@ -1195,6 +1213,7 @@ public:
     ab::apply_affecting_aura( p -> talents.surging_shots );
     ab::apply_affecting_aura( p -> talents.improved_deathblow );
     ab::apply_affecting_aura( p -> talents.obsidian_arrowhead );
+    ab::apply_affecting_aura( p -> talents.deadeye );
 
     ab::apply_affecting_aura( p -> talents.crack_shot );
     ab::apply_affecting_aura( p -> talents.killer_accuracy );
@@ -3522,16 +3541,32 @@ void hunter_t::consume_trick_shots()
 
 void hunter_t::consume_precise_shots()
 {
-  if ( tier_set.tww_s1_mm_4pc.ok() && buffs.precise_shots->check() )
-    buffs.tww_s1_mm_4pc_moving_target->trigger();
-
-  if ( talents.moving_target.ok() && buffs.precise_shots->check() )
+  if ( buffs.precise_shots->check() )
   {
-    buffs.moving_target->trigger();
-    buffs.streamline->trigger();
+    if ( tier_set.tww_s1_mm_4pc.ok() )
+      buffs.tww_s1_mm_4pc_moving_target->trigger();
+
+    if ( talents.moving_target.ok() )
+    {
+      buffs.moving_target->trigger();
+      buffs.streamline->trigger();
+    }
+
+    cooldowns.explosive_shot->adjust( -talents.magnetic_gunpowder->effectN( 1 ).time_value() );
   }
 
   buffs.precise_shots->expire();
+}
+
+void hunter_t::trigger_spotters_mark( player_t* target )
+{
+  double chance = specs.eyes_in_the_sky->effectN( 1 ).percent();
+      
+  if ( talents.feathered_frenzy.ok() && buffs.trueshot->up() )
+    chance *= 1 + talents.feathered_frenzy->effectN( 1 ).percent();
+      
+  if ( rng().roll( chance ) )
+    get_target_data( target )->debuffs.spotters_mark->trigger();
 }
 
 void hunter_t::trigger_deathblow( player_t* target )
@@ -4032,6 +4067,15 @@ struct arcane_shot_base_t: public hunter_ranged_attack_t
     return am;
   }
 
+  double composite_target_multiplier( player_t* target ) const override
+  {
+    double m = hunter_ranged_attack_t::composite_target_multiplier( target );
+
+    m *= 1 + td( target )->debuffs.shrapnel_shot->value();
+
+    return m;
+  }
+
   double cost_pct_multiplier() const override
   {
     double c = hunter_ranged_attack_t::cost_pct_multiplier();
@@ -4046,8 +4090,10 @@ struct arcane_shot_base_t: public hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::impact( s );
 
-    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots && rng().roll( p()->specs.eyes_in_the_sky->effectN( 1 ).percent() ) )
-      td( s->target )->debuffs.spotters_mark->trigger();
+    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots )
+      p()->trigger_spotters_mark( s->target );
+
+    td( s->target )->debuffs.shrapnel_shot->expire();
   }
 
   action_state_t* new_state() override
@@ -4171,6 +4217,8 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
 
       if ( explosive_venom && debug_cast<state_t*>( s )->explosive_venom_ready )
         explosive_venom->execute_on_target( s->target );
+
+      td( s->target )->debuffs.shrapnel_shot->trigger();
     }
 
     action_state_t* new_state() override
@@ -4415,8 +4463,8 @@ struct kill_shot_base_t : hunter_ranged_attack_t
     if ( venoms_bite )
       venoms_bite->execute_on_target( s->target );
 
-    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots && rng().roll( p()->specs.eyes_in_the_sky->effectN( 1 ).percent() ) )
-      td( s->target )->debuffs.spotters_mark->trigger();
+    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots )
+      p()->trigger_spotters_mark( s->target );
   }
 
   int n_targets() const override
@@ -5259,6 +5307,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     double chance = 0; 
   } deathblow;
 
+  timespan_t target_acquisition_reduction;
+
   serpent_sting_t* serpentstalkers_trickery = nullptr;
   serpent_sting_hydras_bite_t* hydras_bite = nullptr;
 
@@ -5266,7 +5316,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     hunter_ranged_attack_t( n, p, s ),
     trick_shots_targets( as<int>( p->talents.trick_shots_data->effectN( 1 ).base_value()
       + p -> talents.light_ammo -> effectN( 1 ).base_value()
-      + p -> talents.heavy_ammo -> effectN( 1 ).base_value() ) )
+      + p -> talents.heavy_ammo -> effectN( 1 ).base_value() ) ),
+    target_acquisition_reduction( p->talents.target_acquisition->effectN( 1 ).time_value() )
   {
     radius = 8;
     base_aoe_multiplier = p->talents.trick_shots_data->effectN( 4 ).percent() + p->talents.heavy_ammo->effectN( 3 ).percent();
@@ -5387,7 +5438,10 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       p()->buffs.streamline->expire();
 
     if ( lock_and_loaded )
-      p() -> buffs.lock_and_load -> decrement();
+    {
+      p()->buffs.lock_and_load->decrement();
+      p()->cooldowns.explosive_shot->adjust( p()->talents.magnetic_gunpowder->effectN( 2 ).time_value() );
+    }
     lock_and_loaded = false;
 
     if ( rng().roll( surging_shots.chance ) )
@@ -5457,6 +5511,11 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     {
       target_data->debuffs.spotters_mark->expire();
       p()->buffs.on_target->trigger();
+      if ( p()->talents.target_acquisition.ok() && p()->cooldowns.target_acquisition->up() )
+      {
+        p()->cooldowns.target_acquisition->start();
+        p()->cooldowns.aimed_shot->adjust( -target_acquisition_reduction );
+      }
     }
 
     // TODO 17/1/25: secondary targets of a trick shots aimed shot consistently trigger the immediate detonation (modeled)
@@ -5688,9 +5747,7 @@ struct rapid_fire_t: public hunter_spell_t
     base_num_ticks += p -> talents.ammo_conservation.ok() ? as<int>( p -> talents.ammo_conservation -> effectN( 2 ).base_value() ) : 0;
 
     if ( p->talents.improved_deathblow.ok() )
-    {
       deathblow.chance = p->talents.improved_deathblow->effectN( 1 ).percent();
-    }
   }
 
   void init() override
@@ -5710,6 +5767,9 @@ struct rapid_fire_t: public hunter_spell_t
 
     if ( rng().roll( deathblow.chance ) )
       p()->trigger_deathblow( target );
+
+    if ( p()->talents.no_scope.ok() )
+      p()->buffs.precise_shots->trigger();
   }
 
   void tick( dot_t* d ) override
@@ -5820,8 +5880,10 @@ struct multishot_mm_t: public hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::impact( s );
 
-    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots && rng().roll( p()->specs.eyes_in_the_sky->effectN( 1 ).percent() ) )
-      td( s->target )->debuffs.spotters_mark->trigger();
+    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots )
+      p()->trigger_spotters_mark( s->target );
+
+    td( s->target )->debuffs.shrapnel_shot->expire();
   }
 
   double composite_da_multiplier( const action_state_t* s ) const override
@@ -5830,6 +5892,15 @@ struct multishot_mm_t: public hunter_ranged_attack_t
 
     m *= 1 + p()->buffs.bulletstorm->check_stack_value();
     m *= 1 + p()->buffs.precise_shots->check_stack_value();
+
+    return m;
+  }
+
+  double composite_target_multiplier( player_t* target ) const override
+  {
+    double m = hunter_ranged_attack_t::composite_target_multiplier( target );
+
+    m *= 1 + td( target )->debuffs.shrapnel_shot->value();
 
     return m;
   }
@@ -7230,6 +7301,9 @@ struct trueshot_t: public hunter_spell_t
       p()->buffs.withering_fire->trigger( p()->buffs.trueshot->data().duration() );
       p()->trigger_deathblow( target );
     }
+
+    if ( p()->talents.feathered_frenzy.ok() )
+      td( target )->debuffs.spotters_mark->trigger();
   }
 };
 
@@ -7618,6 +7692,9 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
   debuffs.spotters_mark = make_buff( *this, "spotters_mark", p->specs.spotters_mark_debuff )
     ->set_default_value( p->specs.spotters_mark_debuff->effectN( 1 ).percent() + p->talents.improved_spotters_mark->effectN( 1 ).percent() );
 
+  debuffs.shrapnel_shot = make_buff( *this, "shrapnel_shot", p->talents.shrapnel_shot_debuff )
+    ->set_default_value_from_effect( 1 );
+
   debuffs.sentinel = make_buff( *this, "sentinel", p->talents.sentinel_debuff );
 
   debuffs.crescent_steel = make_buff( *this, "crescent_steel", p->talents.crescent_steel_debuff )
@@ -7926,7 +8003,13 @@ void hunter_t::init_spells()
     talents.razor_fragments_bleed             = talents.razor_fragments.ok() ? find_spell( 385638 ) : spell_data_t::not_found();
     talents.razor_fragments_buff              = talents.razor_fragments.ok() ? find_spell( 388998 ) : spell_data_t::not_found();
     talents.headshot                          = find_talent_spell( talent_tree::SPECIALIZATION, "Headshot", HUNTER_MARKSMANSHIP );
-
+    talents.deadeye                           = find_talent_spell( talent_tree::SPECIALIZATION, "Deadeye", HUNTER_MARKSMANSHIP );
+    talents.no_scope                          = find_talent_spell( talent_tree::SPECIALIZATION, "No Scope", HUNTER_MARKSMANSHIP );
+    talents.feathered_frenzy                  = find_talent_spell( talent_tree::SPECIALIZATION, "Feathered Frenzy", HUNTER_MARKSMANSHIP );
+    talents.target_acquisition                = find_talent_spell( talent_tree::SPECIALIZATION, "Target Acquisition", HUNTER_MARKSMANSHIP );
+    talents.shrapnel_shot                     = find_talent_spell( talent_tree::SPECIALIZATION, "Shrapnel Shot", HUNTER_MARKSMANSHIP );
+    talents.shrapnel_shot_debuff              = talents.shrapnel_shot.ok() ? find_spell( 474310 ) : spell_data_t::not_found();
+    talents.magnetic_gunpowder                = find_talent_spell( talent_tree::SPECIALIZATION, "Magnetic Gunpowder", HUNTER_MARKSMANSHIP );
     
     talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
     talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
@@ -8218,7 +8301,8 @@ void hunter_t::init_spells()
   tier_set.tww_s1_sv_4pc = sets -> set( HUNTER_SURVIVAL, TWW1, B4 );
 
   // Cooldowns
-  cooldowns.ruthless_marauder -> duration = talents.ruthless_marauder -> internal_cooldown();
+  cooldowns.target_acquisition->duration = talents.target_acquisition->internal_cooldown();
+  cooldowns.ruthless_marauder->duration = talents.ruthless_marauder->internal_cooldown();
   cooldowns.bleak_powder->duration = talents.bleak_powder->internal_cooldown();
   cooldowns.banshees_mark->duration = talents.banshees_mark->internal_cooldown();
   cooldowns.legacy_of_the_windrunners->duration = talents.legacy_of_the_windrunners->internal_cooldown();
