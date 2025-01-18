@@ -2170,7 +2170,7 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
 
     spec_passive() -> trigger();
     o() -> buffs.lone_wolf -> expire();
-    o()->buffs.trigger_finger->trigger( 1, o()->talents.trigger_finger->effectN( 1 ).percent() );
+    o()->buffs.trigger_finger->trigger( 1, o()->talents.trigger_finger->effectN( 1 ).percent() + o()->talents.trigger_finger->effectN( 2 ).percent() );
   }
 
   void demise() override
@@ -2190,16 +2190,6 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
     }
     if ( o() -> pets.animal_companion )
       o() -> pets.animal_companion -> demise();
-  }
-
-  double composite_melee_auto_attack_speed() const override
-  {
-    double ah = hunter_main_pet_base_t::composite_melee_auto_attack_speed();
-
-    if ( o()->talents.trigger_finger.ok() )
-      ah /= 1 + o()->talents.trigger_finger->effectN( 4 ).percent();
-
-    return ah;
   }
 
   target_specific_t<hunter_main_pet_td_t> target_data;
@@ -8048,7 +8038,9 @@ void hunter_t::create_buffs()
 
   buffs.trigger_finger =
     make_buff( this, "trigger_finger", talents.trigger_finger )
-      ->set_default_value( talents.trigger_finger->effectN( 1 ).percent() * ( 1 + talents.trigger_finger->effectN( 3 ).percent() ) )
+      // TODO 18/1/25: Trigger Finger is maybe applying another attack speed mod from effect 2, so there is always double the expected amount
+      // only one effect is doubled while petless, so mm sees triple the expected amount
+      ->set_default_value( talents.trigger_finger->effectN( 1 ).percent() * ( 1 + talents.trigger_finger->effectN( 3 ).percent() ) + talents.trigger_finger->effectN( 2 ).percent() )
       ->add_invalidate( CACHE_AUTO_ATTACK_SPEED )
       ->set_quiet(true);
 

@@ -411,11 +411,9 @@ public:
     spell_data_ptr_t tww_s1_sv_4pc;
   } tier_set;
 
-  // Buffs
   struct buffs_t
   {
     // Hunter Tree
-    buff_t* trigger_finger;
     buff_t* deathblow;
 
     // Marksmanship Tree
@@ -498,7 +496,6 @@ public:
     buff_t* withering_fire_build_up;
   } buffs;
 
-  // Cooldowns
   struct cooldowns_t
   {
     cooldown_t* kill_shot;
@@ -533,7 +530,6 @@ public:
     cooldown_t* lunar_storm;
   } cooldowns;
 
-  // Gains
   struct gains_t
   {
     gain_t* barbed_shot;
@@ -544,7 +540,6 @@ public:
     gain_t* invigorating_pulse;
   } gains;
 
-  // Procs
   struct procs_t
   {
     proc_t* snakeskin_quiver;
@@ -562,14 +557,12 @@ public:
     proc_t* overwatch_implosions;
   } procs;
 
-  // RPPM 
   struct rppm_t
   {
     real_ppm_t* shadow_surge;
     real_ppm_t* shadow_hounds;
   } rppm;
 
-  // Talents
   struct talents_t
   {
     // Hunter Tree
@@ -609,15 +602,12 @@ public:
     spell_data_ptr_t unnatural_causes;
     spell_data_ptr_t unnatural_causes_debuff;
     
-    // Shared
     // BM + SV
     spell_data_ptr_t alpha_predator; 
     spell_data_ptr_t kill_command;
 
     // MM + BM
     spell_data_ptr_t barrage;
-
-    // MM + SV
 
     // Marksmanship Tree
     spell_data_ptr_t aimed_shot;
@@ -2214,7 +2204,9 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
 
     spec_passive() -> trigger();
     o() -> buffs.lone_wolf -> expire();
-    o()->buffs.trigger_finger->trigger( 1, o()->talents.trigger_finger->effectN( 1 ).percent() );
+
+    if ( o()->talents.trigger_finger.ok() )
+      o()->invalidate_cache( CACHE_AUTO_ATTACK_SPEED );
   }
 
   void demise() override
@@ -2229,21 +2221,13 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
       if ( !sim->event_mgr.canceled )
       {
         o()->buffs.lone_wolf->trigger();
-        o()->buffs.trigger_finger->trigger();
+
+        if ( o()->talents.trigger_finger.ok() )
+          o()->invalidate_cache( CACHE_AUTO_ATTACK_SPEED );
       }
     }
     if ( o() -> pets.animal_companion )
       o() -> pets.animal_companion -> demise();
-  }
-
-  double composite_melee_auto_attack_speed() const override
-  {
-    double ah = hunter_main_pet_base_t::composite_melee_auto_attack_speed();
-
-    if ( o()->talents.trigger_finger.ok() )
-      ah /= 1 + o()->talents.trigger_finger->effectN( 4 ).percent();
-
-    return ah;
   }
 
   target_specific_t<hunter_main_pet_td_t> target_data;
@@ -8471,12 +8455,6 @@ void hunter_t::create_buffs()
         } )
       -> set_activated( false );
 
-  buffs.trigger_finger =
-    make_buff( this, "trigger_finger", talents.trigger_finger )
-      ->set_default_value( talents.trigger_finger->effectN( 1 ).percent() * ( 1 + talents.trigger_finger->effectN( 3 ).percent() ) )
-      ->add_invalidate( CACHE_AUTO_ATTACK_SPEED )
-      ->set_quiet(true);
-
   // Marksmanship Tree
 
   buffs.precise_shots = 
@@ -9158,7 +9136,6 @@ void hunter_t::arise()
   player_t::arise();
 
   buffs.lone_wolf->trigger();
-  buffs.trigger_finger->trigger();
 }
 
 void hunter_t::combat_begin()
@@ -9247,9 +9224,18 @@ double hunter_t::composite_melee_auto_attack_speed() const
   if ( buffs.bloodseeker -> check() )
     s /= 1 + buffs.bloodseeker -> check_stack_value();
 
-  if ( buffs.trigger_finger->check() )
-    s /= 1 + buffs.trigger_finger->check_value();
+  if ( talents.trigger_finger->ok() )
+  {
+    // TODO 18/1/25: Trigger Finger is maybe applying another attack speed mod from the effect 2 script separately (multiplicative), so there is always double the expected amount
+    // only one effect is doubled while petless, so mm sees triple the expected amount
+    s /= 1 + talents.trigger_finger->effectN( 2 ).percent();
 
+    if ( pets.main )
+      s /= 1 + talents.trigger_finger->effectN( 1 ).percent();
+    else
+      s /= 1 + talents.trigger_finger->effectN( 1 ).percent() * ( 1 + talents.trigger_finger->effectN( 3 ).percent() );
+  }
+  
   return s;
 }
 
