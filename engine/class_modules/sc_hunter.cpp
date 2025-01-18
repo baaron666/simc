@@ -429,13 +429,8 @@ public:
     buff_t* razor_fragments;
     buff_t* bullseye;
     buff_t* bulletstorm;
-    buff_t* double_tap;
-    
-    buff_t* lone_wolf;
     buff_t* volley;
-    buff_t* steady_focus;
-    buff_t* wailing_arrow_counter;
-    buff_t* wailing_arrow_override;
+    buff_t* double_tap;
 
     // Beast Mastery Tree
     std::array<buff_t*, BARBED_SHOT_BUFFS_MAX> barbed_shot;
@@ -473,7 +468,7 @@ public:
     buff_t* predators_thirst;
 
     // Tier Set Bonuses
-    //TWW - S1
+    // TWW - S1
     buff_t* harmonize; //BM 4pc
     buff_t* tww_s1_mm_4pc_moving_target; //MM 4pc
 
@@ -507,9 +502,6 @@ public:
     cooldown_t* target_acquisition;
     cooldown_t* volley;
     cooldown_t* salvo;
-
-
-    cooldown_t* legacy_of_the_windrunners;
     
     cooldown_t* kill_command;
     cooldown_t* barbed_shot;
@@ -606,14 +598,12 @@ public:
     spell_data_ptr_t alpha_predator; 
     spell_data_ptr_t kill_command;
 
-    // MM + BM
-    spell_data_ptr_t barrage;
-
     // Marksmanship Tree
     spell_data_ptr_t aimed_shot;
 
     spell_data_ptr_t rapid_fire;
     spell_data_ptr_t rapid_fire_tick;
+    spell_data_ptr_t rapid_fire_energize;
     spell_data_ptr_t precise_shots;
     spell_data_ptr_t precise_shots_buff;
 
@@ -685,41 +675,6 @@ public:
     spell_data_ptr_t salvo;
     spell_data_ptr_t bullet_hell;
 
-
-    spell_data_ptr_t improved_steady_shot;
-    spell_data_ptr_t pin_cushion;
-    spell_data_ptr_t crack_shot;
-
-    spell_data_ptr_t fan_the_hammer;
-    spell_data_ptr_t careful_aim;
-    spell_data_ptr_t light_ammo;
-    spell_data_ptr_t heavy_ammo;
-    spell_data_ptr_t steady_focus;
-
-    spell_data_ptr_t night_hunter;
-    spell_data_ptr_t tactical_reload;
-    spell_data_ptr_t serpentstalkers_trickery;
-    spell_data_ptr_t chimaera_shot;
-    spell_data_ptr_t chimaera_shot_nature;
-    spell_data_ptr_t chimaera_shot_frost;
-
-    spell_data_ptr_t killer_accuracy;
-    spell_data_ptr_t rapid_fire_barrage;
-    spell_data_ptr_t rapid_fire_barrage_override;
-    spell_data_ptr_t lone_wolf;
-    spell_data_ptr_t hydras_bite;
-
-    spell_data_ptr_t legacy_of_the_windrunners;
-    spell_data_ptr_t legacy_of_the_windrunners_wind_arrow;
-
-    spell_data_ptr_t wailing_arrow;
-    spell_data_ptr_t wailing_arrow_counter_buff;
-    spell_data_ptr_t wailing_arrow_override_buff;
-    spell_data_ptr_t wailing_arrow_override;
-    spell_data_ptr_t wailing_arrow_damage;
-
-    spell_data_ptr_t readiness;
-
     // Beast Mastery Tree
     spell_data_ptr_t cobra_shot;
     spell_data_ptr_t animal_companion;
@@ -750,6 +705,7 @@ public:
     spell_data_ptr_t dire_beast;
 
     spell_data_ptr_t a_murder_of_crows;
+    spell_data_ptr_t barrage;
     spell_data_ptr_t savagery;
     spell_data_ptr_t bestial_wrath;
     spell_data_ptr_t dire_command;
@@ -919,11 +875,14 @@ public:
     spell_data_ptr_t freezing_trap;
     spell_data_ptr_t arcane_shot;
     spell_data_ptr_t steady_shot;
+    spell_data_ptr_t steady_shot_energize;
     spell_data_ptr_t flare;
     spell_data_ptr_t serpent_sting;
 
+    // SV
     spell_data_ptr_t harpoon;
 
+    // MM
     spell_data_ptr_t multishot;
     spell_data_ptr_t eyes_in_the_sky;
     spell_data_ptr_t spotters_mark_debuff;
@@ -932,9 +891,9 @@ public:
 
   struct mastery_spells_t
   {
-    spell_data_ptr_t master_of_beasts;
-    spell_data_ptr_t sniper_training;
-    spell_data_ptr_t spirit_bond;
+    spell_data_ptr_t master_of_beasts; // BM
+    spell_data_ptr_t sniper_training; // MM
+    spell_data_ptr_t spirit_bond; // SV
     spell_data_ptr_t spirit_bond_buff;
   } mastery;
 
@@ -992,8 +951,6 @@ public:
     cooldowns.target_acquisition        = get_cooldown( "target_acquisition_icd" );
     cooldowns.volley                    = get_cooldown( "volley" );
     cooldowns.salvo                     = get_cooldown( "salvo_icd" );
-
-    cooldowns.legacy_of_the_windrunners = get_cooldown( "legacy_of_the_windrunners" );
     
     cooldowns.kill_command    = get_cooldown( "kill_command" );
     cooldowns.barbed_shot   = get_cooldown( "barbed_shot" );
@@ -1021,56 +978,56 @@ public:
   }
 
   // Character Definition
-  void      init() override;
-  void      init_spells() override;
-  void      init_base_stats() override;
-  void      create_actions() override;
-  void      create_buffs() override;
-  void      init_gains() override;
-  void      init_position() override;
-  void      init_procs() override;
-  void      init_rng() override;
-  void      init_scaling() override;
-  void      init_assessors() override;
-  void      init_action_list() override;
-  void      init_special_effects() override;
-  void      reset() override;
-  void      merge( player_t& other ) override;
-  void      arise() override;
-  void      combat_begin() override;
+  void init() override;
+  void init_spells() override;
+  void init_base_stats() override;
+  void create_actions() override;
+  void create_buffs() override;
+  void init_gains() override;
+  void init_position() override;
+  void init_procs() override;
+  void init_rng() override;
+  void init_scaling() override;
+  void init_assessors() override;
+  void init_action_list() override;
+  void init_special_effects() override;
+  void reset() override;
+  void merge( player_t& other ) override;
+  void arise() override;
+  void combat_begin() override;
 
   void datacollection_begin() override;
   void datacollection_end() override;
 
-  double    composite_melee_crit_chance() const override;
-  double    composite_spell_crit_chance() const override;
-  double    composite_rating_multiplier( rating_e ) const override;
-  double    composite_melee_auto_attack_speed() const override;
-  double    composite_player_target_crit_chance( player_t* target ) const override;
-  double    composite_player_critical_damage_multiplier( const action_state_t* ) const override;
-  double    composite_player_multiplier( school_e school ) const override;
-  double    composite_player_target_multiplier( player_t* target, school_e school ) const override;
-  double    composite_player_pet_damage_multiplier( const action_state_t*, bool ) const override;
-  double    composite_player_target_pet_damage_multiplier( player_t* target, bool guardian ) const override;
-  double    composite_leech() const override;
-  double    matching_gear_multiplier( attribute_e attr ) const override;
-  double    stacking_movement_modifier() const override;
-  void      invalidate_cache( cache_e ) override;
-  void      regen( timespan_t periodicity ) override;
-  double    resource_gain( resource_e resource_type, double amount, gain_t* g = nullptr, action_t* a = nullptr ) override;
-  void      create_options() override;
+  double composite_melee_crit_chance() const override;
+  double composite_spell_crit_chance() const override;
+  double composite_rating_multiplier( rating_e ) const override;
+  double composite_melee_auto_attack_speed() const override;
+  double composite_player_target_crit_chance( player_t* target ) const override;
+  double composite_player_critical_damage_multiplier( const action_state_t* ) const override;
+  double composite_player_multiplier( school_e school ) const override;
+  double composite_player_target_multiplier( player_t* target, school_e school ) const override;
+  double composite_player_pet_damage_multiplier( const action_state_t*, bool ) const override;
+  double composite_player_target_pet_damage_multiplier( player_t* target, bool guardian ) const override;
+  double composite_leech() const override;
+  double matching_gear_multiplier( attribute_e attr ) const override;
+  double stacking_movement_modifier() const override;
+  void invalidate_cache( cache_e ) override;
+  void regen( timespan_t periodicity ) override;
+  double resource_gain( resource_e resource_type, double amount, gain_t* g = nullptr, action_t* a = nullptr ) override;
+  void create_options() override;
   std::unique_ptr<expr_t> create_expression( util::string_view expression_str ) override;
   std::unique_ptr<expr_t> create_action_expression( action_t&, util::string_view expression_str ) override;
   action_t* create_action( util::string_view name, util::string_view options ) override;
-  pet_t*    create_pet( util::string_view name, util::string_view type ) override;
-  void      create_pets() override;
+  pet_t* create_pet( util::string_view name, util::string_view type ) override;
+  void create_pets() override;
   double resource_loss( resource_e resource_type, double amount, gain_t* g = nullptr, action_t* a = nullptr ) override;
   resource_e primary_resource() const override { return RESOURCE_FOCUS; }
-  role_e    primary_role() const override { return ROLE_ATTACK; }
-  stat_e    convert_hybrid_stat( stat_e s ) const override;
-  std::string      create_profile( save_e ) override;
-  void      copy_from( player_t* source ) override;
-  void      moving( ) override;
+  role_e primary_role() const override { return ROLE_ATTACK; }
+  stat_e convert_hybrid_stat( stat_e s ) const override;
+  std::string create_profile( save_e ) override;
+  void copy_from( player_t* source ) override;
+  void moving( ) override;
 
   std::string default_potion() const override { return hunter_apl::potion( this ); }
   std::string default_flask() const override { return hunter_apl::flask( this ); }
@@ -1179,13 +1136,11 @@ public:
 
     if ( p->talents.unnatural_causes.ok() )
       affected_by.unnatural_causes      = parse_damage_affecting_aura( this, p->talents.unnatural_causes_debuff );
-
+    
+    affected_by.sniper_training       = parse_damage_affecting_aura( this, p -> mastery.sniper_training );
     affected_by.trueshot_crit_damage_bonus = check_affected_by( this, p -> talents.trueshot -> effectN( 5 ) );
     affected_by.moving_target         = parse_damage_affecting_aura( this, p -> talents.moving_target_buff );
-
     affected_by.bullseye_crit_chance  = check_affected_by( this, p -> talents.bullseye -> effectN( 1 ).trigger() -> effectN( 1 ) );
-    affected_by.lone_wolf             = parse_damage_affecting_aura( this, p -> talents.lone_wolf );
-    affected_by.sniper_training       = parse_damage_affecting_aura( this, p -> mastery.sniper_training );
 
     affected_by.thrill_of_the_hunt    = check_affected_by( this, p -> talents.thrill_of_the_hunt -> effectN( 1 ).trigger() -> effectN( 1 ) );
     affected_by.bestial_wrath         = parse_damage_affecting_aura( this, p -> talents.bestial_wrath );
@@ -1204,7 +1159,6 @@ public:
     ab::apply_affecting_aura( p -> talents.specialized_arsenal );
     ab::apply_affecting_aura( p -> talents.improved_traps );
     ab::apply_affecting_aura( p -> talents.born_to_be_wild );
-    ab::apply_affecting_aura( p -> talents.hydras_bite );
     ab::apply_affecting_aura( p -> talents.blackrock_munitions );
     ab::apply_affecting_aura( p -> talents.lone_survivor );
 
@@ -1217,14 +1171,6 @@ public:
     ab::apply_affecting_aura( p -> talents.deadeye );
     ab::apply_affecting_aura( p -> talents.eagles_accuracy );
     ab::apply_affecting_aura( p -> talents.small_game_hunter );
-
-
-    ab::apply_affecting_aura( p -> talents.crack_shot );
-    ab::apply_affecting_aura( p -> talents.killer_accuracy );
-    ab::apply_affecting_aura( p -> talents.tactical_reload );
-    ab::apply_affecting_aura( p -> talents.night_hunter );
-    ab::apply_affecting_aura( p -> talents.fan_the_hammer );
-    ab::apply_affecting_aura( p -> talents.rapid_fire_barrage );
 
     // Beast Mastery Tree passives
     ab::apply_affecting_aura( p -> talents.war_orders );
@@ -1314,9 +1260,6 @@ public:
   {
     double am = ab::composite_da_multiplier( s );
 
-    if ( affected_by.lone_wolf.direct )
-      am *= 1 + p() -> buffs.lone_wolf -> check_value();
-
     if ( affected_by.bestial_wrath.direct )
       am *= 1 + p() -> buffs.bestial_wrath -> check_value();
 
@@ -1383,9 +1326,6 @@ public:
   double composite_ta_multiplier( const action_state_t* s ) const override
   {
     double am = ab::composite_ta_multiplier( s );
-
-    if ( affected_by.lone_wolf.tick )
-      am *= 1 + p() -> buffs.lone_wolf -> check_value();
 
     if ( affected_by.bestial_wrath.tick )
       am *= 1 + p() -> buffs.bestial_wrath -> check_value();
@@ -2203,7 +2143,6 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
     }
 
     spec_passive() -> trigger();
-    o() -> buffs.lone_wolf -> expire();
 
     if ( o()->talents.trigger_finger.ok() )
       o()->invalidate_cache( CACHE_AUTO_ATTACK_SPEED );
@@ -2218,13 +2157,9 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
       o() -> pets.main = nullptr;
 
       spec_passive() -> expire();
-      if ( !sim->event_mgr.canceled )
-      {
-        o()->buffs.lone_wolf->trigger();
 
-        if ( o()->talents.trigger_finger.ok() )
-          o()->invalidate_cache( CACHE_AUTO_ATTACK_SPEED );
-      }
+      if ( !sim->event_mgr.canceled && o()->talents.trigger_finger.ok() )
+        o()->invalidate_cache( CACHE_AUTO_ATTACK_SPEED );
     }
     if ( o() -> pets.animal_companion )
       o() -> pets.animal_companion -> demise();
@@ -3376,20 +3311,6 @@ struct tar_trap_aoe_t : public event_t
 } // end namespace events
 
 namespace buffs {
-
-struct trick_shots_t : public buff_t
-{
-  using buff_t::buff_t;
-
-  void expire_override( int remaining_stacks, timespan_t remaining_duration ) override
-  {
-    buff_t::expire_override( remaining_stacks, remaining_duration );
-
-    hunter_t* p = debug_cast<hunter_t*>( player );
-    p -> buffs.razor_fragments -> trigger();
-  }
-};
-
 } // end namespace buffs
 
 void hunter_t::trigger_bloodseeker_update()
@@ -3818,191 +3739,25 @@ struct residual_bleed_base_t : public residual_action::residual_periodic_action_
   }
 };
 
-// Legacy of the Windrunners - Wind Arrow (Marksmanship Talent) ==========================================
+// Steady Shot ========================================================================
 
-struct wind_arrow_t final : public hunter_ranged_attack_t
+struct steady_shot_t: public hunter_ranged_attack_t
 {
-  struct
-  {
-    double multiplier = 0;
-    double high, low;
-  } careful_aim;
-
-  wind_arrow_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( n, p, p->talents.legacy_of_the_windrunners_wind_arrow )
-  {
-    background = dual = true;
-
-    if ( p->talents.careful_aim.ok() )
-    {
-      careful_aim.high       = p->talents.careful_aim->effectN( 1 ).base_value();
-      careful_aim.low        = p->talents.careful_aim->effectN( 2 ).base_value();
-      careful_aim.multiplier = p->talents.careful_aim->effectN( 3 ).percent();
-    }
-  }
-
-  void execute() override
-  {
-    hunter_ranged_attack_t::execute();
-
-    if ( p()->talents.wailing_arrow.ok() )
-    {
-      p()->buffs.wailing_arrow_counter->trigger();
-      if ( p()->buffs.wailing_arrow_counter->at_max_stacks() )
-      {
-        p()->buffs.wailing_arrow_override->trigger();
-        p()->buffs.wailing_arrow_counter->expire();
-      }
-    }
-  }
-
-  double composite_target_da_multiplier( player_t* t ) const override
-  {
-    double m = hunter_ranged_attack_t::composite_target_da_multiplier( t );
-
-    if ( careful_aim.multiplier )
-    {
-      const double target_health_pct = t->health_percentage();
-      if ( target_health_pct > careful_aim.high || target_health_pct < careful_aim.low )
-        m *= 1 + careful_aim.multiplier;
-    }
-
-    return m;
-  }
-};
-
-// Rapid Fire/Rapid Fire Barrage (Marksmanship Talent) ========================================================
-
-struct rapid_fire_tick_t : public hunter_ranged_attack_t
-{
-  const int trick_shots_targets;
-
-  struct
-  {
-    double chance = 0;
-    wind_arrow_t* wind_arrow = nullptr;
-  } legacy_of_the_windrunners;
-
-  rapid_fire_tick_t( util::string_view n, hunter_t* p )
-    : hunter_ranged_attack_t( n, p, p->talents.rapid_fire_tick ),
-      trick_shots_targets( as<int>( p->talents.trick_shots_data->effectN( 3 ).base_value() +
-                                    p->talents.light_ammo->effectN( 2 ).base_value() +
-                                    p->talents.heavy_ammo->effectN( 2 ).base_value() ) )
-  {
-    background = dual = true;
-    direct_tick = true;
-    radius = 8;
-    base_aoe_multiplier = p->talents.trick_shots_data->effectN( 5 ).percent() + p->talents.heavy_ammo->effectN( 4 ).percent();
-
-    // energize
-    parse_effect_data( p->find_spell( 263585 )->effectN( 1 ) );
-
-    if ( p->talents.legacy_of_the_windrunners.ok() )
-    {
-      legacy_of_the_windrunners.chance = p->talents.legacy_of_the_windrunners->proc_chance();
-      legacy_of_the_windrunners.wind_arrow = p->get_background_action<wind_arrow_t>( "wind_arrow" );
-    }
-  }
-
-  int n_targets() const override
-  {
-    if ( p()->buffs.trick_shots->check() )
-      return 1 + trick_shots_targets;
-    return hunter_ranged_attack_t::n_targets();
-  }
-
-  void execute() override
-  {
-    hunter_ranged_attack_t::execute();
-
-    p()->buffs.trick_shots->up();  // Benefit tracking
-
-    if ( p()->cooldowns.lunar_storm->up() )
-      p()->trigger_lunar_storm( target );
-  }
-
-  void impact( action_state_t* state ) override
-  {
-    hunter_ranged_attack_t::impact( state );
-
-    if ( legacy_of_the_windrunners.wind_arrow && p()->cooldowns.legacy_of_the_windrunners->up() &&
-      rng().roll( legacy_of_the_windrunners.chance ) )
-    {
-      legacy_of_the_windrunners.wind_arrow->execute_on_target( state->target );
-      p()->cooldowns.legacy_of_the_windrunners->start();
-    }
-
-    p()->buffs.bulletstorm->trigger();
-  }
-};
-
-// Barrage (Marksmanship/Beast Mastery Talent) ===========================================
-
-struct barrage_t: public hunter_spell_t
-{
-  struct barrage_damage_t final : public hunter_ranged_attack_t
-  {
-    barrage_damage_t( util::string_view n, hunter_t* p ):
-      hunter_ranged_attack_t( n, p, p -> talents.barrage -> effectN( 1 ).trigger() )
-    {
-      background = dual = true;
-      aoe = -1;
-      reduced_aoe_targets = data().effectN( 1 ).base_value();
-    }
-  };
-
-  struct rapid_fire_barrage_tick_t final : public hunter_ranged_attack_t
-  {
-    rapid_fire_tick_t* tick;
-
-    rapid_fire_barrage_tick_t( util::string_view n, hunter_t* p )
-      : hunter_ranged_attack_t( n, p, p->talents.rapid_fire_barrage )
-    {
-      aoe = 1 + as<int>( p->talents.rapid_fire_barrage_override->effectN( 3 ).base_value() );
-      tick = p->get_background_action<rapid_fire_tick_t>( "rapid_fire_tick" );
-      tick->base_multiplier *= p->talents.rapid_fire_barrage->effectN( 4 ).percent();
-    }
-
-    void impact( action_state_t* state ) override
-    {
-      hunter_ranged_attack_t::impact( state );
-
-      tick->execute_on_target( state->target );
-    }
-  };
-
-  action_t* barrage_tick = nullptr;
-
-  barrage_t( hunter_t* p, util::string_view options_str ):
-    hunter_spell_t( "barrage", p, p->talents.rapid_fire_barrage.ok() ? p -> talents.rapid_fire_barrage_override : p -> talents.barrage )
+  steady_shot_t( hunter_t* p, util::string_view options_str ):
+    hunter_ranged_attack_t( "steady_shot", p, p -> specs.steady_shot )
   {
     parse_options( options_str );
 
-    may_miss = may_crit = false;
-    channeled = true;
-
-    if ( p->talents.rapid_fire_barrage.ok() )
-    {
-      rapid_fire_barrage_tick_t* rapid_fire_tick = p->get_background_action<rapid_fire_barrage_tick_t>( "rapid_fire_barrage" );
-      tick_action = rapid_fire_tick;
-      add_child( rapid_fire_tick->tick );
-    }
-    else
-      tick_action = p->get_background_action<barrage_damage_t>( "barrage_damage" );
-
-    starved_proc = p -> get_proc( "starved: barrage" );
+    energize_type = action_energize::ON_CAST;
+    energize_resource = RESOURCE_FOCUS;
+    energize_amount = p->specs.steady_shot_energize->effectN( 1 ).base_value();
   }
 
   void execute() override
   {
-    hunter_spell_t::execute();
+    hunter_ranged_attack_t::execute();
 
-    if ( p()->specialization() == HUNTER_BEAST_MASTERY &&
-         p()->buffs.beast_cleave->buff_duration() > p()->buffs.beast_cleave->remains() )
-    {
-      p() -> buffs.beast_cleave -> trigger(); 
-      for ( auto pet : pets::active<pets::hunter_pet_t>( p() -> pets.main, p() -> pets.animal_companion ) )
-        pet -> buffs.beast_cleave -> trigger();
-    }
+    p()->cooldowns.aimed_shot->adjust( -data().effectN( 2 ).time_value() );
   }
 };
 
@@ -4130,7 +3885,7 @@ struct arcane_shot_t : public arcane_shot_base_t
   }
 };
 
-// Serpent Sting =====================================================================
+// Serpent Sting (Beast Mastery/Survival) =====================================================================
 
 struct serpent_sting_t: public hunter_ranged_attack_t
 {
@@ -4531,6 +4286,17 @@ struct kill_shot_t : public kill_shot_base_t
   }
 };
 
+// Bursting Shot ======================================================================
+
+struct bursting_shot_t : public hunter_ranged_attack_t
+{
+  bursting_shot_t( hunter_t* p, util::string_view options_str ) :
+    hunter_ranged_attack_t( "bursting_shot", p, p -> talents.bursting_shot )
+  {
+    parse_options( options_str );
+  }
+};
+
 // Black Arrow (Dark Ranger) =========================================================
 
 struct black_arrow_dot_t : public hunter_ranged_attack_t
@@ -4688,6 +4454,7 @@ struct shadow_surge_t final : hunter_ranged_attack_t
 };
 
 // Phantom Pain (Dark Ranger) =========================================================
+
 struct phantom_pain_t final : hunter_ranged_attack_t
 {
   phantom_pain_t( hunter_t* p ) : hunter_ranged_attack_t( "phantom_pain", p, p->find_spell( 468019 ) )
@@ -5150,6 +4917,49 @@ struct barbed_shot_t: public hunter_ranged_attack_t
   }
 };
 
+// Barrage (Beast Mastery Talent) ===========================================
+
+struct barrage_t: public hunter_spell_t
+{
+  struct barrage_damage_t final : public hunter_ranged_attack_t
+  {
+    barrage_damage_t( util::string_view n, hunter_t* p ):
+      hunter_ranged_attack_t( n, p, p -> talents.barrage -> effectN( 1 ).trigger() )
+    {
+      background = dual = true;
+      aoe = -1;
+      reduced_aoe_targets = data().effectN( 1 ).base_value();
+    }
+  };
+
+  action_t* barrage_tick = nullptr;
+
+  barrage_t( hunter_t* p, util::string_view options_str ):
+    hunter_spell_t( "barrage", p, p -> talents.barrage )
+  {
+    parse_options( options_str );
+
+    may_miss = may_crit = false;
+    channeled = true;
+
+    tick_action = p->get_background_action<barrage_damage_t>( "barrage_damage" );
+
+    starved_proc = p -> get_proc( "starved: barrage" );
+  }
+
+  void execute() override
+  {
+    hunter_spell_t::execute();
+
+    if ( p()->buffs.beast_cleave->buff_duration() > p()->buffs.beast_cleave->remains() )
+    {
+      p() -> buffs.beast_cleave -> trigger(); 
+      for ( auto pet : pets::active<pets::hunter_pet_t>( p() -> pets.main, p() -> pets.animal_companion ) )
+        pet -> buffs.beast_cleave -> trigger();
+    }
+  }
+};
+
 //==============================
 // Marksmanship attacks
 //==============================
@@ -5163,41 +4973,27 @@ struct master_marksman_t : residual_bleed_base_t
   }
 };
 
-// Chimaera Shot ======================================================================
+// Multi-Shot =================================================================
 
-struct chimaera_shot_t : public hunter_ranged_attack_t
+struct multishot_mm_t: public hunter_ranged_attack_t
 {
-  struct impact_t final : public hunter_ranged_attack_t
+  struct state_data_t
   {
-    impact_t( util::string_view n, hunter_t* p, const spell_data_t* s, double effectiveness = 1 ) :
-      hunter_ranged_attack_t( n, p, s )
+    bool empowered_by_precise_shots = false;
+
+    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out )
     {
-      background = dual = true;
-
-      // "Secondary" frost damage multiplier
-      if ( s -> id() == 344121 )
-        base_multiplier *= p -> talents.chimaera_shot -> effectN( 1 ).percent();
-
-      base_multiplier *= effectiveness;
+      fmt::format_to( out, "empowered_by_precise_shots={}", data.empowered_by_precise_shots );
     }
   };
+  using state_t = hunter_action_state_t<state_data_t>;
 
-  impact_t* nature = nullptr;
-  impact_t* frost = nullptr;
-
-  chimaera_shot_t( hunter_t* p, util::string_view options_str ) : hunter_ranged_attack_t( "chimaera_shot", p, p -> talents.chimaera_shot )
+  multishot_mm_t( hunter_t* p, util::string_view options_str ) : hunter_ranged_attack_t( "multishot", p, p->specs.multishot )
   {
     parse_options( options_str );
 
-    aoe = 2;
-    radius = 5;
-    school = SCHOOL_FROSTSTRIKE; // Just so the report shows a mixture of the two colors.
-
-    nature = p->get_background_action<impact_t>( "chimaera_shot_nature", p->talents.chimaera_shot_nature );
-    frost  = p->get_background_action<impact_t>( "chimaera_shot_frost", p->talents.chimaera_shot_frost );
-
-    add_child( nature );
-    add_child( frost );
+    aoe = -1;
+    reduced_aoe_targets = p -> find_spell( 2643 ) -> effectN( 1 ).base_value();
   }
 
   void execute() override
@@ -5205,28 +5001,68 @@ struct chimaera_shot_t : public hunter_ranged_attack_t
     hunter_ranged_attack_t::execute();
 
     p()->consume_precise_shots();
+
+    if ( ( p() -> talents.trick_shots.ok() && num_targets_hit >= p() -> talents.trick_shots -> effectN( 2 ).base_value() ) )
+      p() -> buffs.trick_shots -> trigger();
+
+    p()->trigger_symphonic_arsenal();
   }
 
   void schedule_travel( action_state_t* s ) override
   {
-    impact_t* damage = ( s -> chain_target == 0 ) ? nature : frost;
-    damage -> execute_on_target( s -> target );
-    action_state_t::release( s );
+    hunter_ranged_attack_t::schedule_travel( s );
   }
 
-  // Don't bother, the results will be discarded anyway.
-  result_e calculate_result( action_state_t* ) const override { return RESULT_NONE; }
-  double calculate_direct_amount( action_state_t* ) const override { return 0.0; }
-};
-
-// Bursting Shot ======================================================================
-
-struct bursting_shot_t : public hunter_ranged_attack_t
-{
-  bursting_shot_t( hunter_t* p, util::string_view options_str ) :
-    hunter_ranged_attack_t( "bursting_shot", p, p -> talents.bursting_shot )
+  void impact( action_state_t* s ) override
   {
-    parse_options( options_str );
+    hunter_ranged_attack_t::impact( s );
+
+    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots )
+      p()->trigger_spotters_mark( s->target );
+
+    td( s->target )->debuffs.shrapnel_shot->expire();
+
+    p()->cooldowns.rapid_fire->adjust( -p()->talents.bullet_hell->effectN( 1 ).time_value() );
+  }
+
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double m = hunter_ranged_attack_t::composite_da_multiplier( s );
+
+    m *= 1 + p()->buffs.precise_shots->check_stack_value();
+
+    return m;
+  }
+
+  double composite_target_multiplier( player_t* target ) const override
+  {
+    double m = hunter_ranged_attack_t::composite_target_multiplier( target );
+
+    m *= 1 + td( target )->debuffs.shrapnel_shot->value();
+
+    return m;
+  }
+
+  double cost_pct_multiplier() const override
+  {
+    double c = hunter_ranged_attack_t::cost_pct_multiplier();
+
+    if ( p()->buffs.precise_shots->check() )
+      c *= 1 + p()->talents.precise_shots_buff->effectN( 3 ).percent();
+
+    return c;
+  }
+
+  action_state_t* new_state() override
+  {
+    return new state_t( this, target );
+  }
+
+  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+  {
+    hunter_ranged_attack_t::snapshot_internal( s, flags, rt );
+
+    debug_cast<state_t*>( s )->empowered_by_precise_shots = p()->buffs.precise_shots->up();
   }
 };
 
@@ -5234,43 +5070,7 @@ struct bursting_shot_t : public hunter_ranged_attack_t
 
 struct aimed_shot_base_t : public hunter_ranged_attack_t
 {
-  struct serpent_sting_hydras_bite_t final : public serpent_sting_t
-  {
-    serpent_sting_hydras_bite_t( util::string_view n, hunter_t* p ) : serpent_sting_t( n, p )
-    {
-      aoe = as<int>( p->talents.hydras_bite->effectN( 3 ).base_value() );
-    }
-
-    timespan_t travel_time() const override
-    {
-      return 0_s;
-    }
-
-    size_t available_targets( std::vector<player_t*>& tl ) const override
-    {
-      serpent_sting_t::available_targets( tl );
-
-      // Remove the cast target as it will get hit by Serpentstalker's Trickery
-      range::erase_remove( tl, target );
-
-      if ( is_aoe() && tl.size() > 1 )
-      {
-        // Prefer targets without Serpent Sting ticking.
-        auto start = tl.begin();
-        std::partition( *start == target ? std::next( start ) : start, tl.end(),
-                        [ this ]( player_t* t ) { return !( this->td( t )->dots.serpent_sting->is_ticking() ); } );
-      }
-
-      return tl.size();
-    }
-  };
-
   const int trick_shots_targets;
-
-  struct {
-    double multiplier = 0;
-    double high, low;
-  } careful_aim;
 
   bool lock_and_loaded = false;
   
@@ -5278,11 +5078,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     double chance = 0;
     proc_t* proc;
   } surging_shots;
-  
-  struct {
-    int count = 0;
-    wind_arrow_t* wind_arrow = nullptr;
-  } legacy_of_the_windrunners;
 
   struct {
     double chance = 0; 
@@ -5290,28 +5085,13 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
   timespan_t target_acquisition_reduction;
 
-  serpent_sting_t* serpentstalkers_trickery = nullptr;
-  serpent_sting_hydras_bite_t* hydras_bite = nullptr;
-
   aimed_shot_base_t( util::string_view n, hunter_t* p, spell_data_ptr_t s ) :
     hunter_ranged_attack_t( n, p, s ),
-    trick_shots_targets( as<int>( p->talents.trick_shots_data->effectN( 1 ).base_value()
-      + p -> talents.light_ammo -> effectN( 1 ).base_value()
-      + p -> talents.heavy_ammo -> effectN( 1 ).base_value() ) ),
+    trick_shots_targets( as<int>( p->talents.trick_shots_data->effectN( 1 ).base_value() ) ),
     target_acquisition_reduction( p->talents.target_acquisition->effectN( 1 ).time_value() )
   {
     radius = 8;
-    base_aoe_multiplier = p->talents.trick_shots_data->effectN( 4 ).percent() + p->talents.heavy_ammo->effectN( 3 ).percent();
-
-    if ( p -> talents.careful_aim.ok() )
-    {
-      careful_aim.high = p -> talents.careful_aim -> effectN( 1 ).base_value();
-      careful_aim.low = p -> talents.careful_aim -> effectN( 2 ).base_value();
-      careful_aim.multiplier = p -> talents.careful_aim -> effectN( 3 ).percent();
-    }
-
-    if ( p -> talents.serpentstalkers_trickery.ok() )
-      serpentstalkers_trickery = p->get_background_action<serpent_sting_t>( "serpent_sting" );
+    base_aoe_multiplier = p->talents.trick_shots_data->effectN( 4 ).percent();
 
     if ( p -> talents.surging_shots.ok() )
     {
@@ -5319,19 +5099,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       surging_shots.proc = p -> get_proc( "Surging Shots Rapid Fire reset" );
     }
 
-    if ( p -> talents.legacy_of_the_windrunners.ok() )
-    {
-      legacy_of_the_windrunners.count = as<int>( p->talents.legacy_of_the_windrunners->effectN( 1 ).base_value() );
-      legacy_of_the_windrunners.wind_arrow = p->get_background_action<wind_arrow_t>( "wind_arrow" );
-    }
-
     if ( p->talents.deathblow.ok() )
-    {
       deathblow.chance = p->talents.improved_deathblow.ok() ? p->talents.improved_deathblow->effectN( 2 ).percent() : p->talents.deathblow->effectN( 1 ).percent();
-    }
-
-    if ( p->talents.hydras_bite.ok() )
-      hydras_bite = p->get_background_action<serpent_sting_hydras_bite_t>( "serpent_sting_hydras_bite" );
   }
 
   double action_multiplier() const override
@@ -5356,13 +5125,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
   double composite_target_da_multiplier( player_t* t ) const override
   {
     double m = hunter_ranged_attack_t::composite_target_da_multiplier( t );
-
-    if ( careful_aim.multiplier )
-    {
-      const double target_health_pct = t -> health_percentage();
-      if ( target_health_pct > careful_aim.high || target_health_pct < careful_aim.low )
-        m *= 1 + careful_aim.multiplier;
-    }
 
     m *= 1 + td( target )->debuffs.spotters_mark->check_value();
 
@@ -5425,9 +5187,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
     hunter_ranged_attack_t::execute();
 
-    if ( serpentstalkers_trickery )
-      serpentstalkers_trickery->execute_on_target( target );
-
     int precise_shot_stacks = 1;
     if ( rng().roll( p()->talents.windrunner_quiver->effectN( 6 ).percent() ) )
       precise_shot_stacks++;
@@ -5436,13 +5195,10 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     if ( rng().roll( deathblow.chance ) )
       p()->trigger_deathblow( target );
 
-    if ( !p()->buffs.wailing_arrow_override->check() )
-    { 
-      p()->buffs.trick_shots->up(); // Benefit tracking
-      p()->consume_trick_shots();
-    }
+    p()->buffs.trick_shots->up(); // Benefit tracking
+    p()->consume_trick_shots();
 
-    // XXX: 2020-10-22 Lock and Load completely supresses consumption of Streamline
+    // Lock and Load completely supresses consumption of Streamline
     if ( !p()->buffs.lock_and_load->check() )
       p()->buffs.streamline->expire();
 
@@ -5458,21 +5214,13 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       surging_shots.proc -> occur();
       p() -> cooldowns.rapid_fire -> reset( true );
     }
-
-    if ( legacy_of_the_windrunners.count )
-    {
-      int count = legacy_of_the_windrunners.count;
-      if ( p()->buffs.trueshot->check() )
-        count += as<int>( p()->talents.readiness->effectN( 3 ).base_value() );
-      for ( int i = 0; i < count; i++ )
-        legacy_of_the_windrunners.wind_arrow->execute_on_target( target );
-    }
   }
 
   int n_targets() const override
   {
     if ( p()->buffs.trick_shots->check() )
       return 1 + trick_shots_targets;
+
     return hunter_ranged_attack_t::n_targets();
   }
 
@@ -5496,11 +5244,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
   void impact( action_state_t* s ) override
   {
     hunter_ranged_attack_t::impact( s );
-
-    if ( s -> chain_target == 0 ) {
-      if ( hydras_bite )
-        hydras_bite->execute_on_target( s->target );
-    }
 
     if ( p()->talents.phantom_pain.ok() )
     {
@@ -5607,11 +5350,6 @@ struct aimed_shot_t : public aimed_shot_base_t
       double_tap = p->get_background_action<aimed_shot_double_tap_t>( "aimed_shot_double_tap" );
   }
 
-  bool ready() override
-  {
-    return !p()->buffs.wailing_arrow_override->check() && aimed_shot_base_t::ready();
-  }
-
   void execute() override
   {
     hunter_ranged_attack_t::execute();
@@ -5636,125 +5374,6 @@ struct aimed_shot_t : public aimed_shot_base_t
   }
 };
 
-// Wailing Arrow =====================================================================
-
-struct wailing_arrow_t : public aimed_shot_base_t
-{
-  struct splash_damage_t final : hunter_ranged_attack_t
-  {
-    splash_damage_t( util::string_view n, hunter_t* p )
-      : hunter_ranged_attack_t( n, p, p->talents.wailing_arrow_damage )
-    {
-      aoe = -1;
-      attack_power_mod.direct = data().effectN( 2 ).ap_coeff();
-      dual = true;
-    }
-  };
-
-  struct primary_damage_t final : hunter_ranged_attack_t
-  {
-    primary_damage_t( util::string_view n, hunter_t* p )
-      : hunter_ranged_attack_t( n, p, p->talents.wailing_arrow_damage )
-    {
-      attack_power_mod.direct = data().effectN( 1 ).ap_coeff();
-
-      dual = true;
-    }
-  };
-
-  primary_damage_t* primary_damage;
-  splash_damage_t* splash_damage;
-
-  wailing_arrow_t( hunter_t* p, util::string_view options_str )
-    : aimed_shot_base_t( "wailing_arrow", p, p->talents.wailing_arrow_override )
-  {
-    parse_options( options_str );
-
-    aoe = 1;
-
-    primary_damage = p->get_background_action<primary_damage_t>( "wailing_arrow_primary" );
-    primary_damage->stats = stats;
-    primary_damage->base_aoe_multiplier = base_aoe_multiplier;
-
-    splash_damage = p->get_background_action<splash_damage_t>( "wailing_arrow_splash" );
-    add_child( splash_damage );
-
-    stats->action_list.push_back( primary_damage );
-  }
-
-  void execute() override
-  {
-    aimed_shot_base_t::execute();
-
-    if ( p()->talents.readiness.ok() )
-    {
-      p()->cooldowns.rapid_fire->reset( false );
-      p()->cooldowns.aimed_shot->reset( p()->talents.readiness->effectN( 2 ).base_value() );
-    }
-
-    p()->buffs.wailing_arrow_override->expire();
-  }
-
-  void impact( action_state_t* state ) override
-  {
-    aimed_shot_base_t::impact( state );
-
-    primary_damage->execute_on_target( state->target );
-    splash_damage->execute_on_target( state->target );
-  }
-
-  int n_targets() const override
-  {
-    return hunter_ranged_attack_t::n_targets();
-  }
-
-  bool ready() override
-  {
-    return p()->buffs.wailing_arrow_override->check() && aimed_shot_base_t::ready();
-  }
-
-  result_e calculate_result( action_state_t* ) const override
-  {
-    return RESULT_NONE;
-  }
-
-  double calculate_direct_amount( action_state_t* ) const override
-  {
-    return 0.0;
-  }
-};
-
-// Steady Shot ========================================================================
-
-struct steady_shot_t: public hunter_ranged_attack_t
-{
-  steady_shot_t( hunter_t* p, util::string_view options_str ):
-    hunter_ranged_attack_t( "steady_shot", p, p -> specs.steady_shot )
-  {
-    parse_options( options_str );
-
-    energize_type = action_energize::ON_CAST;
-    energize_resource = RESOURCE_FOCUS;
-    energize_amount = p->find_spell( 77443 )->effectN( 1 ).base_value();
-
-    if ( p -> talents.improved_steady_shot.ok() )
-    {
-      energize_amount += p->talents.improved_steady_shot->effectN( 1 ).base_value();
-    }
-  }
-
-  void execute() override
-  {
-    hunter_ranged_attack_t::execute();
-
-    p() -> buffs.steady_focus -> trigger();
-    if ( p()->talents.pin_cushion.ok() )
-    {
-      p()->cooldowns.aimed_shot->adjust( -p()->talents.pin_cushion->effectN( 1 ).time_value() ); 
-    }
-  }
-};
-
 // Rapid Fire =========================================================================
 
 struct rapid_fire_t: public hunter_spell_t
@@ -5768,6 +5387,48 @@ struct rapid_fire_t: public hunter_spell_t
     }
   };
   using state_t = hunter_action_state_t<state_data_t>;
+
+  struct rapid_fire_tick_t : public hunter_ranged_attack_t
+  {
+    const int trick_shots_targets;
+
+    rapid_fire_tick_t( util::string_view n, hunter_t* p )
+      : hunter_ranged_attack_t( n, p, p->talents.rapid_fire_tick ),
+        trick_shots_targets( as<int>( p->talents.trick_shots_data->effectN( 3 ).base_value() ) )
+    {
+      background = dual = true;
+      direct_tick = true;
+      radius = 8;
+      base_aoe_multiplier = p->talents.trick_shots_data->effectN( 5 ).percent();
+
+      // energize
+      parse_effect_data( p->talents.rapid_fire_energize->effectN( 1 ) );
+    }
+
+    int n_targets() const override
+    {
+      if ( p()->buffs.trick_shots->check() )
+        return 1 + trick_shots_targets;
+      return hunter_ranged_attack_t::n_targets();
+    }
+
+    void execute() override
+    {
+      hunter_ranged_attack_t::execute();
+
+      p()->buffs.trick_shots->up();  // Benefit tracking
+
+      if ( p()->cooldowns.lunar_storm->up() )
+        p()->trigger_lunar_storm( target );
+    }
+
+    void impact( action_state_t* state ) override
+    {
+      hunter_ranged_attack_t::impact( state );
+
+      p()->buffs.bulletstorm->trigger();
+    }
+  };
 
   struct rapid_fire_tick_aspect_of_the_hydra : rapid_fire_tick_t
   {
@@ -5841,10 +5502,7 @@ struct rapid_fire_t: public hunter_spell_t
     hunter_spell_t::last_tick( d );
 
     p()->consume_trick_shots();
-
-    //2024-07-16: When talented into Fan The Hammer, In The Rhythm will trigger on the old last tick (7th instead of 10th).
     p()->buffs.in_the_rhythm->trigger();
-
     p()->buffs.double_tap->expire();
   }
 
@@ -5895,99 +5553,6 @@ struct rapid_fire_t: public hunter_spell_t
   {
     hunter_spell_t::snapshot_state( s, type );
     debug_cast<state_t*>( s ) -> double_tap = p() -> buffs.double_tap -> up();
-  }
-};
-
-// Multi-Shot =================================================================
-
-struct multishot_mm_t: public hunter_ranged_attack_t
-{
-  struct state_data_t
-  {
-    bool empowered_by_precise_shots = false;
-
-    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out )
-    {
-      fmt::format_to( out, "empowered_by_precise_shots={}", data.empowered_by_precise_shots );
-    }
-  };
-  using state_t = hunter_action_state_t<state_data_t>;
-
-  multishot_mm_t( hunter_t* p, util::string_view options_str ) : hunter_ranged_attack_t( "multishot", p, p->specs.multishot )
-  {
-    parse_options( options_str );
-
-    aoe = -1;
-    reduced_aoe_targets = p -> find_spell( 2643 ) -> effectN( 1 ).base_value();
-  }
-
-  void execute() override
-  {
-    hunter_ranged_attack_t::execute();
-
-    p()->consume_precise_shots();
-
-    if ( ( p() -> talents.trick_shots.ok() && num_targets_hit >= p() -> talents.trick_shots -> effectN( 2 ).base_value() ) )
-      p() -> buffs.trick_shots -> trigger();
-
-    p()->trigger_symphonic_arsenal();
-  }
-
-  void schedule_travel( action_state_t* s ) override
-  {
-    hunter_ranged_attack_t::schedule_travel( s );
-  }
-
-  void impact( action_state_t* s ) override
-  {
-    hunter_ranged_attack_t::impact( s );
-
-    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots )
-      p()->trigger_spotters_mark( s->target );
-
-    td( s->target )->debuffs.shrapnel_shot->expire();
-
-    p()->cooldowns.rapid_fire->adjust( -p()->talents.bullet_hell->effectN( 1 ).time_value() );
-  }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double m = hunter_ranged_attack_t::composite_da_multiplier( s );
-
-    m *= 1 + p()->buffs.precise_shots->check_stack_value();
-
-    return m;
-  }
-
-  double composite_target_multiplier( player_t* target ) const override
-  {
-    double m = hunter_ranged_attack_t::composite_target_multiplier( target );
-
-    m *= 1 + td( target )->debuffs.shrapnel_shot->value();
-
-    return m;
-  }
-
-  double cost_pct_multiplier() const override
-  {
-    double c = hunter_ranged_attack_t::cost_pct_multiplier();
-
-    if ( p()->buffs.precise_shots->check() )
-      c *= 1 + p()->talents.precise_shots_buff->effectN( 3 ).percent();
-
-    return c;
-  }
-
-  action_state_t* new_state() override
-  {
-    return new state_t( this, target );
-  }
-
-  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
-  {
-    hunter_ranged_attack_t::snapshot_internal( s, flags, rt );
-
-    debug_cast<state_t*>( s )->empowered_by_precise_shots = p()->buffs.precise_shots->up();
   }
 };
 
@@ -6602,6 +6167,10 @@ struct coordinated_assault_t: public hunter_melee_attack_t
 namespace spells
 {
 
+//==============================
+// Shared spells
+//==============================
+
 // Base Interrupt ===========================================================
 
 struct interrupt_base_t: public hunter_spell_t
@@ -6624,10 +6193,6 @@ struct interrupt_base_t: public hunter_spell_t
     return hunter_spell_t::target_ready( candidate_target );
   }
 };
-
-//==============================
-// Shared spells
-//==============================
 
 // Summon Pet ===============================================================
 
@@ -7355,9 +6920,6 @@ struct trueshot_t: public hunter_spell_t
     // Applying Trueshot directly does not extend an existing Trueshot and resets Unerring Vision stacks.
     p() -> buffs.trueshot -> expire();
     p() -> buffs.trueshot -> trigger();
-
-    if ( p()->talents.readiness.ok() )
-      p()->buffs.wailing_arrow_override->trigger();
     
     if ( p()->talents.withering_fire.ok() && !is_precombat )
     {
@@ -7792,20 +7354,6 @@ void hunter_td_t::target_demise()
  */
 std::unique_ptr<expr_t> hunter_t::create_action_expression ( action_t& action, util::string_view expression_str )
 {
-  auto splits = util::string_split<util::string_view>( expression_str, "." );
-
-  // Careful Aim expression
-  if ( splits.size() == 1 && splits[ 0 ] == "ca_active" )
-  {
-    if ( !talents.careful_aim.ok() )
-      return expr_t::create_constant( "ca_active", false );
-
-    return make_fn_expr( "ca_active",
-      [ &action, high_pct = talents.careful_aim -> effectN( 1 ).base_value() ] {
-        return action.get_expression_target()->health_percentage() > high_pct;
-      } );
-  }
-
   return player_t::create_action_expression( action, expression_str );
 }
 
@@ -7857,7 +7405,6 @@ action_t* hunter_t::create_action( util::string_view name, util::string_view opt
   if ( name == "bursting_shot"         ) return new          bursting_shot_t( this, options_str );
   if ( name == "butchery"              ) return new               butchery_t( this, options_str );
   if ( name == "call_of_the_wild"      ) return new       call_of_the_wild_t( this, options_str );
-  if ( name == "chimaera_shot"         ) return new          chimaera_shot_t( this, options_str );
   if ( name == "cobra_shot"            ) return new             cobra_shot_t( this, options_str );
   if ( name == "coordinated_assault"   ) return new    coordinated_assault_t( this, options_str );
   if ( name == "counter_shot"          ) return new           counter_shot_t( this, options_str );
@@ -7879,7 +7426,6 @@ action_t* hunter_t::create_action( util::string_view name, util::string_view opt
   if ( name == "tar_trap"              ) return new               tar_trap_t( this, options_str );
   if ( name == "trueshot"              ) return new               trueshot_t( this, options_str );
   if ( name == "volley"                ) return new                 volley_t( this, options_str );
-  if ( name == "wailing_arrow"         ) return new          wailing_arrow_t( this, options_str );
   if ( name == "wildfire_bomb"         ) return new          wildfire_bomb_t( this, options_str );
 
   if ( name == "raptor_strike" || name == "mongoose_bite" || name == "raptor_bite" || name == "mongoose_strike" )
@@ -8001,7 +7547,8 @@ void hunter_t::init_spells()
     talents.aimed_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Aimed Shot", HUNTER_MARKSMANSHIP );
 
     talents.rapid_fire                        = find_talent_spell( talent_tree::SPECIALIZATION, "Rapid Fire", HUNTER_MARKSMANSHIP );
-    talents.rapid_fire_tick                   = find_spell( 257045 );
+    talents.rapid_fire_tick                   = talents.rapid_fire.ok() ? find_spell( 257045 ) : spell_data_t::not_found();
+    talents.rapid_fire_energize               = talents.rapid_fire.ok() ? find_spell( 263585 ) : spell_data_t::not_found();
     talents.precise_shots                     = find_talent_spell( talent_tree::SPECIALIZATION, "Precise Shots", HUNTER_MARKSMANSHIP );
     talents.precise_shots_buff                = talents.precise_shots.ok() ? find_spell( 260242 ) : spell_data_t::not_found();
 
@@ -8072,44 +7619,6 @@ void hunter_t::init_spells()
     talents.kill_zone_debuff                  = talents.kill_zone.ok() ? find_spell( 393480 ) : spell_data_t::not_found();
     talents.salvo                             = find_talent_spell( talent_tree::SPECIALIZATION, "Salvo", HUNTER_MARKSMANSHIP );
     talents.bullet_hell                       = find_talent_spell( talent_tree::SPECIALIZATION, "Bullet Hell", HUNTER_MARKSMANSHIP );
-
-
-    
-    talents.improved_steady_shot              = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Steady Shot", HUNTER_MARKSMANSHIP );
-    talents.pin_cushion                       = find_talent_spell( talent_tree::SPECIALIZATION, "Pin Cushion", HUNTER_MARKSMANSHIP );
-    talents.crack_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Crack Shot", HUNTER_MARKSMANSHIP );
-
-
-    talents.fan_the_hammer                    = find_talent_spell( talent_tree::SPECIALIZATION, "Fan the Hammer", HUNTER_MARKSMANSHIP );
-    talents.careful_aim                       = find_talent_spell( talent_tree::SPECIALIZATION, "Careful Aim", HUNTER_MARKSMANSHIP );
-    talents.light_ammo                        = find_talent_spell( talent_tree::SPECIALIZATION, "Light Ammo", HUNTER_MARKSMANSHIP );
-    talents.heavy_ammo                        = find_talent_spell( talent_tree::SPECIALIZATION, "Heavy Ammo", HUNTER_MARKSMANSHIP );
-    talents.steady_focus                      = find_talent_spell( talent_tree::SPECIALIZATION, "Steady Focus", HUNTER_MARKSMANSHIP );
-
-    talents.barrage                           = find_talent_spell( talent_tree::SPECIALIZATION, "Barrage", HUNTER_MARKSMANSHIP );
-    talents.night_hunter                      = find_talent_spell( talent_tree::SPECIALIZATION, "Night Hunter", HUNTER_MARKSMANSHIP );
-    talents.tactical_reload                   = find_talent_spell( talent_tree::SPECIALIZATION, "Tactical Reload", HUNTER_MARKSMANSHIP );
-    talents.serpentstalkers_trickery          = find_talent_spell( talent_tree::SPECIALIZATION, "Serpentstalker's Trickery", HUNTER_MARKSMANSHIP );
-    talents.chimaera_shot                     = find_talent_spell( talent_tree::SPECIALIZATION, "Chimaera Shot", HUNTER_MARKSMANSHIP );
-    talents.chimaera_shot_nature              = talents.chimaera_shot.ok() ? find_spell( 344120 ) : spell_data_t::not_found();
-    talents.chimaera_shot_frost               = talents.chimaera_shot.ok() ? find_spell( 344121 ) : spell_data_t::not_found();
-  
-    talents.killer_accuracy                   = find_talent_spell( talent_tree::SPECIALIZATION, "Killer Accuracy", HUNTER_MARKSMANSHIP );
-    talents.rapid_fire_barrage                = find_talent_spell( talent_tree::SPECIALIZATION, "Rapid Fire Barrage", HUNTER_MARKSMANSHIP );
-    talents.rapid_fire_barrage_override       = talents.rapid_fire_barrage.ok() ? find_spell( 459796 ) : spell_data_t::not_found();
-    talents.lone_wolf                         = find_talent_spell( talent_tree::SPECIALIZATION, "Lone Wolf", HUNTER_MARKSMANSHIP );
-    talents.hydras_bite                       = find_talent_spell( talent_tree::SPECIALIZATION, "Hydra's Bite", HUNTER_MARKSMANSHIP );
-
-    talents.legacy_of_the_windrunners         = find_talent_spell( talent_tree::SPECIALIZATION, "Legacy of the Windrunners", HUNTER_MARKSMANSHIP );
-    talents.legacy_of_the_windrunners_wind_arrow = talents.legacy_of_the_windrunners.ok() ? find_spell( 191043 ) : spell_data_t::not_found();
-
-    talents.wailing_arrow                     = find_talent_spell( talent_tree::SPECIALIZATION, "Wailing Arrow", HUNTER_MARKSMANSHIP );
-    talents.wailing_arrow_counter_buff        = talents.wailing_arrow.ok() ? find_spell( 459805 ) : spell_data_t::not_found();
-    talents.wailing_arrow_override_buff       = talents.wailing_arrow.ok() ? find_spell( 459808 ) : spell_data_t::not_found();
-    talents.wailing_arrow_override            = talents.wailing_arrow.ok() ? find_spell( 392060 ) : spell_data_t::not_found();
-    talents.wailing_arrow_damage              = talents.wailing_arrow.ok() ? find_spell( 392058 ) : spell_data_t::not_found();
-
-    talents.readiness                         = find_talent_spell( talent_tree::SPECIALIZATION, "Readiness", HUNTER_MARKSMANSHIP );
   }
 
   // Beast Mastery Tree
@@ -8171,6 +7680,8 @@ void hunter_t::init_spells()
     talents.piercing_fangs                    = find_talent_spell( talent_tree::SPECIALIZATION, "Piercing Fangs", HUNTER_BEAST_MASTERY );
     talents.venomous_bite                     = find_talent_spell( talent_tree::SPECIALIZATION, "Venomous Bite", HUNTER_BEAST_MASTERY );
     talents.shower_of_blood                   = find_talent_spell( talent_tree::SPECIALIZATION, "Shower of Blood", HUNTER_BEAST_MASTERY );
+
+    specs.serpent_sting = find_spell( 271788 );
   }
 
   // Survival Tree
@@ -8246,9 +7757,6 @@ void hunter_t::init_spells()
 
   if ( specialization() == HUNTER_MARKSMANSHIP || specialization() == HUNTER_BEAST_MASTERY )
   {
-    // Baseline
-    specs.serpent_sting = find_spell( 271788 );
-
     // Dark Ranger
     talents.black_arrow = find_talent_spell( talent_tree::HERO, "Black Arrow" );
 
@@ -8341,6 +7849,7 @@ void hunter_t::init_spells()
   specs.freezing_trap        = find_class_spell( "Freezing Trap" );
   specs.arcane_shot          = find_class_spell( "Arcane Shot" );
   specs.steady_shot          = find_class_spell( "Steady Shot" );
+  specs.steady_shot_energize = find_spell( 77443 );
   specs.flare                = find_class_spell( "Flare" );
 
   // Tier Sets
@@ -8355,10 +7864,10 @@ void hunter_t::init_spells()
   // Cooldowns
   cooldowns.target_acquisition->duration = talents.target_acquisition->internal_cooldown();
   cooldowns.salvo->duration = talents.volley->cooldown();
+
   cooldowns.ruthless_marauder->duration = talents.ruthless_marauder->internal_cooldown();
   cooldowns.bleak_powder->duration = talents.bleak_powder->internal_cooldown();
   cooldowns.banshees_mark->duration = talents.banshees_mark->internal_cooldown();
-  cooldowns.legacy_of_the_windrunners->duration = talents.legacy_of_the_windrunners->internal_cooldown();
   cooldowns.lunar_storm->duration = talents.lunar_storm->internal_cooldown();
 }
 
@@ -8466,7 +7975,7 @@ void hunter_t::create_buffs()
     make_buff( this, "streamline", talents.streamline_buff )
       ->set_default_value( talents.streamline_buff->effectN( 1 ).percent() + talents.improved_streamline->effectN( 1 ).percent() );
 
-  buffs.trick_shots = make_buff<buffs::trick_shots_t>( this, "trick_shots", talents.trick_shots_buff );
+  buffs.trick_shots = make_buff( this, "trick_shots", talents.trick_shots_buff );
   
   buffs.lock_and_load =
     make_buff( this, "lock_and_load", talents.lock_and_load -> effectN( 1 ).trigger() )
@@ -8529,28 +8038,6 @@ void hunter_t::create_buffs()
       -> set_cooldown( 0_ms )
       -> set_period( 0_ms ) // disable ticks as an optimization
       -> set_refresh_behavior( buff_refresh_behavior::DURATION );
-
-
-  buffs.steady_focus =
-    make_buff( this, "steady_focus", find_spell( 193534 ) )
-    -> set_default_value( talents.steady_focus -> effectN( 1 ).percent() )
-    -> set_pct_buff_type( STAT_PCT_BUFF_HASTE )
-    -> set_chance( talents.steady_focus.ok() );
-
-  buffs.lone_wolf =
-    make_buff( this, "lone_wolf", find_spell( 164273 ) )
-    -> set_default_value( talents.lone_wolf -> effectN( 1 ).percent() )
-    -> set_period( 0_ms ) // disable ticks as an optimization
-    -> set_chance( talents.lone_wolf.ok() );
-
-  buffs.wailing_arrow_counter = 
-    make_buff( this, "wailing_arrow", talents.wailing_arrow_counter_buff )
-      ->set_chance( talents.wailing_arrow.ok() );
-
-  buffs.wailing_arrow_override = 
-    make_buff( this, "wailing_arrow_override", talents.wailing_arrow_override_buff )
-      ->set_quiet( true )
-      ->set_chance( talents.wailing_arrow.ok() );
 
   // Beast Mastery Tree
   const spell_data_t* barbed_shot = find_spell( 246152 );
@@ -9134,8 +8621,6 @@ void hunter_t::merge( player_t& other )
 void hunter_t::arise()
 {
   player_t::arise();
-
-  buffs.lone_wolf->trigger();
 }
 
 void hunter_t::combat_begin()
