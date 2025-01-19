@@ -1075,7 +1075,9 @@ public:
 
   struct {
     bool cull_the_herd = false;
-    damage_affected_by unnatural_causes;
+    damage_affected_by unnatural_causes; // 10% direct from 459527 effect 4, 10% tick from 459527 effect 5
+    bool unnatural_causes_debuff; // 10-15% dmg taken from caster spells from 459529 effect 1
+    bool unnatural_causes_debuff_label; // 10-15% dmg taken from caster spells (label) from 459529 effect 2
 
     // bm
     bool thrill_of_the_hunt = false;
@@ -1116,7 +1118,11 @@ public:
     }
 
     if ( p->talents.unnatural_causes.ok() )
-      affected_by.unnatural_causes      = parse_damage_affecting_aura( this, p->talents.unnatural_causes_debuff );
+    {
+      affected_by.unnatural_causes = parse_damage_affecting_aura( this, p->talents.unnatural_causes );
+      affected_by.unnatural_causes_debuff = check_affected_by( this, p->talents.unnatural_causes_debuff->effectN( 1 ) );
+      affected_by.unnatural_causes_debuff_label = check_affected_by( this, p->talents.unnatural_causes_debuff->effectN( 2 ) );
+    }
 
     affected_by.bullseye_crit_chance  = check_affected_by( this, p -> talents.bullseye -> effectN( 1 ).trigger() -> effectN( 1 ) );
     affected_by.lone_wolf             = parse_damage_affecting_aura( this, p -> talents.lone_wolf );
@@ -1285,15 +1291,7 @@ public:
       am *= 1 + p()->talents.coordinated_assault->effectN( affected_by.coordinated_assault.direct ).percent();
 
     if ( affected_by.unnatural_causes.direct )
-    {
-      double amount = p()->talents.unnatural_causes_debuff->effectN( affected_by.unnatural_causes.direct ).percent();
-      if ( s->target->health_percentage() < p()->talents.unnatural_causes->effectN( 3 ).base_value() )
-      {
-        amount *= 1 + p()->talents.unnatural_causes->effectN( 2 ).percent();
-      }
-
-      am *= 1 + amount;
-    }
+      am *= 1 + p()->talents.unnatural_causes->effectN( affected_by.unnatural_causes.direct ).percent();
 
     int affected_by_tip = std::max( affected_by.tip_of_the_spear.direct, affected_by.tip_of_the_spear_explosive.direct );
     if ( affected_by_tip && p()->buffs.tip_of_the_spear->check() )
@@ -1348,13 +1346,7 @@ public:
     }
 
     if ( affected_by.unnatural_causes.tick )
-    {
-      double amount = p()->talents.unnatural_causes_debuff->effectN( affected_by.unnatural_causes.tick ).percent();
-      if ( s->target->health_percentage() < p()->talents.unnatural_causes->effectN( 3 ).base_value() )
-        amount *= 1 + p()->talents.unnatural_causes->effectN( 2 ).percent();
-
-      am *= 1 + amount;
-    }
+      am *= 1 + p()->talents.unnatural_causes->effectN( affected_by.unnatural_causes.tick ).percent();
 
     if ( affected_by.coordinated_assault.tick && p()->buffs.coordinated_assault->check() )
       am *= 1 + p()->talents.coordinated_assault->effectN( affected_by.coordinated_assault.tick ).percent();
@@ -1397,6 +1389,26 @@ public:
     return cm;
   }
 
+  double composite_target_da_multiplier( player_t* target ) const override
+  {
+    double da = ab::composite_target_da_multiplier( target );
+
+    if ( affected_by.unnatural_causes_debuff || affected_by.unnatural_causes_debuff_label )
+    {
+      double execute_mod = 0.0;
+      if ( target->health_percentage() < p()->talents.unnatural_causes->effectN( 3 ).base_value() )
+        execute_mod = p()->talents.unnatural_causes->effectN( 2 ).percent();
+
+      if ( affected_by.unnatural_causes_debuff )
+        da *= 1 + p()->talents.unnatural_causes_debuff->effectN( 1 ).percent() * ( 1 + execute_mod );
+
+      if ( affected_by.unnatural_causes_debuff_label )
+        da *= 1 + p()->talents.unnatural_causes_debuff->effectN( 2 ).percent() * ( 1 + execute_mod );
+    }
+
+    return da;
+  }
+
   double composite_target_ta_multiplier( player_t* target ) const override
   {
     double ta = ab::composite_target_ta_multiplier( target );
@@ -1404,6 +1416,19 @@ public:
     if ( affected_by.cull_the_herd && p() -> get_target_data( target ) -> dots.cull_the_herd -> is_ticking() )
     {
       ta *= 1 + p() -> talents.cull_the_herd -> effectN( 3 ).percent();
+    }
+
+    if ( affected_by.unnatural_causes_debuff || affected_by.unnatural_causes_debuff_label )
+    {
+      double execute_mod = 0.0;
+      if ( target->health_percentage() < p()->talents.unnatural_causes->effectN( 3 ).base_value() )
+        execute_mod = p()->talents.unnatural_causes->effectN( 2 ).percent();
+
+      if ( affected_by.unnatural_causes_debuff )
+        ta *= 1 + p()->talents.unnatural_causes_debuff->effectN( 1 ).percent() * ( 1 + execute_mod );
+
+      if ( affected_by.unnatural_causes_debuff_label )
+        ta *= 1 + p()->talents.unnatural_causes_debuff->effectN( 2 ).percent() * ( 1 + execute_mod );
     }
 
     return ta;
