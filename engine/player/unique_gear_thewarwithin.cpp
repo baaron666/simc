@@ -7388,7 +7388,7 @@ void best_in_slots( special_effect_t& effect )
       : stat_buff_t( e.player, name, s, item ), range_min( 0 ), range_max( 0 )
     {
       auto equip_driver = e.player->find_spell( 471063 );
-      auto mod          = equip_driver->effectN( 2 ).base_value() / 100;
+      auto mod          = equip_driver->effectN( 2 ).percent();
       range_min         = 1 - mod;
       range_max         = 1 + mod;
     }
@@ -7400,7 +7400,8 @@ void best_in_slots( special_effect_t& effect )
 
     void start( int s, double, timespan_t d ) override
     {
-      stat_buff_t::start( s, randomize_stat_value(), d );
+      double val = randomize_stat_value();
+      stat_buff_t::start( s, val, d );
     }
 
     void bump( int stacks, double ) override
@@ -7413,10 +7414,10 @@ void best_in_slots( special_effect_t& effect )
   {
     std::unordered_map<stat_e, buff_t*> buffs;
 
-    best_in_slots_cb_t( const special_effect_t& equip, const special_effect_t& use, const spell_data_t* equip_driver )
+    best_in_slots_cb_t( const special_effect_t& equip, const special_effect_t& use )
       : dbc_proc_callback_t( equip.player, equip ), buffs()
     {
-      auto buff_value      = equip_driver->effectN( 1 ).average( use );
+      auto buff_value      = equip.driver()->effectN( 1 ).average( use );
       auto proc_buff_spell = equip.player->find_spell( 473492 );
 
       create_all_stat_buffs<best_in_slots_stat_buff_t>( equip, proc_buff_spell, buff_value,
@@ -7442,18 +7443,18 @@ void best_in_slots( special_effect_t& effect )
   equip->spell_id = equip_driver->id();
   effect.player->special_effects.push_back( equip );
 
-  auto cb = new best_in_slots_cb_t( *equip, effect, equip_driver );
+  auto cb = new best_in_slots_cb_t( *equip, effect );
   cb->initialize();
   cb->activate();
 
-  struct cheating_t : public generic_proc_t
+  struct cheating_t : public spell_t
   {
     std::unordered_map<stat_e, buff_t*> buffs;
 
     cheating_t( const special_effect_t& e, const spell_data_t* equip_driver )
-      : generic_proc_t( e, "cheating", e.driver() ), buffs()
+      : spell_t( "cheating", e.player, e.driver() ), buffs()
     {
-      auto value_mod  = 1 + ( equip_driver->effectN( 2 ).base_value() / 100 );
+      auto value_mod  = 1 + equip_driver->effectN( 2 ).percent();
       auto buff_value = equip_driver->effectN( 1 ).average( e ) * value_mod;
 
       create_all_stat_buffs( e, e.driver(), buff_value, [ &, buff_value ]( stat_e s, buff_t* b ) {
@@ -7464,11 +7465,12 @@ void best_in_slots( special_effect_t& effect )
 
     void execute() override
     {
-      generic_proc_t::execute();
+      spell_t::execute();
       buffs.at( util::highest_stat( player, secondary_ratings ) )->trigger();
     }
   };
 
+  effect.disable_buff();
   effect.spell_id       = 473402;
   effect.execute_action = create_proc_action<cheating_t>( "cheating", effect, equip_driver );
 }
