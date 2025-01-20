@@ -7995,7 +7995,7 @@ void hunter_t::create_buffs()
     make_buff( this, "trueshot", talents.trueshot )
       ->set_cooldown( 0_ms )
       ->set_refresh_behavior( buff_refresh_behavior::EXTEND )
-      ->add_invalidate( cache_e::CACHE_ATTACK_CRIT_CHANCE )
+      ->add_invalidate( cache_e::CACHE_CRIT_CHANCE )
       ->set_stack_change_callback(
         [ this ]( buff_t*, int, int cur ) {
           cooldowns.aimed_shot->adjust_recharge_multiplier();
@@ -8281,6 +8281,10 @@ void hunter_t::create_buffs()
       -> set_default_value_from_effect( 1 );
 
   buffs.eyes_closed = make_buff( this, "eyes_closed", talents.eyes_closed->effectN( 1 ).trigger() );
+
+  buffs.lunar_storm_ready = make_buff( this, "lunar_storm_ready", talents.lunar_storm_ready_buff );
+  
+  buffs.lunar_storm_cooldown = make_buff( this, "lunar_storm_cooldown", talents.lunar_storm_cooldown_buff );
 
   buffs.withering_fire =
     make_buff( this, "withering_fire", talents.withering_fire_buff );
