@@ -338,7 +338,11 @@ struct hunter_td_t: public actor_target_data_t
 {
   bool damaged = false;
   bool sentinel_imploding = false;
-  bool crescent_steel_damaged = false;
+
+  struct cooldowns_t
+  {
+    cooldown_t* overwatch;
+  } cooldowns;
 
   struct debuffs_t
   {
@@ -484,6 +488,8 @@ public:
 
     // Sentinel
     buff_t* eyes_closed;
+    buff_t* lunar_storm_ready;
+    buff_t* lunar_storm_cooldown;
 
     // Dark Ranger
     buff_t* withering_fire;
@@ -518,8 +524,6 @@ public:
     cooldown_t* black_arrow;
     cooldown_t* bleak_powder;
     cooldown_t* banshees_mark;
-
-    cooldown_t* lunar_storm;
   } cooldowns;
 
   struct gains_t
@@ -841,30 +845,32 @@ public:
     spell_data_ptr_t pack_assault;
 
     // Sentinel
+    // TODO chance to stack and chance to implode were and are still pretty rough estimates
     spell_data_ptr_t sentinel;
     spell_data_ptr_t sentinel_debuff;
     spell_data_ptr_t sentinel_tick;
 
-    spell_data_ptr_t dont_look_back;
     spell_data_ptr_t extrapolated_shots;
     spell_data_ptr_t sentinel_precision;
 
     spell_data_ptr_t release_and_reload;
-    spell_data_ptr_t catch_out;
-    spell_data_ptr_t sideline;
+    // TODO the alleged decreased chance is unknown and not modeled
     spell_data_ptr_t invigorating_pulse;
 
     spell_data_ptr_t sentinel_watch;
     spell_data_ptr_t eyes_closed;
     spell_data_ptr_t symphonic_arsenal;
-    spell_data_ptr_t symphonic_arsenal_dmg;
+    spell_data_ptr_t symphonic_arsenal_spell;
     spell_data_ptr_t overwatch;
     spell_data_ptr_t crescent_steel;
     spell_data_ptr_t crescent_steel_debuff;
 
     spell_data_ptr_t lunar_storm;
-    spell_data_ptr_t lunar_storm_ground;
-    spell_data_ptr_t lunar_storm_dmg;
+    spell_data_ptr_t lunar_storm_initial_spell;
+    spell_data_ptr_t lunar_storm_periodic_trigger;
+    spell_data_ptr_t lunar_storm_periodic_spell;
+    spell_data_ptr_t lunar_storm_ready_buff;
+    spell_data_ptr_t lunar_storm_cooldown_buff;
   } talents;
 
   // Specialization Spells
@@ -914,7 +920,8 @@ public:
 
     action_t* sentinel = nullptr;
     action_t* symphonic_arsenal = nullptr;
-    action_t* lunar_storm = nullptr;
+    action_t* lunar_storm_initial = nullptr;
+    action_t* lunar_storm_periodic = nullptr;
 
     action_t* phantom_pain = nullptr;
     action_t* shadow_surge = nullptr;
@@ -925,8 +932,6 @@ public:
   struct {
     events::tar_trap_aoe_t* tar_trap_aoe = nullptr;
     timespan_t tensile_bowstring_extension = 0_s;
-    unsigned bombardment_counter = 0;
-    unsigned windrunners_guidance_counter = 0;
     event_t* current_volley = nullptr;
     timespan_t sentinel_watch_reduction = 0_s;
   } state;
@@ -970,8 +975,6 @@ public:
     cooldowns.black_arrow = get_cooldown( "black_arrow" );
     cooldowns.bleak_powder = get_cooldown( "bleak_powder_icd" );
     cooldowns.banshees_mark = get_cooldown( "banshees_mark" );
-
-    cooldowns.lunar_storm = get_cooldown( "lunar_storm" );
 
     base_gcd = 1.5_s;
 
@@ -1078,7 +1081,7 @@ public:
   void trigger_sentinel( player_t* target, bool force = false, proc_t* proc = nullptr );
   void trigger_sentinel_implosion( hunter_td_t* td );
   void trigger_symphonic_arsenal();
-  void trigger_lunar_storm( player_t* target );
+  void trigger_lunar_storm();
   void consume_precise_shots();
   void trigger_spotters_mark( player_t* target, bool force = false );
 };
@@ -1631,7 +1634,7 @@ struct hunter_pet_t: public pet_t
       m *= 1 + o()->talents.kill_zone_debuff->effectN( guardian ? 4 : 3 ).percent();
 
     if ( td->debuffs.lunar_storm->check() )
-      m *= 1 + o()->talents.lunar_storm_dmg->effectN( 2 ).trigger()->effectN( guardian ? 3 : 2 ).percent();
+      m *= 1 + o()->talents.lunar_storm_periodic_spell->effectN( 2 ).trigger()->effectN( guardian ? 3 : 2 ).percent();
     
     return m;
   }
@@ -3542,6 +3545,8 @@ void hunter_t::trigger_sentinel( player_t* target, bool force, proc_t* proc )
     {
       procs.extrapolated_shots_stacks->occur();
       sentinel->trigger( as<int>( talents.extrapolated_shots->effectN( 1 ).base_value() ) );
+      // The stack from Extrapolated Shots has its own chance to roll a bonus stack from Release and Reload,
+      // possibly generating 4 stacks at once.
       if ( rng().roll( talents.release_and_reload->effectN( 1 ).percent() ) )
       {
         procs.release_and_reload_stacks->occur();
@@ -3586,22 +3591,23 @@ void hunter_t::trigger_symphonic_arsenal()
         actions.symphonic_arsenal->execute_on_target( t );
 }
 
-void hunter_t::trigger_lunar_storm( player_t* /* target */ )
+void hunter_t::trigger_lunar_storm()
 {
-  if ( actions.lunar_storm )
+  if ( talents.lunar_storm.ok() )
   {
-    cooldowns.lunar_storm->start();
+    buffs.lunar_storm_ready->expire();
+    buffs.lunar_storm_cooldown->trigger();
     make_repeating_event(
-        sim, talents.lunar_storm_ground->effectN( 2 ).period(),
+        sim, talents.lunar_storm_periodic_trigger->effectN( 2 ).period(),
         [ this ] {
-          auto& tl = actions.lunar_storm->target_list();
+          auto& tl = actions.lunar_storm_periodic->target_list();
           if ( tl.size() )
           {
             rng().shuffle( tl.begin(), tl.end() );
-            actions.lunar_storm->execute_on_target( tl.front() );
+            actions.lunar_storm_periodic->execute_on_target( tl.front() );
           }
         },
-        as<int>( talents.lunar_storm_ground->duration() / talents.lunar_storm_ground->effectN( 2 ).period() ) );
+        as<int>( talents.lunar_storm_periodic_trigger->duration() / talents.lunar_storm_periodic_trigger->effectN( 2 ).period() ) );
   }
 }
 
@@ -4557,7 +4563,7 @@ struct sentinel_t : hunter_ranged_attack_t
     if ( p->talents.invigorating_pulse.ok() )
     {
       invigorating_pulse.chance = p->talents.invigorating_pulse->effectN( 2 ).percent();
-      invigorating_pulse.gain   = p->talents.invigorating_pulse->effectN( 1 ).base_value();
+      invigorating_pulse.gain = p->talents.invigorating_pulse->effectN( 1 ).base_value();
     }
 
     if ( p->talents.sentinel_watch.ok() )
@@ -4583,7 +4589,6 @@ struct sentinel_t : hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::impact( s );
 
-    // TODO test for lower chance when multiple implosions are active
     if ( rng().roll( invigorating_pulse.chance ) )
       p()->resource_gain( RESOURCE_FOCUS, invigorating_pulse.gain, p()->gains.invigorating_pulse, this );
 
@@ -4599,39 +4604,28 @@ struct sentinel_t : hunter_ranged_attack_t
 
 struct symphonic_arsenal_t : hunter_ranged_attack_t
 {
-  symphonic_arsenal_t( hunter_t* p ) : hunter_ranged_attack_t( "symphonic_arsenal", p, p->talents.symphonic_arsenal_dmg )
+  symphonic_arsenal_t( hunter_t* p ) : hunter_ranged_attack_t( "symphonic_arsenal", p, p->talents.symphonic_arsenal_spell )
   {
     background = dual = true;
-    //2024-10-19: Survival Symphonic Arsenal hits 6 targets instead of 5, due to the 6th target being the original target.
-    aoe = p->bugs && p->specialization() == HUNTER_SURVIVAL ? as<int>( p->talents.symphonic_arsenal->effectN( 1 ).base_value() + 1 ) : as<int>( p->talents.symphonic_arsenal->effectN( 1 ).base_value() );
-    attack_power_mod.direct = p->specialization() == HUNTER_SURVIVAL ? p->talents.symphonic_arsenal_dmg->effectN( 3 ).ap_coeff() : p->talents.symphonic_arsenal_dmg->effectN( 1 ).ap_coeff();
-  }
-
-  void execute() override
-  {
-    hunter_ranged_attack_t::execute();
-
-    // Can still proc Sentinel on original target.
-    p()->trigger_sentinel( target, false, p()->procs.sentinel_stacks );
-  }
-
-  size_t available_targets( std::vector<player_t*>& tl ) const override
-  {
-    hunter_ranged_attack_t::available_targets( tl );
-
-    // Can hit the original target for Survival.
-    if ( !p()->bugs && p()->specialization()==HUNTER_SURVIVAL || p()->specialization() == HUNTER_MARKSMANSHIP )
-      range::erase_remove( tl, target );
-
-    return tl.size();
+    attack_power_mod.direct = p->specialization() == HUNTER_SURVIVAL ? p->talents.symphonic_arsenal_spell->effectN( 3 ).ap_coeff() : p->talents.symphonic_arsenal_spell->effectN( 1 ).ap_coeff();
+    aoe = 1 + as<int>( p->talents.symphonic_arsenal->effectN( 1 ).base_value() );
   }
 };
 
 // Lunar Storm (Sentinel) ============================================================
 
-struct lunar_storm_t : hunter_ranged_attack_t
+struct lunar_storm_initial_t : hunter_ranged_attack_t
 {
-  lunar_storm_t( hunter_t* p ) : hunter_ranged_attack_t( "lunar_storm_dmg", p, p->talents.lunar_storm_dmg )
+  lunar_storm_initial_t( hunter_t* p ) : hunter_ranged_attack_t( "lunar_storm_initial", p, p->talents.lunar_storm_initial_spell )
+  {
+    background = dual = true;
+    aoe = -1;
+  }
+};
+
+struct lunar_storm_periodic_t : hunter_ranged_attack_t
+{
+  lunar_storm_periodic_t( hunter_t* p ) : hunter_ranged_attack_t( "lunar_storm_periodic", p, p->talents.lunar_storm_periodic_spell )
   {
     background = dual = true;
   }
@@ -5418,10 +5412,10 @@ struct rapid_fire_t: public hunter_spell_t
     {
       hunter_ranged_attack_t::execute();
 
-      p()->buffs.trick_shots->up();  // Benefit tracking
+      p()->buffs.trick_shots->up(); // Benefit tracking
 
-      if ( p()->cooldowns.lunar_storm->up() )
-        p()->trigger_lunar_storm( target );
+      if ( p()->buffs.lunar_storm_ready->up() )
+        p()->trigger_lunar_storm();
     }
 
     void impact( action_state_t* state ) override
@@ -7144,8 +7138,8 @@ struct wildfire_bomb_base_t: public hunter_spell_t
       if ( rng().roll( p()->talents.grenade_juggler->effectN( 2 ).percent() ) )
         p()->cooldowns.explosive_shot->reset( true );
 
-      if ( p()->cooldowns.lunar_storm->up() )
-        p()->trigger_lunar_storm( target );
+      if ( p()->buffs.lunar_storm_ready->up() )
+        p()->trigger_lunar_storm();
     }
 
     double composite_da_multiplier( const action_state_t* s ) const override
@@ -7273,9 +7267,13 @@ struct auto_attack_t: public action_t
 } // end namespace actions
 
 hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p ),
+  cooldowns(),
   debuffs(),
   dots()
 {
+  cooldowns.overwatch = t->get_cooldown( "overwatch" );
+  cooldowns.overwatch->duration = timespan_t::from_seconds( p->talents.overwatch->effectN( 2 ).base_value() );
+
   debuffs.shredded_armor = 
     make_buff( *this, "shredded_armor", p -> find_spell( 410167 ) )
       -> set_default_value_from_effect( 1 );
@@ -7307,21 +7305,12 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
   debuffs.crescent_steel = make_buff( *this, "crescent_steel", p->talents.crescent_steel_debuff )
     -> set_tick_callback(
       [ this, p ]( buff_t* b, int, const timespan_t& ) {
-        if ( crescent_steel_damaged )
-        {
-          crescent_steel_damaged = false;
-          p->trigger_sentinel( target, true, p->procs.crescent_steel_stacks );
-        }
-        else
-        {
-          b->expire();
-        }
+        p->trigger_sentinel( target, true, p->procs.crescent_steel_stacks );
       } );
 
-  debuffs.lunar_storm = make_buff( *this, "lunar_storm", p->talents.lunar_storm_dmg->effectN( 2 ).trigger() )
+  debuffs.lunar_storm = make_buff( *this, "lunar_storm", p->talents.lunar_storm_periodic_spell->effectN( 2 ).trigger() )
     -> set_default_value_from_effect( 1 )
-    -> set_schools_from_effect( 1 )
-    -> set_chance( p->talents.lunar_storm.ok() );
+    -> set_schools_from_effect( 1 );
 
   dots.serpent_sting = t -> get_dot( "serpent_sting", p );
   dots.a_murder_of_crows = t -> get_dot( "a_murder_of_crows", p );
@@ -7339,7 +7328,6 @@ void hunter_td_t::target_demise()
 {
   damaged = false;
   sentinel_imploding = false;
-  crescent_steel_damaged = false;
 
   // Don't pollute results at the end-of-iteration deaths of everyone
   if ( source -> sim -> event_mgr.canceled )
@@ -7824,28 +7812,28 @@ void hunter_t::init_spells()
     // Sentinel
     talents.sentinel = find_talent_spell( talent_tree::HERO, "Sentinel" );
     talents.sentinel_debuff = talents.sentinel.ok() ? find_spell( 450387 ) : spell_data_t::not_found();
-    talents.sentinel_tick   = talents.sentinel.ok() ? find_spell( 450412 ) : spell_data_t::not_found();
+    talents.sentinel_tick = talents.sentinel.ok() ? find_spell( 450412 ) : spell_data_t::not_found();
 
-    talents.dont_look_back     = find_talent_spell( talent_tree::HERO, "Don't Look Back" );
     talents.extrapolated_shots = find_talent_spell( talent_tree::HERO, "Extrapolated Shots" );
     talents.sentinel_precision = find_talent_spell( talent_tree::HERO, "Sentinel Precision" );
 
     talents.release_and_reload = find_talent_spell( talent_tree::HERO, "Release and Reload" );
-    talents.catch_out          = find_talent_spell( talent_tree::HERO, "Catch Out" );
-    talents.sideline           = find_talent_spell( talent_tree::HERO, "Sideline" );
     talents.invigorating_pulse = find_talent_spell( talent_tree::HERO, "Invigorating Pulse" );
 
-    talents.sentinel_watch    = find_talent_spell( talent_tree::HERO, "Sentinel Watch" );
-    talents.eyes_closed       = find_talent_spell( talent_tree::HERO, "Eyes Closed" );
+    talents.sentinel_watch = find_talent_spell( talent_tree::HERO, "Sentinel Watch" );
+    talents.eyes_closed = find_talent_spell( talent_tree::HERO, "Eyes Closed" );
     talents.symphonic_arsenal = find_talent_spell( talent_tree::HERO, "Symphonic Arsenal" );
-    talents.symphonic_arsenal_dmg = talents.symphonic_arsenal.ok() ? find_spell( 451194 ) : spell_data_t::not_found();
-    talents.overwatch         = find_talent_spell( talent_tree::HERO, "Overwatch" );
-    talents.crescent_steel    = find_talent_spell( talent_tree::HERO, "Crescent Steel" );
+    talents.symphonic_arsenal_spell = talents.symphonic_arsenal.ok() ? find_spell( 451194 ) : spell_data_t::not_found();
+    talents.overwatch = find_talent_spell( talent_tree::HERO, "Overwatch" );
+    talents.crescent_steel = find_talent_spell( talent_tree::HERO, "Crescent Steel" );
     talents.crescent_steel_debuff = talents.crescent_steel.ok() ? find_spell( 451531 ) : spell_data_t::not_found();
 
     talents.lunar_storm = find_talent_spell( talent_tree::HERO, "Lunar Storm" );
-    talents.lunar_storm_ground = talents.lunar_storm.ok() ? find_spell( 450978 ) : spell_data_t::not_found();
-    talents.lunar_storm_dmg    = talents.lunar_storm.ok() ? find_spell( 450883 ) : spell_data_t::not_found();
+    talents.lunar_storm_initial_spell = talents.lunar_storm.ok() ? find_spell( 1217459 ) : spell_data_t::not_found();
+    talents.lunar_storm_periodic_trigger = talents.lunar_storm.ok() ? find_spell( 450978 ) : spell_data_t::not_found();
+    talents.lunar_storm_periodic_spell = talents.lunar_storm.ok() ? find_spell( 450883 ) : spell_data_t::not_found();
+    talents.lunar_storm_ready_buff = talents.lunar_storm.ok() ? find_spell( 451805 ) : spell_data_t::not_found();
+    talents.lunar_storm_cooldown_buff = talents.lunar_storm.ok() ? find_spell( 451803 ) : spell_data_t::not_found();
   }
 
   // Mastery
@@ -7884,7 +7872,6 @@ void hunter_t::init_spells()
   cooldowns.ruthless_marauder->duration = talents.ruthless_marauder->internal_cooldown();
   cooldowns.bleak_powder->duration = talents.bleak_powder->internal_cooldown();
   cooldowns.banshees_mark->duration = talents.banshees_mark->internal_cooldown();
-  cooldowns.lunar_storm->duration = talents.lunar_storm->internal_cooldown();
 }
 
 void hunter_t::init_base_stats()
@@ -7942,7 +7929,10 @@ void hunter_t::create_actions()
     actions.symphonic_arsenal = new attacks::symphonic_arsenal_t( this );
 
   if ( talents.lunar_storm.ok() )
-    actions.lunar_storm = new attacks::lunar_storm_t( this );
+  {
+    actions.lunar_storm_initial = new attacks::lunar_storm_initial_t( this );
+    actions.lunar_storm_periodic = new attacks::lunar_storm_periodic_t( this );
+  }
 
   if ( talents.snakeskin_quiver.ok() )
     actions.snakeskin_quiver = new attacks::cobra_shot_snakeskin_quiver_t( this );
@@ -8395,56 +8385,43 @@ void hunter_t::init_assessors()
   player_t::init_assessors();
 
   if ( talents.terms_of_engagement.ok() )
-  {
     assessor_out_damage.add( assessor::TARGET_DAMAGE - 1, [this]( result_amount_type, action_state_t* s ) {
       if ( s -> result_amount > 0 )
         get_target_data( s -> target ) -> damaged = true;
       return assessor::CONTINUE;
     } );
-  }
 
   if ( talents.overwatch.ok() )
-  {
     assessor_out_damage.add( assessor::TARGET_DAMAGE + 1, [ this ]( result_amount_type, action_state_t* s ) {
       hunter_td_t* target_data = get_target_data( s->target );
       if ( !target_data->sentinel_imploding && target_data->debuffs.sentinel->check() > 3 && s->target->health_percentage() < talents.overwatch->effectN( 1 ).base_value() )
       {
-        sim->print_debug( "Damage to {} with {} Sentinel stacks at {}% triggers Overwatch", s->target->name(),
-                          target_data->debuffs.sentinel->check(), s->target->health_percentage() );
-
         for ( player_t* t : sim->target_non_sleeping_list )
         {
           if ( t->is_enemy() && !t->demise_event )
           {
             hunter_td_t* td = get_target_data( t );
-            if ( !td->sentinel_imploding )
+            if ( !td->sentinel_imploding && td->cooldowns.overwatch->up() )
             {
+              sim->print_debug( "Damage to {} with {} Sentinel stacks at {}% triggers Overwatch on {}", s->target->name(),
+                          target_data->debuffs.sentinel->check(), s->target->health_percentage(), t->name() );
+
               procs.overwatch_implosions->occur();
               trigger_sentinel_implosion( td );
+              td->cooldowns.overwatch->start();
             }
           }
         }
       }
       return assessor::CONTINUE;
     } );
-  }
 
   if ( talents.crescent_steel.ok() )
-  {
     assessor_out_damage.add( assessor::TARGET_DAMAGE + 1, [ this ]( result_amount_type, action_state_t* s ) {
-      hunter_td_t* target_data = get_target_data( s->target );
-      if ( target_data->debuffs.crescent_steel->check() )
-      {
-        target_data->crescent_steel_damaged = true;
-      }
-      else if ( target_data->debuffs.sentinel->check() && s->target->health_percentage() < talents.crescent_steel->effectN( 1 ).base_value() )
-      {
-        target_data->crescent_steel_damaged = true;
-        target_data->debuffs.crescent_steel->trigger();
-      }
+      if ( s->target->health_percentage() < talents.crescent_steel->effectN( 1 ).base_value() )
+        get_target_data( s->target )->debuffs.crescent_steel->trigger();
       return assessor::CONTINUE;
     } );
-  }
 }
 
 void hunter_t::apply_affecting_auras( action_t& action )
