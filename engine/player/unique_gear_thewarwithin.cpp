@@ -7460,6 +7460,7 @@ void best_in_slots( special_effect_t& effect )
       create_all_stat_buffs( e, e.driver(), buff_value, [ &, buff_value ]( stat_e s, buff_t* b ) {
         b->default_value = buff_value;
         buffs[ s ]       = b;
+        b->cooldown->duration = 0_ms; // Handled by the action
       } );
     }
 
