@@ -3228,7 +3228,6 @@ public:
     if ( !p->spec.ebon_might )
     {
       p->spec.ebon_might = std::make_unique<modified_spell_data_t>( data() );
-      p->spec.ebon_might->effects[ 0 ].value = 5.0; //In description TODO: Parse.
       p->spec.ebon_might->parse_effects( p->sets->set( EVOKER_AUGMENTATION, T30, B4 ) )
         ->parse_effects( p->spec.close_as_clutchmates, [ p = p ]( const action_t*, const action_state_t* ) {
           return p->close_as_clutchmates;
@@ -9706,6 +9705,11 @@ struct evoker_module_t : public module_t
 
   void register_hotfixes() const override
   {
+    hotfix::register_effect( "Evoker", "2025-01-20", "Ebon Might is 5%", 1035393, hotfix::HOTFIX_FLAG_DEFAULT )
+        .field( "base_value" )
+        .operation( hotfix::HOTFIX_SET )
+        .modifier( 5 )
+        .verification_value( 6.5 );
   }
 
   void combat_begin( sim_t* ) const override
