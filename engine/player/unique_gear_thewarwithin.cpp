@@ -7395,18 +7395,42 @@ void best_in_slots( special_effect_t& effect )
 
     double randomize_stat_value()
     {
-      return default_value * rng().range( range_min, range_max );
-    }
-
-    void start( int s, double, timespan_t d ) override
-    {
-      double val = randomize_stat_value();
-      stat_buff_t::start( s, val, d );
+      double val = default_value * rng().range( range_min, range_max );
+      for ( auto& buff_stat : stats )
+      {
+        double delta            = val - buff_stat.current_value;
+        buff_stat.current_value = val;
+        buff_stat.amount        = val;
+        if ( delta > 0 )
+        {
+          player->stat_gain( buff_stat.stat, delta, stat_gain, nullptr, buff_duration() > timespan_t::zero() );
+        }
+        else if ( delta < 0 )
+        {
+          player->stat_loss( buff_stat.stat, std::fabs( delta ), stat_gain, nullptr,
+                             buff_duration() > timespan_t::zero() );
+        }
+      }
+      return val;
     }
 
     void bump( int stacks, double ) override
     {
       buff_t::bump( stacks, randomize_stat_value() );
+    }
+
+    void expire_override( int s, timespan_t d ) override
+    {
+      for ( auto& buff_stat : stats )
+      {
+        player->stat_loss( buff_stat.stat, buff_stat.current_value, stat_gain, nullptr,
+                           buff_duration() > timespan_t::zero() );
+
+        buff_stat.current_value = 0;
+      }
+
+      // Purposely skip over stat_buff_t::expire_override() as we do the lost stat calculations manually
+      buff_t::expire_override( s, d );
     }
   };
 
