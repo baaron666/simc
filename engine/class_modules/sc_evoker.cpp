@@ -3228,6 +3228,7 @@ public:
     if ( !p->spec.ebon_might )
     {
       p->spec.ebon_might = std::make_unique<modified_spell_data_t>( data() );
+      p->spec.ebon_might->effects[ 0 ].value = 5.0; //In description TODO: Parse.
       p->spec.ebon_might->parse_effects( p->sets->set( EVOKER_AUGMENTATION, T30, B4 ) )
         ->parse_effects( p->spec.close_as_clutchmates, [ p = p ]( const action_t*, const action_state_t* ) {
           return p->close_as_clutchmates;
@@ -7830,10 +7831,15 @@ void evoker_t::init_finished()
   auto CT = []( player_t* p, std::string_view n ) { return p->find_talent_spell( talent_tree::CLASS, n ); };
   auto ST = []( player_t* p, std::string_view n ) { return p->find_talent_spell( talent_tree::SPECIALIZATION, n ); };
 
+  int dps = 0;
+
   for ( auto p : sim->player_no_pet_list )
   {
     if ( p == this )
       continue;
+
+    if ( p->role != ROLE_HYBRID && p->role != ROLE_HEAL && p->role != ROLE_TANK )
+      dps += 1;
     
     // DEATH_KNIGHT, DEMON_HUNTER, DRUID, EVOKER, HUNTER, MAGE, MONK, PALADIN, PRIEST, ROGUE, SHAMAN, WARLOCK, WARRIOR,
     if ( p->type == DEATH_KNIGHT )
@@ -7971,7 +7977,7 @@ void evoker_t::init_finished()
     }
   }
 
-  if ( ( sim->player_no_pet_list.size() <= 5 && !util::str_compare_ci( option.force_clutchmates, "no" ) ) ||
+  if ( ( dps < 4 && !util::str_compare_ci( option.force_clutchmates, "no" ) ) ||
        util::str_compare_ci( option.force_clutchmates, "yes" ) )
   {
     close_as_clutchmates = true;
