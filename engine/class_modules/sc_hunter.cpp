@@ -565,6 +565,7 @@ public:
     spell_data_ptr_t kill_shot;
 
     spell_data_ptr_t deathblow; 
+    spell_data_ptr_t deathblow_buff;
 
     spell_data_ptr_t tar_trap;
 
@@ -1110,7 +1111,6 @@ public:
 
     // mm
     bool trueshot_crit_damage_bonus = false;
-    damage_affected_by moving_target;
 
     bool bullseye_crit_chance = false;
     damage_affected_by lone_wolf;
@@ -1151,7 +1151,6 @@ public:
     
     affected_by.sniper_training       = parse_damage_affecting_aura( this, p -> mastery.sniper_training );
     affected_by.trueshot_crit_damage_bonus = check_affected_by( this, p -> talents.trueshot -> effectN( 5 ) );
-    affected_by.moving_target         = parse_damage_affecting_aura( this, p -> talents.moving_target_buff );
     affected_by.bullseye_crit_chance  = check_affected_by( this, p -> talents.bullseye -> effectN( 1 ).trigger() -> effectN( 1 ) );
 
     affected_by.thrill_of_the_hunt    = check_affected_by( this, p -> talents.thrill_of_the_hunt -> effectN( 1 ).trigger() -> effectN( 1 ) );
@@ -1319,12 +1318,6 @@ public:
 
       am *= 1 + tip_bonus;
     }
-
-    if ( affected_by.tww_s1_mm_4pc.direct )
-      am *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
-
-    if ( affected_by.moving_target.direct )
-      am *= 1 + p()->buffs.moving_target->value();
 
     return am;
   }
@@ -3475,6 +3468,7 @@ void hunter_t::consume_precise_shots()
     {
       timespan_t extension = talents.tensile_bowstring->effectN( 1 ).time_value();
       buffs.trueshot->extend_duration( this, extension );
+      buffs.withering_fire->extend_duration( this, extension );
       state.tensile_bowstring_extension += extension;
     }
   }
@@ -3520,6 +3514,7 @@ void hunter_t::trigger_deathblow( player_t* target )
   procs.deathblow->occur();
   buffs.razor_fragments->trigger();
   buffs.deathblow->trigger();
+  talents.black_arrow.ok() ? cooldowns.black_arrow->reset( true ) : cooldowns.kill_shot->reset( true );
 }
 
 void hunter_t::trigger_sentinel( player_t* target, bool force, proc_t* proc )
@@ -5067,17 +5062,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 {
   const int trick_shots_targets;
 
-  bool lock_and_loaded = false;
-  
-  struct {
-    double chance = 0;
-    proc_t* proc;
-  } surging_shots;
-
-  struct {
-    double chance = 0; 
-  } deathblow;
-
   timespan_t target_acquisition_reduction;
 
   aimed_shot_base_t( util::string_view n, hunter_t* p, spell_data_ptr_t s ) :
@@ -5087,22 +5071,15 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
   {
     radius = 8;
     base_aoe_multiplier = p->talents.trick_shots_data->effectN( 4 ).percent();
-
-    if ( p -> talents.surging_shots.ok() )
-    {
-      surging_shots.chance = p -> talents.surging_shots -> proc_chance();
-      surging_shots.proc = p -> get_proc( "Surging Shots Rapid Fire reset" );
-    }
-
-    if ( p->talents.deathblow.ok() )
-      deathblow.chance = p->talents.improved_deathblow.ok() ? p->talents.improved_deathblow->effectN( 2 ).percent() : p->talents.deathblow->effectN( 1 ).percent();
   }
 
   double action_multiplier() const override
   {
     double am = hunter_ranged_attack_t::action_multiplier();
 
-    if ( lock_and_loaded )
+    // TODO 20/1/25: Aimed Shots that are mid cast when Lock and Load triggers
+    // are affected by the Quickdraw bonus without consuming it
+    if ( p()->buffs.lock_and_load->check() )
       am *= 1 + p()->talents.quickdraw->effectN( 1 ).percent();
 
     return am;
@@ -5145,36 +5122,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     return c;
   }
 
-  double cost() const override
-  {
-    const bool casting = p() -> executing && p() -> executing == this;
-    if ( casting ? lock_and_loaded : p() -> buffs.lock_and_load -> check() )
-      return 0;
-
-    return hunter_ranged_attack_t::cost();
-  }
-
-  double cost_pct_multiplier() const override
-  {
-    double c = hunter_ranged_attack_t::cost_pct_multiplier();
-
-    double streamline_mod = p()->buffs.streamline->check_value();
-
-    if ( p()->buffs.trueshot->check() )
-      streamline_mod *= 1 + p()->talents.tensile_bowstring->effectN( 2 ).percent();
-
-    c *= 1 + streamline_mod;
-
-    return c;
-  }
-
-  void schedule_execute( action_state_t* s ) override
-  {
-    lock_and_loaded = p() -> buffs.lock_and_load -> up();
-
-    hunter_ranged_attack_t::schedule_execute( s );
-  }
-
   void execute() override
   {
     if ( is_aoe() )
@@ -5182,33 +5129,10 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
     hunter_ranged_attack_t::execute();
 
-    int precise_shot_stacks = 1;
-    if ( rng().roll( p()->talents.windrunner_quiver->effectN( 6 ).percent() ) )
-      precise_shot_stacks++;
-    p()->buffs.precise_shots->trigger( precise_shot_stacks );
-
-    if ( rng().roll( deathblow.chance ) )
-      p()->trigger_deathblow( target );
-
-    p()->buffs.trick_shots->up(); // Benefit tracking
-    p()->consume_trick_shots();
-
-    // Lock and Load completely supresses consumption of Streamline
-    if ( !p()->buffs.lock_and_load->check() )
-      p()->buffs.streamline->expire();
-
-    if ( lock_and_loaded )
-    {
-      p()->buffs.lock_and_load->decrement();
-      p()->cooldowns.explosive_shot->adjust( p()->talents.magnetic_gunpowder->effectN( 2 ).time_value() );
-    }
-    lock_and_loaded = false;
-
-    if ( rng().roll( surging_shots.chance ) )
-    {
-      surging_shots.proc -> occur();
-      p() -> cooldowns.rapid_fire -> reset( true );
-    }
+    // TODO 20/1/25: Moving Target gets consumed by all forms of Aimed Shot casts, but only
+    // provides benefit to the casted and Double Tap Aimed Shots
+    p()->buffs.tww_s1_mm_4pc_moving_target->expire();
+    p()->buffs.moving_target->expire();
   }
 
   int n_targets() const override
@@ -5219,44 +5143,9 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     return hunter_ranged_attack_t::n_targets();
   }
 
-  double execute_time_pct_multiplier() const override
-  {
-    if ( p() -> buffs.lock_and_load -> check() )
-      return 0;
-
-    auto et = hunter_ranged_attack_t::execute_time_pct_multiplier();
-
-    double streamline_mod = p()->buffs.streamline->check_value();
-    
-    if ( p()->buffs.trueshot->check() )
-      streamline_mod *= 1 + p()->talents.tensile_bowstring->effectN( 2 ).percent();
-
-    et *= 1 + streamline_mod;
-
-    return et;
-  }
-
   void impact( action_state_t* s ) override
   {
     hunter_ranged_attack_t::impact( s );
-
-    // TODO 19/1/25: still triggering regardless of Black Arrow on target
-    if ( p()->talents.phantom_pain.ok() && ( p()->bugs || td( s->target )->dots.black_arrow->is_ticking() ) )
-    {
-      double replicate_amount = p()->talents.phantom_pain->effectN( 1 ).percent();
-      for ( player_t* t : sim->target_non_sleeping_list )
-      {
-        if ( t->is_enemy() && !t->demise_event && t != s->target )
-        {
-          hunter_td_t* td = p()->get_target_data( t );
-          if ( td->dots.black_arrow->is_ticking() )
-          {
-            double amount = replicate_amount * s->result_amount;
-            p()->actions.phantom_pain->execute_on_target( t, amount );
-          }
-        }
-      }
-    }
 
     hunter_td_t* target_data = td( s-> target );
 
@@ -5275,36 +5164,7 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       p()->cooldowns.trueshot->adjust( -( p()->talents.calling_the_shots->effectN( 1 ).time_value() + p()->talents.unerring_vision->effectN( 3 ).time_value() ) );
     }
 
-    // TODO 17/1/25: secondary targets of a trick shots aimed shot consistently trigger the immediate detonation (modeled)
-    // it is wildly inconsistent though whether they are all affected by the damage increase (not modeled, pray for fixes and buff all for now)
-    // perhaps tied to the trigger and expiration timing of the hidden buff 474199
-    if ( p()->talents.precision_detonation->ok() )
-    {
-      if ( s->chain_target == 0 )
-      {
-        p()->buffs.precision_detonation_hidden->trigger();
-        // Expire after other bounces hit
-        make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
-      }
-      target_data->dots.explosive_shot->cancel();
-    }
-
     p()->cooldowns.volley->adjust( -p()->talents.bullet_hell->effectN( 2 ).time_value() );
-  }
-
-  double recharge_rate_multiplier( const cooldown_t& cd ) const override
-  {
-    double m = hunter_ranged_attack_t::recharge_rate_multiplier( cd );
-
-    if ( p() -> buffs.trueshot -> check() )
-      m /= 1 + p() -> talents.trueshot -> effectN( 3 ).percent();
-
-    return m;
-  }
-
-  bool usable_moving() const override
-  {
-    return false;
   }
 };
 
@@ -5327,12 +5187,56 @@ struct aimed_shot_t : public aimed_shot_base_t
       background = dual = true;
       base_costs[ RESOURCE_FOCUS ] = 0;
       // TODO 17/1/25: currently using 100% effectiveness in game
-      base_multiplier *= p->talents.double_tap->effectN( 3 ).percent();
+      base_multiplier *= p->bugs ? 1.0 : p->talents.double_tap->effectN( 3 ).percent();
+    }
+
+    double composite_da_multiplier( const action_state_t* s ) const override
+    {
+      double m = aimed_shot_base_t::composite_da_multiplier( s );
+
+       m *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
+       m *= 1 + p()->buffs.moving_target->value();
+    
+      return m;
+    }
+
+    void impact( action_state_t* s ) override
+    {
+      aimed_shot_base_t::impact( s );
+
+      // TODO 19/1/25: still triggering regardless of Black Arrow on target
+      // only triggers for the primary target of a casted or Double Tap Aimed Shot
+      if ( p()->talents.phantom_pain.ok() && s->chain_target == 0 && ( p()->bugs || td( s->target )->dots.black_arrow->is_ticking() ) )
+      {
+        double replicate_amount = p()->talents.phantom_pain->effectN( 1 ).percent();
+        for ( player_t* t : sim->target_non_sleeping_list )
+        {
+          if ( t->is_enemy() && !t->demise_event && t != s->target )
+          {
+            hunter_td_t* td = p()->get_target_data( t );
+            if ( td->dots.black_arrow->is_ticking() )
+            {
+              double amount = replicate_amount * s->result_amount;
+              p()->actions.phantom_pain->execute_on_target( t, amount );
+            }
+          }
+        }
+      }
     }
   };
 
+  struct {
+    double chance = 0;
+    proc_t* proc;
+  } surging_shots;
+
+  struct {
+    double chance = 0; 
+  } deathblow;
+
   aimed_shot_aspect_of_the_hydra_t* aspect_of_the_hydra = nullptr;
   aimed_shot_double_tap_t* double_tap = nullptr;
+  bool lock_and_loaded = false;
 
   aimed_shot_t( hunter_t* p, util::string_view options_str ) : 
     aimed_shot_base_t( "aimed_shot", p, p->talents.aimed_shot )
@@ -5344,11 +5248,88 @@ struct aimed_shot_t : public aimed_shot_base_t
 
     if ( p->talents.double_tap.ok() )
       double_tap = p->get_background_action<aimed_shot_double_tap_t>( "aimed_shot_double_tap" );
+
+    if ( p -> talents.surging_shots.ok() )
+    {
+      surging_shots.chance = p -> talents.surging_shots -> proc_chance();
+      surging_shots.proc = p -> get_proc( "Surging Shots Rapid Fire reset" );
+    }
+
+    if ( p->talents.deathblow.ok() )
+      deathblow.chance = p->talents.improved_deathblow.ok() ? p->talents.improved_deathblow->effectN( 2 ).percent() : p->talents.deathblow->effectN( 1 ).percent();
+  }
+
+  double cost() const override
+  {
+    const bool casting = p() -> executing && p() -> executing == this;
+    if ( casting ? lock_and_loaded : p() -> buffs.lock_and_load -> check() )
+      return 0;
+
+    return aimed_shot_base_t::cost();
+  }
+
+  double cost_pct_multiplier() const override
+  {
+    double c = aimed_shot_base_t::cost_pct_multiplier();
+
+    double streamline_mod = p()->buffs.streamline->check_value();
+
+    if ( p()->buffs.trueshot->check() )
+      streamline_mod *= 1 + p()->talents.tensile_bowstring->effectN( 2 ).percent();
+
+    c *= 1 + streamline_mod;
+
+    return c;
+  }
+
+  double execute_time_pct_multiplier() const override
+  {
+    if ( p() -> buffs.lock_and_load -> check() )
+      return 0;
+
+    auto et = aimed_shot_base_t::execute_time_pct_multiplier();
+
+    double streamline_mod = p()->buffs.streamline->check_value();
+    
+    if ( p()->buffs.trueshot->check() )
+      streamline_mod *= 1 + p()->talents.tensile_bowstring->effectN( 2 ).percent();
+
+    et *= 1 + streamline_mod;
+
+    return et;
+  }
+  
+  void schedule_execute( action_state_t* s ) override
+  {
+    lock_and_loaded = p() -> buffs.lock_and_load -> up();
+
+    aimed_shot_base_t::schedule_execute( s );
   }
 
   void execute() override
   {
-    hunter_ranged_attack_t::execute();
+    aimed_shot_base_t::execute();
+
+    // Lock and Load completely supresses consumption of Streamline
+    if ( !p()->buffs.lock_and_load->check() )
+      p()->buffs.streamline->expire();
+
+    if ( rng().roll( surging_shots.chance ) )
+    {
+      surging_shots.proc -> occur();
+      p() -> cooldowns.rapid_fire -> reset( true );
+    }
+    
+    p()->buffs.trick_shots->up(); // Benefit tracking
+    p()->consume_trick_shots();
+
+    int precise_shot_stacks = 1;
+    if ( rng().roll( p()->talents.windrunner_quiver->effectN( 6 ).percent() ) )
+      precise_shot_stacks++;
+    p()->buffs.precise_shots->increment( precise_shot_stacks );
+
+    if ( rng().roll( deathblow.chance ) )
+      p()->trigger_deathblow( target );
 
     // TODO 15/1/25: secondary cast is using primary target if no secondary target is near
     // note (not modeled): there is some kind of dead zone where a secondary target is too far to get hit by the
@@ -5367,6 +5348,76 @@ struct aimed_shot_t : public aimed_shot_base_t
       double_tap->execute_on_target( target );
       p()->buffs.double_tap->expire();
     }
+
+    if ( lock_and_loaded )
+    {
+      p()->buffs.lock_and_load->decrement();
+      p()->cooldowns.explosive_shot->adjust( p()->talents.magnetic_gunpowder->effectN( 2 ).time_value() );
+    }
+    lock_and_loaded = false;
+  }
+
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double m = aimed_shot_base_t::composite_da_multiplier( s );
+
+     m *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
+     m *= 1 + p()->buffs.moving_target->value();
+    
+    return m;
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    aimed_shot_base_t::impact( s );
+
+    // TODO 17/1/25: secondary targets of a trick shots aimed shot consistently trigger the immediate detonation (modeled)
+    // it is wildly inconsistent though whether they are all affected by the damage increase (not modeled, pray for fixes and buff all for now)
+    // perhaps tied to the trigger and expiration timing of the hidden buff 474199
+    if ( p()->talents.precision_detonation->ok() )
+    {
+      if ( s->chain_target == 0 )
+      {
+        p()->buffs.precision_detonation_hidden->trigger();
+        // Expire after other bounces hit
+        make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+      }
+      td( s->target )->dots.explosive_shot->cancel();
+    }
+
+    // TODO 19/1/25: still triggering regardless of Black Arrow on target
+    // only triggers for the primary target of a casted or Double Tap Aimed Shot
+    if ( p()->talents.phantom_pain.ok() && s->chain_target == 0 && ( p()->bugs || td( s->target )->dots.black_arrow->is_ticking() ) )
+    {
+      double replicate_amount = p()->talents.phantom_pain->effectN( 1 ).percent();
+      for ( player_t* t : sim->target_non_sleeping_list )
+      {
+        if ( t->is_enemy() && !t->demise_event && t != s->target )
+        {
+          hunter_td_t* td = p()->get_target_data( t );
+          if ( td->dots.black_arrow->is_ticking() )
+          {
+            double amount = replicate_amount * s->result_amount;
+            p()->actions.phantom_pain->execute_on_target( t, amount );
+          }
+        }
+      }
+    }
+  }
+
+  double recharge_rate_multiplier( const cooldown_t& cd ) const override
+  {
+    double m = aimed_shot_base_t::recharge_rate_multiplier( cd );
+
+    if ( p() -> buffs.trueshot -> check() )
+      m /= 1 + p() -> talents.trueshot -> effectN( 3 ).percent();
+
+    return m;
+  }
+
+  bool usable_moving() const override
+  {
+    return false;
   }
 };
 
@@ -7502,6 +7553,7 @@ void hunter_t::init_spells()
   talents.kill_shot                         = find_talent_spell( talent_tree::CLASS, "Kill Shot" );
 
   talents.deathblow                         = find_talent_spell( talent_tree::CLASS, "Deathblow" );
+  talents.deathblow_buff                    = talents.deathblow.ok() ? find_spell( 378770 ) : spell_data_t::not_found();
 
   talents.tar_trap                          = find_talent_spell( talent_tree::CLASS, "Tar Trap" );
 
@@ -7954,15 +8006,7 @@ void hunter_t::create_buffs()
   // Hunter Tree
 
   buffs.deathblow =
-    make_buff( this, "deathblow", find_spell( 378770 ) )
-      -> set_stack_change_callback(
-        [ this ]( buff_t*, int old, int ) {
-          // XXX: check refreshes
-          if ( old == 0 ) {
-            talents.black_arrow.ok() ? cooldowns.black_arrow->reset( true ) : cooldowns.kill_shot->reset( true );
-          }
-        } )
-      -> set_activated( false );
+    make_buff( this, "deathblow", talents.deathblow_buff );
 
   // Marksmanship Tree
 
@@ -7975,7 +8019,8 @@ void hunter_t::create_buffs()
     make_buff( this, "streamline", talents.streamline_buff )
       ->set_default_value( talents.streamline_buff->effectN( 1 ).percent() + talents.improved_streamline->effectN( 1 ).percent() );
 
-  buffs.trick_shots = make_buff( this, "trick_shots", talents.trick_shots_buff );
+  buffs.trick_shots =
+    make_buff( this, "trick_shots", talents.trick_shots_buff );
   
   buffs.lock_and_load =
     make_buff( this, "lock_and_load", talents.lock_and_load -> effectN( 1 ).trigger() )
@@ -7993,7 +8038,7 @@ void hunter_t::create_buffs()
 
   buffs.trueshot =
     make_buff( this, "trueshot", talents.trueshot )
-      ->set_cooldown( 0_ms )
+      ->set_cooldown( 0_s )
       ->set_refresh_behavior( buff_refresh_behavior::EXTEND )
       ->add_invalidate( cache_e::CACHE_CRIT_CHANCE )
       ->set_stack_change_callback(
@@ -8033,8 +8078,8 @@ void hunter_t::create_buffs()
     make_buff( this, "double_tap", talents.double_tap_buff )
       ->set_default_value_from_effect( 1 );
 
-
-  buffs.volley = make_buff( this, "volley", talents.volley_data )
+  buffs.volley =
+    make_buff( this, "volley", talents.volley_data )
       -> set_cooldown( 0_ms )
       -> set_period( 0_ms ) // disable ticks as an optimization
       -> set_refresh_behavior( buff_refresh_behavior::DURATION );
