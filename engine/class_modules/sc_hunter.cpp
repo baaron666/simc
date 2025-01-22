@@ -3676,7 +3676,7 @@ struct auto_shot_base_t : public auto_attack_base_t<ranged_attack_t>
   double snakeskin_quiver_chance = 0;
   double wild_call_chance = 0;
 
-  auto_shot_base_t( util::string_view n, hunter_t* p, const spell_data_t* s ) : auto_attack_base_t( "auto_shot", p, p->specs.auto_shot )
+  auto_shot_base_t( util::string_view n, hunter_t* p, const spell_data_t* s ) : auto_attack_base_t( n, p, s )
   {
     wild_call_chance = p->talents.wild_call->effectN( 1 ).percent();
     snakeskin_quiver_chance = p->talents.snakeskin_quiver->effectN( 1 ).percent();
@@ -4073,6 +4073,9 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
 
     p()->cooldowns.wildfire_bomb->adjust( -grenade_juggler_reduction );
     p()->buffs.bombardier->decrement();
+
+    if ( p()->talents.precision_detonation.ok() )
+      p()->buffs.streamline->trigger();
   }
 
   double cost_pct_multiplier() const override
@@ -4111,6 +4114,17 @@ struct explosive_shot_t : public explosive_shot_base_t
   {
     parse_options( options_str );
   }
+
+  void init() override
+  {
+    explosive_shot_base_t::init();
+
+    if ( p()->specialization() == HUNTER_MARKSMANSHIP )
+    {
+      explosion->stats = stats;
+      stats->action_list.push_back( explosion );
+    }
+  }
   
   void execute() override
   {
@@ -4121,9 +4135,6 @@ struct explosive_shot_t : public explosive_shot_base_t
       p()->buffs.tip_of_the_spear->decrement();
       p()->buffs.tip_of_the_spear_explosive->trigger();
     }
-
-    if ( p()->talents.precision_detonation.ok() )
-      p()->buffs.streamline->trigger();
   }
 };
 
@@ -4427,8 +4438,13 @@ struct black_arrow_t final : public black_arrow_base_t
   {
     parse_options( options_str );
 
+    add_child( impact_action );
+
     if ( p->talents.withering_fire.ok() )
+    {
       withering_fire = p->get_background_action<withering_fire_t>( "black_arrow_withering_fire" );
+      add_child( withering_fire );
+    }
   }
 
   void execute() override
@@ -5272,7 +5288,7 @@ struct aimed_shot_t : public aimed_shot_base_t
   {
     double c = aimed_shot_base_t::cost_pct_multiplier();
 
-    double streamline_mod = p()->buffs.streamline->check_value();
+    double streamline_mod = p()->buffs.streamline->check() * p()->talents.streamline_buff->effectN( 2 ).percent();
 
     if ( p()->buffs.trueshot->check() )
       streamline_mod *= 1 + p()->talents.tensile_bowstring->effectN( 2 ).percent();
@@ -7292,7 +7308,10 @@ struct auto_attack_t: public action_t
     }
     else if ( p -> main_hand_weapon.group() == WEAPON_RANGED )
     {
-      p -> main_hand_attack = new attacks::auto_shot_t( p );
+      if ( p->talents.bleak_arrows.ok() )
+        p -> main_hand_attack = new attacks::bleak_arrows_t( p );
+      else
+        p -> main_hand_attack = new attacks::auto_shot_t( p );
     }
     else
     {
