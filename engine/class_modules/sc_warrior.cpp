@@ -1201,6 +1201,7 @@ public:
     else if ( p()->specialization() == WARRIOR_PROTECTION )
     {
       parse_effects( p()->buff.battering_ram );
+      parse_effects( p()->buff.brace_for_impact, effect_mask_t( true ).disable( 2 ) );
       parse_effects( p()->buff.juggernaut_prot );
       parse_effects( p()->buff.seismic_reverberation_revenge );
       parse_effects( p()->buff.vanguards_determination );
@@ -1237,7 +1238,8 @@ public:
       }
       // Effect 3 is the auto attack mod
       parse_effects( p()->talents.colossus.mountain_of_muscle_and_scars, effect_mask_t( false ).enable( 3 ) );
-      parse_effects( p()->talents.colossus.practiced_strikes );
+      // Effect 3 is the increased rage gain.
+      parse_effects( p()->talents.colossus.practiced_strikes, effect_mask_t( true ).disable( 3 ) );
     }
 
     // Slayer
@@ -1787,9 +1789,14 @@ struct avatar_t : public warrior_spell_t
       immovable_object_duration = p->talents.warrior.immovable_object->effectN( 2 ).time_value();
 
     if ( p->talents.mountain_thane.avatar_of_the_storm->ok() )
+    {
       avatar_of_the_storm_duration = timespan_t::from_seconds( p->talents.mountain_thane.avatar_of_the_storm->effectN( 3 ).base_value() );
+      if ( p->is_ptr() && p->specialization() == WARRIOR_PROTECTION )
+        avatar_of_the_storm_duration += timespan_t::from_seconds( p->talents.mountain_thane.avatar_of_the_storm->effectN( 4 ).base_value() );
+    }
   }
 
+  // Background action version
   avatar_t( util::string_view name, warrior_t* p )
     : warrior_spell_t( name, p, p->talents.warrior.avatar ),
     warlords_torment_duration( 0_s ),
@@ -1802,6 +1809,7 @@ struct avatar_t : public warrior_spell_t
     from_immovable_object( false )
   {
     background = true;
+    cooldown->duration = 0_s;
     trigger_gcd = timespan_t::zero();
     harmful    = false;
     target     = p;
@@ -1819,7 +1827,11 @@ struct avatar_t : public warrior_spell_t
       immovable_object_duration = p->talents.warrior.immovable_object->effectN( 2 ).time_value();
 
     if ( p->talents.mountain_thane.avatar_of_the_storm->ok() )
+    {
       avatar_of_the_storm_duration = timespan_t::from_seconds( p->talents.mountain_thane.avatar_of_the_storm->effectN( 3 ).base_value() );
+      if ( p->is_ptr() && p->specialization() == WARRIOR_PROTECTION )
+        avatar_of_the_storm_duration += timespan_t::from_seconds( p->talents.mountain_thane.avatar_of_the_storm->effectN( 4 ).base_value() );
+    }
   }
 
   struct state_t : public action_state_t
@@ -2892,6 +2904,7 @@ struct bloodbath_dot_t : public warrior_attack_t
     background = true;
     hasted_ticks = false;
     may_miss = false;
+    dot_behavior = DOT_EXTEND;
   }
 };
 
@@ -3276,7 +3289,7 @@ struct mortal_strike_t : public warrior_attack_t
     background = true;
     impact_action = p->active.deep_wounds_ARMS;
     rend_dot = new rend_dot_t( p );
-    internal_cooldown->duration = 0_s;
+    cooldown->duration = 0_s;
     if ( p->talents.slayer.reap_the_storm->ok() )
     {
       std::string s = "reap_the_storm_";
@@ -4001,7 +4014,12 @@ struct cleave_t : public warrior_attack_t
 
     if ( p()->talents.slayer.reap_the_storm->ok() )
     {
-      if ( p()->cooldown.reap_the_storm_icd->is_ready() && rng().roll( p()->talents.slayer.reap_the_storm->proc_chance() ) )
+      if ( p()->is_ptr() && p()->cooldown.reap_the_storm_icd->is_ready() && execute_state->n_targets >= p()->talents.slayer.reap_the_storm->effectN( 2 ).base_value() && rng().roll( p()->talents.slayer.reap_the_storm->proc_chance() ) )
+      {
+        reap_the_storm->execute();
+        p()->cooldown.reap_the_storm_icd->start();
+      }
+      if ( !p()->is_ptr() && p()->cooldown.reap_the_storm_icd->is_ready() && rng().roll( p()->talents.slayer.reap_the_storm->proc_chance() ) )
       {
         reap_the_storm->execute();
         p()->cooldown.reap_the_storm_icd->start();
@@ -6529,6 +6547,50 @@ struct ravager_t : public warrior_attack_t
 
 // Revenge ==================================================================
 
+struct revenge_seismic_reverberation_t : public warrior_attack_t
+{
+  revenge_seismic_reverberation_t( util::string_view name, warrior_t* p )
+    : warrior_attack_t( name, p, p->find_spell( 1215174 ) )
+  {
+    weapon = &( player->main_hand_weapon );
+    aoe = -1;
+    background = true;
+    proc = true;
+    impact_action = p->active.deep_wounds_PROT;
+    base_multiplier *= 1.0 + p -> talents.protection.best_served_cold -> effectN( 1 ).percent();
+  }
+
+  double action_multiplier() const override
+  {
+    double am = warrior_attack_t::action_multiplier();
+    if( p() -> buff.revenge -> up() && p() -> talents.protection.best_served_cold -> ok() )
+    {
+      am /= 1.0 + p()->talents.protection.best_served_cold->effectN( 1 ).percent();
+      am *= 1.0 + p()->talents.protection.best_served_cold->effectN( 1 ).percent() +
+            p()->buff.revenge->data().effectN( 2 ).percent();
+    }
+
+    am *= 1.0 + p() -> talents.protection.show_of_force -> effectN( 2 ).percent();
+
+    am *= 1.0 + p()->talents.warrior.seismic_reverberation->effectN( 3 ).percent();
+
+    return am;
+  }
+
+  double composite_da_multiplier( const action_state_t* state ) const override
+  {
+    double m = warrior_attack_t::composite_da_multiplier( state );
+
+    if ( p()->talents.colossus.one_against_many->ok() )
+    {
+      m *= 1.0 + ( p()->talents.colossus.one_against_many->effectN( 1 ).percent() * std::min( state -> n_targets,  as<unsigned int>( p()->talents.colossus.one_against_many->effectN( 2 ).base_value() ) ) );
+    }
+
+    return m;
+  }
+
+};
+
 struct revenge_t : public warrior_attack_t
 {
   double shield_slam_reset;
@@ -6555,7 +6617,11 @@ struct revenge_t : public warrior_attack_t
       }
       else if ( p -> talents.warrior.seismic_reverberation -> ok() )
       {
-        seismic_action = new revenge_t( p, "", true );
+        if ( ! p->is_ptr() )
+          seismic_action = new revenge_t( p, "", true );
+        else  // PTR uses a different spell id
+          seismic_action = new revenge_seismic_reverberation_t( "revenge_seismic_reverberation", p );
+
         add_child( seismic_action );
       }
 
@@ -6588,7 +6654,8 @@ struct revenge_t : public warrior_attack_t
     if ( p()->talents.warrior.seismic_reverberation->ok() && !background &&
     execute_state->n_targets >= p()->talents.warrior.seismic_reverberation->effectN( 1 ).base_value() )
     {
-      p()->buff.seismic_reverberation_revenge->trigger();
+      if( !p()->is_ptr() )  // Remove the entire buff.seismic_reverberation_revenge after 11.1 releases, it's no longer used
+        p()->buff.seismic_reverberation_revenge->trigger();
       seismic_action->execute_on_target( target );
     }
 
@@ -6890,6 +6957,9 @@ struct shield_slam_t : public warrior_attack_t
     if( !p->is_ptr() )
       rage_gain += p->talents.protection.impenetrable_wall->effectN( 2 ).resource( RESOURCE_RAGE );
 
+    if ( p->is_ptr() && p->talents.colossus.practiced_strikes->ok() )
+      rage_gain += p->talents.colossus.practiced_strikes->effectN( 3 ).resource( RESOURCE_RAGE );
+
     if ( p -> sets -> has_set_bonus( WARRIOR_PROTECTION, T30, B2 ) )
         base_multiplier *= 1.0 + p -> sets -> set( WARRIOR_PROTECTION, T30, B2 ) -> effectN( 1 ).percent();
 
@@ -6916,19 +6986,9 @@ struct shield_slam_t : public warrior_attack_t
       am *= 1.0 + sb_increase;
     }
 
-    if ( p()->talents.protection.punish.ok() )
-    {
-      am *= 1.0 + p()->talents.protection.punish->effectN( 1 ).percent();
-    }
-
     if ( p()->buff.violent_outburst->check() )
     {
       am *= 1.0 + p()->buff.violent_outburst->data().effectN( 1 ).percent();
-    }
-
-    if ( p() -> buff.brace_for_impact -> up() )
-    {
-      am *= 1.0 + p()->buff.brace_for_impact -> stack_value();
     }
 
     if ( p() -> sets -> has_set_bonus( WARRIOR_PROTECTION, T30, B2 ) && p() -> buff.last_stand -> up() )
@@ -9379,8 +9439,7 @@ warrior_td_t::warrior_td_t( player_t* target, warrior_t& p ) : actor_target_data
 
   debuffs_demoralizing_shout = new buffs::debuff_demo_shout_t( *this, &p );
 
-  debuffs_punish = make_buff( *this, "punish", p.talents.protection.punish -> effectN( 2 ).trigger() )
-    ->set_default_value( p.talents.protection.punish -> effectN( 2 ).trigger() -> effectN( 1 ).percent() );
+  debuffs_punish = make_buff( *this, "punish", p.talents.protection.punish -> effectN( 2 ).trigger() );
 
   debuffs_taunt = make_buff( *this, "taunt", p.find_class_spell( "Taunt" ) );
 
@@ -11063,6 +11122,7 @@ void warrior_t::apply_affecting_auras( action_t& action )
   action.apply_affecting_aura( talents.protection.bloodborne );
   action.apply_affecting_aura( talents.protection.defenders_aegis );
   action.apply_affecting_aura( talents.protection.battering_ram );
+  action.apply_affecting_aura( talents.protection.punish );
 
   // Shared Auras
   if ( !is_ptr() )
