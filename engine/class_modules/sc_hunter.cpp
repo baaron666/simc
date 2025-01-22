@@ -5476,16 +5476,16 @@ struct rapid_fire_t: public hunter_spell_t
     }
   };
 
-  struct rapid_fire_tick_aspect_of_the_hydra : rapid_fire_tick_t
+  struct rapid_fire_tick_aspect_of_the_hydra_t : rapid_fire_tick_t
   {
-    rapid_fire_tick_aspect_of_the_hydra( util::string_view n, hunter_t* p ) : rapid_fire_tick_t( n, p )
+    rapid_fire_tick_aspect_of_the_hydra_t( util::string_view n, hunter_t* p ) : rapid_fire_tick_t( n, p )
     {
       base_multiplier *= p->talents.aspect_of_the_hydra->effectN( 1 ).percent();
     }
   };
 
   rapid_fire_tick_t* damage;
-  rapid_fire_tick_aspect_of_the_hydra* aspect_of_the_hydra;
+  rapid_fire_tick_aspect_of_the_hydra_t* aspect_of_the_hydra;
   int base_num_ticks;
 
   struct {
@@ -5506,6 +5506,9 @@ struct rapid_fire_t: public hunter_spell_t
 
     if ( p->talents.improved_deathblow.ok() )
       deathblow.chance = p->talents.improved_deathblow->effectN( 1 ).percent();
+
+    if ( p->talents.aspect_of_the_hydra.ok() )
+      aspect_of_the_hydra = p->get_background_action<rapid_fire_tick_aspect_of_the_hydra_t>( "rapid_fire_tick_aspect_of_the_hydra" );
   }
 
   void init() override
