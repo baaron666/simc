@@ -3895,10 +3895,7 @@ struct arcane_shot_t : public arcane_shot_base_t
     if ( aspect_of_the_hydra )
     {
       auto tl = target_list();
-      if ( target_list().size() > 1 )
-        aspect_of_the_hydra->execute_on_target( tl[1] );
-      else
-        aspect_of_the_hydra->execute_on_target( target );
+      aspect_of_the_hydra->execute_on_target( tl[ tl.size() > 1 ? 1 : 0 ] );
     }
   }
 };
@@ -4408,27 +4405,21 @@ struct black_arrow_t final : public black_arrow_base_t
     withering_fire_t( util::string_view n, hunter_t* p ) : black_arrow_base_t( n, p, p->talents.withering_fire_black_arrow )
     {
       background = dual = true;
-      aoe = as<int>( p->talents.withering_fire->effectN( 3 ).base_value() );
     }
 
     // Ignore Kill Shot target count mods
     int n_targets() const override
     {
-      return aoe;
-    }
-
-    size_t available_targets( std::vector<player_t*>& tl ) const override
-    {
-      black_arrow_base_t::available_targets( tl );
-
-      // Cannot hit the original target.
-      range::erase_remove( tl, target );
-
-      return tl.size();
+      return 1;
     }
   };
 
-  withering_fire_t* withering_fire = nullptr;
+  struct
+  {
+    int count = 0;
+    withering_fire_t* action = nullptr;
+  } withering_fire;
+
   double lower_health_threshold_pct;
   double upper_health_threshold_pct;
 
@@ -4442,8 +4433,9 @@ struct black_arrow_t final : public black_arrow_base_t
 
     if ( p->talents.withering_fire.ok() )
     {
-      withering_fire = p->get_background_action<withering_fire_t>( "black_arrow_withering_fire" );
-      add_child( withering_fire );
+      withering_fire.count = as<int>( p->talents.withering_fire->effectN( 3 ).base_value() );
+      withering_fire.action = p->get_background_action<withering_fire_t>( "black_arrow_withering_fire" );
+      add_child( withering_fire.action );
     }
   }
 
@@ -4455,7 +4447,11 @@ struct black_arrow_t final : public black_arrow_base_t
       p()->trigger_deathblow( target );
 
     if ( p()->buffs.withering_fire->up() )
-      withering_fire->execute_on_target( target );
+    {
+      auto tl = target_list();
+      withering_fire.action->execute_on_target( tl[ tl.size() > 1 ? 1 : 0 ] );
+      withering_fire.action->execute_on_target( tl[ tl.size() > 2 ? 2 : 0 ] );
+    }
   }
 
   void impact( action_state_t* s ) override
@@ -4477,7 +4473,7 @@ struct black_arrow_t final : public black_arrow_base_t
       ( candidate_target->health_percentage() <= lower_health_threshold_pct ||
         ( p()->bugs && candidate_target->health_percentage() >= upper_health_threshold_pct ) ||
         ( p()->talents.the_bell_tolls.ok() && candidate_target->health_percentage() >= upper_health_threshold_pct ) ||
-        p()->buffs.deathblow->check() );
+        p()->buffs.deathblow->check() || p()->buffs.withering_fire->check() );
   }
 };
 
@@ -5353,10 +5349,7 @@ struct aimed_shot_t : public aimed_shot_base_t
     if ( aspect_of_the_hydra )
     {
       auto tl = target_list();
-      if ( target_list().size() > 1 )
-        aspect_of_the_hydra->execute_on_target( tl[1] );
-      else
-        aspect_of_the_hydra->execute_on_target( target );
+      aspect_of_the_hydra->execute_on_target( tl[ tl.size() > 1 ? 1 : 0 ] );
     }
 
     if ( double_tap && p()->buffs.double_tap->up() )
@@ -5441,16 +5434,6 @@ struct aimed_shot_t : public aimed_shot_base_t
 
 struct rapid_fire_t: public hunter_spell_t
 {
-  struct state_data_t
-  {
-    bool double_tap = false;
-
-    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out ) {
-      fmt::format_to( out, "double_tap={:d}", data.double_tap );
-    }
-  };
-  using state_t = hunter_action_state_t<state_data_t>;
-
   struct rapid_fire_tick_t : public hunter_ranged_attack_t
   {
     const int trick_shots_targets;
@@ -5561,10 +5544,7 @@ struct rapid_fire_t: public hunter_spell_t
     if ( aspect_of_the_hydra )
     {
       auto tl = target_list();
-      if ( target_list().size() > 1 )
-        aspect_of_the_hydra->execute_on_target( tl[1] );
-      else
-        aspect_of_the_hydra->execute_on_target( target );
+      aspect_of_the_hydra->execute_on_target( tl[ tl.size() > 1 ? 1 : 0 ] );
     }
   }
 
@@ -5583,7 +5563,7 @@ struct rapid_fire_t: public hunter_spell_t
     double num_ticks = base_num_ticks - 1;
 
     if ( p()->buffs.double_tap->check() )
-      num_ticks *= p()->talents.double_tap_buff->effectN( 3 ).percent();
+      num_ticks *= 1 + p()->talents.double_tap_buff->effectN( 3 ).percent();
 
     timespan_t base_duration = num_ticks * tick_time( s );
     
@@ -5601,7 +5581,6 @@ struct rapid_fire_t: public hunter_spell_t
 
   double energize_cast_regen( const action_state_t* ) const override
   {
-    // XXX: Not exactly true for Nesingwary's / Trueshot because the buff can fall off mid-channel. Meh
     return base_num_ticks * damage -> composite_energize_amount( nullptr );
   }
 
@@ -5613,17 +5592,6 @@ struct rapid_fire_t: public hunter_spell_t
       m /= 1 + p() -> talents.trueshot -> effectN( 1 ).percent();
 
     return m;
-  }
-
-  action_state_t* new_state() override
-  {
-    return new state_t( this, target );
-  }
-
-  void snapshot_state( action_state_t* s, result_amount_type type ) override
-  {
-    hunter_spell_t::snapshot_state( s, type );
-    debug_cast<state_t*>( s ) -> double_tap = p() -> buffs.double_tap -> up();
   }
 };
 
