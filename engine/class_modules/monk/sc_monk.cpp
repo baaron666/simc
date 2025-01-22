@@ -1706,12 +1706,14 @@ struct blackout_kick_t : overwhelming_force_t<charred_passions_t<monk_melee_atta
 {
   blackout_kick_totm_proc_t *bok_totm_proc;
   cooldown_t *keg_smash_cooldown;
+  bool tier_tww2_opportunistic_strike;
 
   blackout_kick_t( monk_t *p, util::string_view options_str )
     : base_t( p, "blackout_kick",
               ( p->specialization() == MONK_BREWMASTER ? p->baseline.brewmaster.blackout_kick
                                                        : p->baseline.monk.blackout_kick ) ),
-      keg_smash_cooldown( nullptr )
+      keg_smash_cooldown( nullptr ),
+      tier_tww2_opportunistic_strike( false )
   {
     parse_options( options_str );
     if ( p->specialization() == MONK_WINDWALKER )
@@ -1727,7 +1729,7 @@ struct blackout_kick_t : overwhelming_force_t<charred_passions_t<monk_melee_atta
     apply_affecting_aura( p->talent.brewmaster.shadowboxing_treads );
     apply_affecting_aura( p->talent.brewmaster.elusive_footwork );
 
-    parse_effects( p->tier.tww2.opportunistic_strike, DECREMENT_BUFF );
+    parse_effects( p->tier.tww2.opportunistic_strike, [ & ]() { return tier_tww2_opportunistic_strike; } );
 
     if ( player->sets->set( MONK_BREWMASTER, TWW1, B4 )->ok() )
       keg_smash_cooldown = player->get_cooldown( "keg_smash" );
@@ -1777,7 +1779,13 @@ struct blackout_kick_t : overwhelming_force_t<charred_passions_t<monk_melee_atta
 
   void execute() override
   {
+    tier_tww2_opportunistic_strike = p()->tier.tww2.opportunistic_strike->check();
+    p()->tier.tww2.opportunistic_strike->decrement();
+
     base_t::execute();
+
+    if ( tier_tww2_opportunistic_strike )
+      cooldown->adjust( -p()->tier.tww2.brm_4pc_opportunistic_strike->effectN( 1 ).time_value() );
 
     p()->buff.shuffle->trigger( timespan_t::from_seconds( p()->talent.brewmaster.shuffle->effectN( 1 ).base_value() ) );
 
