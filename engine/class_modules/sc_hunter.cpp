@@ -413,6 +413,9 @@ public:
     spell_data_ptr_t tww_s1_mm_4pc_buff;
     spell_data_ptr_t tww_s1_sv_2pc;
     spell_data_ptr_t tww_s1_sv_4pc;
+
+    spell_data_ptr_t tww_s2_mm_2pc;
+    spell_data_ptr_t tww_s2_mm_4pc;
   } tier_set;
 
   struct buffs_t
@@ -473,8 +476,10 @@ public:
 
     // Tier Set Bonuses
     // TWW - S1
-    buff_t* harmonize; //BM 4pc
-    buff_t* tww_s1_mm_4pc_moving_target; //MM 4pc
+    buff_t* harmonize; // BM 4pc
+    buff_t* tww_s1_mm_4pc_moving_target; // shares name with talent buff
+    // TWW - S2
+    buff_t* jackpot; // MM 2pc
 
     // Hero Talents 
 
@@ -1104,19 +1109,19 @@ public:
     bool unnatural_causes_debuff; // 10-15% dmg taken from caster spells from 459529 effect 1
     bool unnatural_causes_debuff_label; // 10-15% dmg taken from caster spells (label) from 459529 effect 2
 
-    // bm
+    // BM
     bool thrill_of_the_hunt = false;
     damage_affected_by bestial_wrath;
     damage_affected_by master_of_beasts;
 
-    // mm
+    // MM
     bool trueshot_crit_damage_bonus = false;
 
     bool bullseye_crit_chance = false;
     damage_affected_by lone_wolf;
     damage_affected_by sniper_training;
 
-    // surv
+    // SV
     damage_affected_by spirit_bond;
     damage_affected_by coordinated_assault;
     damage_affected_by tip_of_the_spear;
@@ -1126,6 +1131,7 @@ public:
 
     // Tier Set
     damage_affected_by tww_s1_mm_4pc;
+    damage_affected_by tww_s2_mm_2pc;
   } affected_by;
 
   cdwaste::action_data_t* cd_waste = nullptr;
@@ -1165,6 +1171,7 @@ public:
     affected_by.spearhead_crit_damage = check_affected_by( this, p->talents.spearhead_attack->effectN( 3 ) );
 
     affected_by.tww_s1_mm_4pc = parse_damage_affecting_aura( this, p -> tier_set.tww_s1_mm_4pc_buff );
+    affected_by.tww_s2_mm_2pc = parse_damage_affecting_aura( this, p -> tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() );
 
     // Hunter Tree passives
     ab::apply_affecting_aura( p -> talents.specialized_arsenal );
@@ -1318,6 +1325,9 @@ public:
 
       am *= 1 + tip_bonus;
     }
+
+    if ( affected_by.tww_s2_mm_2pc.direct )
+      am *= 1 + p()->buffs.jackpot->value();
 
     return am;
   }
@@ -3734,6 +3744,9 @@ struct auto_shot_base_t : public auto_attack_base_t<ranged_attack_t>
 
     m + timespan_t::from_millis( p()->buffs.in_the_rhythm->check_value() );
 
+    if ( p()->buffs.jackpot->check() )
+      m + timespan_t::from_millis( p()->tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger()->effectN( 2 ).base_value() );
+
     return m;
   }
 };
@@ -5237,6 +5250,23 @@ struct aimed_shot_t : public aimed_shot_base_t
     }
   };
 
+  struct explosive_shot_tww_s2_mm_4pc_t : public explosive_shot_background_t
+  {
+    explosive_shot_tww_s2_mm_4pc_t( util::string_view n, hunter_t* p ) : explosive_shot_background_t( n, p )
+    {
+    }
+
+    void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+    {
+      explosive_shot_background_t::snapshot_internal( s, flags, rt );
+
+      // TODO 23/1/25: Tooltip says "at 200% effectiveness" but damage is actually increased by 200%, so 300% effectiveness
+      // note (not modeled): effectiveness bonus is only applying to primary target in aoe
+      if ( flags & STATE_EFFECTIVENESS )
+        debug_cast<state_t*>( s )->effectiveness = p()->tier_set.tww_s2_mm_4pc->effectN( 1 ).percent();
+    }
+  };
+
   struct {
     double chance = 0;
     proc_t* proc;
@@ -5248,6 +5278,7 @@ struct aimed_shot_t : public aimed_shot_base_t
 
   aimed_shot_aspect_of_the_hydra_t* aspect_of_the_hydra = nullptr;
   aimed_shot_double_tap_t* double_tap = nullptr;
+  explosive_shot_tww_s2_mm_4pc_t* tww_s2_mm_4pc_t = nullptr;
   bool lock_and_loaded = false;
 
   aimed_shot_t( hunter_t* p, util::string_view options_str ) : 
@@ -5269,6 +5300,9 @@ struct aimed_shot_t : public aimed_shot_base_t
 
     if ( p->talents.deathblow.ok() )
       deathblow.chance = p->talents.improved_deathblow.ok() ? p->talents.improved_deathblow->effectN( 2 ).percent() : p->talents.deathblow->effectN( 1 ).percent();
+  
+    if ( p->tier_set.tww_s2_mm_4pc.ok() )
+      tww_s2_mm_4pc_t = p->get_background_action<explosive_shot_tww_s2_mm_4pc_t>( "explosive_shot_tww_s2_mm_4pc_t" );
   }
 
   double cost() const override
@@ -5362,6 +5396,8 @@ struct aimed_shot_t : public aimed_shot_base_t
     {
       p()->buffs.lock_and_load->decrement();
       p()->cooldowns.explosive_shot->adjust( p()->talents.magnetic_gunpowder->effectN( 2 ).time_value() );
+      if ( tww_s2_mm_4pc_t )
+        tww_s2_mm_4pc_t->execute_on_target( target );
     }
     lock_and_loaded = false;
   }
@@ -6972,6 +7008,8 @@ struct trueshot_t: public hunter_spell_t
       p()->trigger_spotters_mark( target, true );
 
     p()->buffs.double_tap->trigger();
+
+    p()->buffs.jackpot->trigger();
   }
 };
 
@@ -7907,6 +7945,9 @@ void hunter_t::init_spells()
   tier_set.tww_s1_sv_2pc = sets -> set( HUNTER_SURVIVAL, TWW1, B2 );
   tier_set.tww_s1_sv_4pc = sets -> set( HUNTER_SURVIVAL, TWW1, B4 );
 
+  tier_set.tww_s2_mm_2pc = sets -> set( HUNTER_MARKSMANSHIP, TWW2, B2 );
+  tier_set.tww_s2_mm_4pc = sets -> set( HUNTER_MARKSMANSHIP, TWW2, B4 );
+
   // Cooldowns
   cooldowns.target_acquisition->duration = talents.target_acquisition->internal_cooldown();
   cooldowns.salvo->duration = talents.volley->cooldown();
@@ -8284,6 +8325,10 @@ void hunter_t::create_buffs()
   buffs.tww_s1_mm_4pc_moving_target
     = make_buff( this, "tww_s1_mm_4pc_moving_target", tier_set.tww_s1_mm_4pc_buff )
       -> set_default_value_from_effect( 1 );
+
+  buffs.jackpot
+    = make_buff( this, "jackpot", tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() )
+      ->set_default_value_from_effect( 1 );
 
   // Hero Talents
   buffs.vicious_hunt = 
