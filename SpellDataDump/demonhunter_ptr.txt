@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58626 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58731 PTR
 Name             : Dual Wield (desc=Passive) (id=674) [Passive] 
 Class            : Frost Death Knight, Warrior, Hunter, Rogue, Monk, Demon Hunter
 School           : Physical
@@ -580,6 +580,7 @@ Category         : 1553 (Type 0x9): Abyssal Strike (207550 effect#1), Blazing Pa
 Labels           : 16: Class Spells
                  : 66: Demon Hunter Spells
                  : 292
+                 : 4638
 Category Cooldown: 0.8 seconds
 Family Flags     : 1
 Attributes       : Is Ability (4), Do Not Log (8), Not Shapeshifted (16), Do Not Sheath (18), No Jump Pathing (208), Cheap Missile AOI (374), Allow Class Ability Procs (416)
@@ -694,6 +695,7 @@ Labels           : 16: Class Spells
                  : 219
                  : 292
                  : 2966
+                 : 4638
 Category Cooldown: 0.5 seconds
 Triggered By     : Fel Rush (344865)
 Family Flags     : 2
