@@ -930,7 +930,6 @@ public:
     action_t* lunar_storm_periodic = nullptr;
 
     action_t* phantom_pain = nullptr;
-    action_t* shadow_surge = nullptr;
   } actions;
 
   cdwaste::player_data_t cd_waste;
@@ -3742,10 +3741,10 @@ struct auto_shot_base_t : public auto_attack_base_t<ranged_attack_t>
   {
     timespan_t m = auto_attack_base_t::execute_time_flat_modifier();
 
-    m + timespan_t::from_millis( p()->buffs.in_the_rhythm->check_value() );
+    m += timespan_t::from_millis( p()->buffs.in_the_rhythm->check_value() );
 
     if ( p()->buffs.jackpot->check() )
-      m + timespan_t::from_millis( p()->tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger()->effectN( 2 ).base_value() );
+      m += timespan_t::from_millis( p()->tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger()->effectN( 2 ).base_value() );
 
     return m;
   }
@@ -3895,16 +3894,17 @@ struct arcane_shot_t : public arcane_shot_base_t
     parse_options( options_str );
 
     if ( p->talents.aspect_of_the_hydra.ok() )
+    {
       aspect_of_the_hydra = p->get_background_action<arcane_shot_aspect_of_the_hydra_t>( "arcane_shot_aspect_of_the_hydra" );
+      add_child( aspect_of_the_hydra );
+    }
   }
 
   void execute() override
   {
     arcane_shot_base_t::execute();
 
-    // TODO 15/1/25: secondary cast is using primary target if no secondary target is near
-    // note (not modeled): there is some kind of dead zone where a secondary target is too far to get hit by the
-    // secondary cast but close enough to cause the primary cast target to not be used as the secondary cast target
+    // TODO 23/1/25: secondary cast is using primary target if no secondary target is near
     if ( aspect_of_the_hydra )
     {
       auto tl = target_list();
@@ -4341,6 +4341,17 @@ struct black_arrow_base_t : public kill_shot_base_t
 {
   struct black_arrow_dot_t : public hunter_ranged_attack_t
   {
+    struct shadow_surge_t final : hunter_ranged_attack_t
+    {
+      shadow_surge_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( n, p, p->talents.shadow_surge_spell )
+      {
+        aoe = -1;
+        background = dual = true;
+        reduced_aoe_targets = p->talents.shadow_surge->effectN( 1 ).base_value();
+      }
+    };
+
+    shadow_surge_t* shadow_surge = nullptr;
     timespan_t dark_hound_duration;
   
     black_arrow_dot_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( n, p, p->talents.black_arrow_dot )
@@ -4350,14 +4361,17 @@ struct black_arrow_base_t : public kill_shot_base_t
 
       if ( p->talents.shadow_hounds.ok() )
         dark_hound_duration = p->talents.shadow_hounds_summon->duration();
+
+      if ( p->talents.shadow_surge.ok() )
+        shadow_surge = p->get_background_action<shadow_surge_t>( "shadow_surge" );
     }
 
     void tick( dot_t* d ) override
     {
       hunter_ranged_attack_t::tick( d );
 
-      if ( p()->talents.shadow_surge.ok() && p()->rppm.shadow_surge->trigger() )
-        p()->actions.shadow_surge->execute_on_target( d->target );
+      if ( shadow_surge && p()->rppm.shadow_surge->trigger() )
+        shadow_surge->execute_on_target( d->target );
 
       if ( p()->talents.shadow_hounds.ok() && p()->rppm.shadow_hounds->trigger() )
       {
@@ -4389,10 +4403,12 @@ struct black_arrow_base_t : public kill_shot_base_t
 
   black_arrow_dot_t* black_arrow_dot = nullptr;
   bleak_powder_t* bleak_powder = nullptr;
+  black_arrow_dot_t* dot;
 
-  black_arrow_base_t( util::string_view n, hunter_t* p, spell_data_ptr_t s ) : kill_shot_base_t( n, p, s )
+  black_arrow_base_t( util::string_view n, hunter_t* p, spell_data_ptr_t s ) : kill_shot_base_t( n, p, s ),
+    dot( p->get_background_action<black_arrow_dot_t>( "black_arrow_dot" ) )
   {
-    impact_action = p->get_background_action<black_arrow_dot_t>( "black_arrow_dot" );
+    impact_action = dot;
 
     if ( p->talents.bleak_powder.ok() )
       bleak_powder = p->get_background_action<bleak_powder_t>( "bleak_powder" );
@@ -4442,7 +4458,9 @@ struct black_arrow_t final : public black_arrow_base_t
   {
     parse_options( options_str );
 
-    add_child( impact_action );
+    add_child( dot );
+    if ( dot->shadow_surge )
+      add_child( dot->shadow_surge );
 
     if ( p->talents.withering_fire.ok() )
     {
@@ -4486,7 +4504,7 @@ struct black_arrow_t final : public black_arrow_base_t
       ( candidate_target->health_percentage() <= lower_health_threshold_pct ||
         ( p()->bugs && candidate_target->health_percentage() >= upper_health_threshold_pct ) ||
         ( p()->talents.the_bell_tolls.ok() && candidate_target->health_percentage() >= upper_health_threshold_pct ) ||
-        p()->buffs.deathblow->check() || p()->buffs.withering_fire->check() );
+        p()->buffs.deathblow->check() );
   }
 };
 
@@ -4518,18 +4536,6 @@ struct phantom_pain_t final : hunter_ranged_attack_t
   {
     background = dual = true;
     base_dd_min = base_dd_max = 1.0;
-  }
-};
-
-// Shadow Surge (Dark Ranger) =========================================================
-
-struct shadow_surge_t final : hunter_ranged_attack_t
-{
-  shadow_surge_t( hunter_t* p ) : hunter_ranged_attack_t( "shadow_surge", p, p->talents.shadow_surge_spell )
-  {
-    aoe = -1;
-    background = dual = true;
-    reduced_aoe_targets = p->talents.shadow_surge->effectN( 1 ).base_value();
   }
 };
 
@@ -5115,6 +5121,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     double m = hunter_ranged_attack_t::composite_da_multiplier( s );
 
     m *= 1 + p()->buffs.bulletstorm->check_stack_value();
+    m *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
+    m *= 1 + p()->buffs.moving_target->value();
 
     return m;
   }
@@ -5154,8 +5162,12 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
     hunter_ranged_attack_t::execute();
 
-    // TODO 20/1/25: Moving Target gets consumed by all forms of Aimed Shot casts, but only
-    // provides benefit to the casted and Double Tap Aimed Shots
+    // TODO 23/1/25: Moving Target gets consumed by all forms of Aimed Shot casts
+    // for example casting an Aimed Shot with an Arcane Shot queued immediately after will apply the 
+    // Moving Target triggered by the Arcane Shot to an Aspect of the Hydra or Double Tap Aimed Shot
+    // and consume the Moving Target
+    // likewise if the primary Aimed Shot cast consumes a Moving Target and it is not triggered again
+    // with a queued Precise Shot spender, a secondary Aimed Shot will not receive a bonus from it
     p()->buffs.tww_s1_mm_4pc_moving_target->expire();
     p()->buffs.moving_target->expire();
   }
@@ -5172,7 +5184,38 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::impact( s );
 
-    hunter_td_t* target_data = td( s-> target );
+    hunter_td_t* target_data = td( s->target );
+
+    // TODO 23/1/25: secondary targets of a Trick Shots or Aspect of the Hydra Aimed Shot consistently trigger the immediate detonation (modeled)
+    // it is wildly inconsistent though whether they are all affected by the damage increase (not modeled, pray for fixes and buff all for now)
+    // perhaps tied to the trigger and expiration timing of the hidden buff 474199
+    if ( p()->talents.precision_detonation->ok() )
+    {
+      if ( s->chain_target == 0 )
+      {
+        p()->buffs.precision_detonation_hidden->trigger();
+        // Expire after other bounces hit
+        make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+      }
+      target_data->dots.explosive_shot->cancel();
+    }
+
+    if ( p()->talents.phantom_pain.ok() )
+    {
+      double replicate_amount = p()->talents.phantom_pain->effectN( 1 ).percent();
+      for ( player_t* t : sim->target_non_sleeping_list )
+      {
+        if ( t->is_enemy() && !t->demise_event && t != s->target )
+        {
+          hunter_td_t* td = p()->get_target_data( t );
+          if ( td->dots.black_arrow->is_ticking() )
+          {
+            double amount = replicate_amount * s->result_amount;
+            p()->actions.phantom_pain->execute_on_target( t, amount );
+          }
+        }
+      }
+    }
 
     if ( target_data->debuffs.spotters_mark->check() )
     {
@@ -5211,42 +5254,7 @@ struct aimed_shot_t : public aimed_shot_base_t
     {
       background = dual = true;
       base_costs[ RESOURCE_FOCUS ] = 0;
-      // TODO 17/1/25: currently using 100% effectiveness in game
-      base_multiplier *= p->bugs ? 1.0 : p->talents.double_tap->effectN( 3 ).percent();
-    }
-
-    double composite_da_multiplier( const action_state_t* s ) const override
-    {
-      double m = aimed_shot_base_t::composite_da_multiplier( s );
-
-       m *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
-       m *= 1 + p()->buffs.moving_target->value();
-    
-      return m;
-    }
-
-    void impact( action_state_t* s ) override
-    {
-      aimed_shot_base_t::impact( s );
-
-      // TODO 19/1/25: still triggering regardless of Black Arrow on target
-      // only triggers for the primary target of a casted or Double Tap Aimed Shot
-      if ( p()->talents.phantom_pain.ok() && s->chain_target == 0 && ( p()->bugs || td( s->target )->dots.black_arrow->is_ticking() ) )
-      {
-        double replicate_amount = p()->talents.phantom_pain->effectN( 1 ).percent();
-        for ( player_t* t : sim->target_non_sleeping_list )
-        {
-          if ( t->is_enemy() && !t->demise_event && t != s->target )
-          {
-            hunter_td_t* td = p()->get_target_data( t );
-            if ( td->dots.black_arrow->is_ticking() )
-            {
-              double amount = replicate_amount * s->result_amount;
-              p()->actions.phantom_pain->execute_on_target( t, amount );
-            }
-          }
-        }
-      }
+      base_multiplier *= p->talents.double_tap->effectN( 3 ).percent();
     }
   };
 
@@ -5260,7 +5268,7 @@ struct aimed_shot_t : public aimed_shot_base_t
     {
       explosive_shot_background_t::snapshot_internal( s, flags, rt );
 
-      // TODO 23/1/25: Tooltip says "at 200% effectiveness" but damage is actually increased by 200%, so 300% effectiveness
+      // TODO 23/1/25: Tooltip now says "at 300% effectiveness" but damage is actually increased by 300%, so 400% effectiveness
       // note (not modeled): effectiveness bonus is only applying to primary target in aoe
       if ( flags & STATE_EFFECTIVENESS )
         debug_cast<state_t*>( s )->effectiveness = p()->tier_set.tww_s2_mm_4pc->effectN( 1 ).percent();
@@ -5287,10 +5295,16 @@ struct aimed_shot_t : public aimed_shot_base_t
     parse_options( options_str );
 
     if ( p->talents.aspect_of_the_hydra.ok() )
+    {
       aspect_of_the_hydra = p->get_background_action<aimed_shot_aspect_of_the_hydra_t>( "aimed_shot_aspect_of_the_hydra" );
+      add_child( aspect_of_the_hydra );
+    }
 
     if ( p->talents.double_tap.ok() )
+    {
       double_tap = p->get_background_action<aimed_shot_double_tap_t>( "aimed_shot_double_tap" );
+      add_child( double_tap );
+    }
 
     if ( p -> talents.surging_shots.ok() )
     {
@@ -5377,9 +5391,7 @@ struct aimed_shot_t : public aimed_shot_base_t
     if ( rng().roll( deathblow.chance ) )
       p()->trigger_deathblow( target );
 
-    // TODO 15/1/25: secondary cast is using primary target if no secondary target is near
-    // note (not modeled): there is some kind of dead zone where a secondary target is too far to get hit by the
-    // secondary cast but close enough to cause the primary cast target to not be used as the secondary cast target
+    // TODO 23/1/25: secondary cast is using primary target if no secondary target is near
     if ( aspect_of_the_hydra )
     {
       auto tl = target_list();
@@ -5400,54 +5412,6 @@ struct aimed_shot_t : public aimed_shot_base_t
         tww_s2_mm_4pc_t->execute_on_target( target );
     }
     lock_and_loaded = false;
-  }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double m = aimed_shot_base_t::composite_da_multiplier( s );
-
-     m *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
-     m *= 1 + p()->buffs.moving_target->value();
-    
-    return m;
-  }
-
-  void impact( action_state_t* s ) override
-  {
-    aimed_shot_base_t::impact( s );
-
-    // TODO 17/1/25: secondary targets of a trick shots aimed shot consistently trigger the immediate detonation (modeled)
-    // it is wildly inconsistent though whether they are all affected by the damage increase (not modeled, pray for fixes and buff all for now)
-    // perhaps tied to the trigger and expiration timing of the hidden buff 474199
-    if ( p()->talents.precision_detonation->ok() )
-    {
-      if ( s->chain_target == 0 )
-      {
-        p()->buffs.precision_detonation_hidden->trigger();
-        // Expire after other bounces hit
-        make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
-      }
-      td( s->target )->dots.explosive_shot->cancel();
-    }
-
-    // TODO 19/1/25: still triggering regardless of Black Arrow on target
-    // only triggers for the primary target of a casted or Double Tap Aimed Shot
-    if ( p()->talents.phantom_pain.ok() && s->chain_target == 0 && ( p()->bugs || td( s->target )->dots.black_arrow->is_ticking() ) )
-    {
-      double replicate_amount = p()->talents.phantom_pain->effectN( 1 ).percent();
-      for ( player_t* t : sim->target_non_sleeping_list )
-      {
-        if ( t->is_enemy() && !t->demise_event && t != s->target )
-        {
-          hunter_td_t* td = p()->get_target_data( t );
-          if ( td->dots.black_arrow->is_ticking() )
-          {
-            double amount = replicate_amount * s->result_amount;
-            p()->actions.phantom_pain->execute_on_target( t, amount );
-          }
-        }
-      }
-    }
   }
 
   double recharge_rate_multiplier( const cooldown_t& cd ) const override
@@ -5544,7 +5508,10 @@ struct rapid_fire_t: public hunter_spell_t
       deathblow.chance = p->talents.improved_deathblow->effectN( 1 ).percent();
 
     if ( p->talents.aspect_of_the_hydra.ok() )
+    {
       aspect_of_the_hydra = p->get_background_action<rapid_fire_tick_aspect_of_the_hydra_t>( "rapid_fire_tick_aspect_of_the_hydra" );
+      add_child( aspect_of_the_hydra );
+    }
   }
 
   void init() override
@@ -5577,9 +5544,7 @@ struct rapid_fire_t: public hunter_spell_t
 
     damage -> execute_on_target( d->target );
 
-    // TODO 15/1/25: secondary cast is using primary target if no secondary target is near
-    // note (not modeled): there is some kind of dead zone where a secondary target is too far to get hit by the
-    // secondary cast but close enough to cause the primary cast target to not be used as the secondary cast target
+    // TODO 23/1/25: secondary cast is using primary target if no secondary target is near
     if ( aspect_of_the_hydra )
     {
       auto tl = target_list();
@@ -8022,9 +7987,6 @@ void hunter_t::create_actions()
 
   if ( talents.merciless_blow.ok() )
     actions.merciless_blow = new attacks::merciless_blow_t( this );
-  
-  if ( talents.shadow_surge.ok() )
-    actions.shadow_surge = new attacks::shadow_surge_t( this );
 
   if ( talents.phantom_pain.ok() )
     actions.phantom_pain = new attacks::phantom_pain_t( this );
@@ -8668,6 +8630,18 @@ void hunter_t::init_special_effects()
     auto cb = new sentinel_cb_t( *effect, this );
     cb->initialize();
   }
+
+  if ( tier_set.tww_s2_mm_2pc.ok() )
+  {
+    auto const effect = new special_effect_t( this );
+    effect->name_str = "jackpot";
+    effect->spell_id = tier_set.tww_s2_mm_2pc->id();
+    effect->custom_buff = buffs.jackpot;
+    special_effects.push_back( effect );
+
+    auto cb = new dbc_proc_callback_t( this, *effect );
+    cb->initialize();
+  }
 }
 
 void hunter_t::reset()
@@ -8779,7 +8753,7 @@ double hunter_t::composite_melee_auto_attack_speed() const
 
   if ( talents.trigger_finger->ok() )
   {
-    // TODO 18/1/25: Trigger Finger is maybe applying another attack speed mod from the effect 2 script separately (multiplicative), so there is always double the expected amount
+    // TODO 23/1/25: Trigger Finger is maybe applying another attack speed mod from the effect 2 script separately (multiplicative), so there is always double the expected amount
     // only one effect is doubled while petless, so mm sees triple the expected amount
     s /= 1 + talents.trigger_finger->effectN( 2 ).percent();
 
