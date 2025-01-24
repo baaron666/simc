@@ -4157,10 +4157,7 @@ void action_t::snapshot_internal( action_state_t* state, unsigned flags, result_
     state->persistent_multiplier = composite_persistent_multiplier( state );
 
   if ( flags & STATE_MUL_PET )
-  {
-    state->pet_multiplier =
-      player->cast_pet()->owner->composite_player_pet_damage_multiplier( state, player->type == PLAYER_GUARDIAN );
-  }
+    state->pet_multiplier = player->cast_pet()->composite_owner_pet_damage_multiplier( state );
 
   if ( flags & STATE_TGT_MUL_DA )
     state->target_da_multiplier = composite_target_da_multiplier( state->target );
@@ -4169,10 +4166,7 @@ void action_t::snapshot_internal( action_state_t* state, unsigned flags, result_
     state->target_ta_multiplier = composite_target_ta_multiplier( state->target );
 
   if ( flags & STATE_TGT_MUL_PET )
-  {
-    state->target_pet_multiplier = player->cast_pet()->owner->composite_player_target_pet_damage_multiplier(
-      state->target, player->type == PLAYER_GUARDIAN );
-  }
+    state->target_pet_multiplier = player->cast_pet()->composite_owner_pet_target_damage_multiplier( state->target );
 
   if ( flags & STATE_TGT_CRIT )
     state->target_crit_chance = composite_target_crit_chance( state->target ) * composite_crit_chance_multiplier();
