@@ -1,9 +1,9 @@
 #ifndef PTR_CLIENT_DATA_VERSION_INC
 #define PTR_CLIENT_DATA_VERSION_INC
 
-// Client data versioning information for 11.1.0.58731
+// Client data versioning information for 11.1.0.58774
 
-#define PTR_CLIENT_DATA_WOW_VERSION "11.1.0.58731"
+#define PTR_CLIENT_DATA_WOW_VERSION "11.1.0.58774"
 #define PTR_SIMC_WOW_VERSION "1110"
 
 #endif /* PTR_CLIENT_DATA_VERSION_INC*/
