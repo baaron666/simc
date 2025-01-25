@@ -5786,6 +5786,16 @@ struct sundering_t : public shaman_attack_t
 
     p()->trigger_earthsurge( execute_state );
   }
+
+  void impact( action_state_t* s ) override
+  {
+    shaman_attack_t::impact( s );
+
+    if ( p()->dbc->ptr )
+    {
+      td( s->target )->debuff.lashing_flames->trigger();
+    }
+  }
 };
 
 // Weapon imbues
