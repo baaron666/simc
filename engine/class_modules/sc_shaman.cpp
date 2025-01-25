@@ -1147,6 +1147,7 @@ public:
     // Enhancement
     // Row 1
     player_talent_t stormstrike;
+    player_talent_t maelstrom_weapon;
     // Row 2
     player_talent_t windfury_weapon;
     player_talent_t lava_lash;
@@ -2823,7 +2824,8 @@ public:
 
   void compute_mw_multiplier()
   {
-    if ( !this->p()->spec.maelstrom_weapon->ok() || !affected_by_maelstrom_weapon )
+    if ( ( !this->p()->spec.maelstrom_weapon->ok() && !this->p()->talent.maelstrom_weapon.ok() ) ||
+      !affected_by_maelstrom_weapon )
     {
       return;
     }
@@ -11527,7 +11529,9 @@ struct maelstrom_weapon_cb_t : public dbc_proc_callback_t
       return;
     }
 
-    double proc_chance = shaman->spec.maelstrom_weapon->proc_chance();
+    double proc_chance = shaman->dbc->ptr
+      ? shaman->talent.maelstrom_weapon->proc_chance()
+      : shaman->spec.maelstrom_weapon->proc_chance();
     proc_chance += shaman->buff.witch_doctors_ancestry->stack_value();
 
     auto triggered = rng().roll( proc_chance );
@@ -11550,10 +11554,10 @@ void shaman_t::create_special_effects()
 {
   player_t::create_special_effects();
 
-  if ( spec.maelstrom_weapon->ok() )
+  if ( spec.maelstrom_weapon->ok() || talent.maelstrom_weapon->ok() )
   {
     auto mw_effect = new special_effect_t( this );
-    mw_effect->spell_id = spec.maelstrom_weapon->id();
+    mw_effect->spell_id = dbc->ptr ? talent.maelstrom_weapon->id() : spec.maelstrom_weapon->id();
     mw_effect->proc_flags2_ = PF2_ALL_HIT;
 
     special_effects.push_back( mw_effect );
@@ -11600,7 +11604,7 @@ void shaman_t::action_init_finished( action_t& action )
 
   // Enable Maelstrom Weapon proccing for selected abilities, if they
   // fulfill the basic conditions for the proc
-  if ( spec.maelstrom_weapon->ok() && action.callbacks &&
+  if ( ( spec.maelstrom_weapon->ok() || talent.maelstrom_weapon.ok() ) && action.callbacks &&
        get_mw_proc_state( action ) == mw_proc_state::DEFAULT && (
          // Auto-attacks (shaman-module convention to set mh to action id 1, oh to id 2)
          ( action.id == 1 || action.id == 2 ) ||
@@ -11793,6 +11797,7 @@ void shaman_t::init_spells()
   // Enhancement
   // Row 1
   talent.stormstrike = _ST( "Stormstrike" );
+  talent.maelstrom_weapon = _ST( "Maelstrom Weapon" );
   // Row 2
   talent.windfury_weapon = _ST( "Windfury Weapon" );
   talent.lava_lash = _ST( "Lava Lash" );
@@ -12567,7 +12572,7 @@ void shaman_t::regenerate_flame_shock_dependent_target_list( const action_t* act
 
 void shaman_t::consume_maelstrom_weapon( const action_state_t* state, int stacks )
 {
-  if ( !spec.maelstrom_weapon->ok() )
+  if ( !spec.maelstrom_weapon->ok() && !talent.maelstrom_weapon.ok() )
   {
     return;
   }
@@ -12618,7 +12623,7 @@ void shaman_t::trigger_maelstrom_gain( double maelstrom_gain, gain_t* gain )
 
 void shaman_t::generate_maelstrom_weapon( const action_t* action, int stacks )
 {
-  if ( !spec.maelstrom_weapon->ok() )
+  if ( !spec.maelstrom_weapon->ok() && !talent.maelstrom_weapon.ok() )
   {
     return;
   }
@@ -15469,7 +15474,7 @@ public:
   void html_customsection( report::sc_html_stream& os ) override
   {
     // Custom Class Section
-    if ( p.spec.maelstrom_weapon->ok() )
+    if ( p.spec.maelstrom_weapon->ok() || p.talent.maelstrom_weapon.ok() )
     {
       os << "\t\t\t\t<div class=\"player-section custom_section\">\n";
       os << "\t\t\t\t\t<h3 class=\"toggle open\">Maelstrom Weapon Details</h3>\n"
