@@ -690,6 +690,10 @@ public:
   // Attempts, successes
   std::vector<std::tuple<simple_sample_data_t, simple_sample_data_t>> flowing_spirits_procs;
 
+  /// Molten Thunder 11.1
+  double molten_thunder_chance;
+  bool molten_thunder_resetted;
+
   // Cached actions
   struct actions_t
   {
@@ -5785,6 +5789,37 @@ struct sundering_t : public shaman_attack_t
     shaman_attack_t::execute();
 
     p()->trigger_earthsurge( execute_state );
+
+    if ( p()->dbc->ptr )
+    {
+      // First, increase proc chance by number of targets hit
+      auto mul = ( 1.0 + p()->talent.molten_thunder->effectN( 3 ).percent() ) *
+        std::min( num_targets_hit,
+                  as<int>( p()->talent.molten_thunder->effectN( 4 ).base_value() ) );
+
+      p()->molten_thunder_chance *= mul;
+
+      sim->out_debug.print( "{} molten_thunder chance={}, increase_by={}, reset={}",
+        player->name(), p()->molten_thunder_chance, mul, p()->molten_thunder_resetted );
+
+      if ( p()->rng().roll( p()->molten_thunder_chance ) )
+      {
+        cooldown->reset( true );
+        p()->proc.molten_thunder->occur();
+
+        // Previous Sundering procced Molten Thunder, so cut chance in half
+        if ( p()->molten_thunder_resetted )
+        {
+          p()->molten_thunder_chance *= 0.5;
+        }
+
+        p()->molten_thunder_resetted = true;
+      }
+      else
+      {
+        p()->molten_thunder_resetted = false;
+      }
+    }
   }
 
   void impact( action_state_t* s ) override
@@ -12312,7 +12347,7 @@ void shaman_t::trigger_stormbringer( const action_state_t* state, double overrid
 
   if ( triggered )
   {
-    if ( rng().roll( talent.molten_thunder->effectN( 2 ).percent() ) )
+    if ( ! dbc->ptr && rng().roll( talent.molten_thunder->effectN( 2 ).percent() ) )
     {
       cooldown.sundering->reset( true );
       proc.molten_thunder->occur();
@@ -14845,6 +14880,12 @@ void shaman_t::reset()
   }
 
   active_flowing_spirits_proc = 0U;
+
+  if ( dbc->ptr )
+  {
+    molten_thunder_chance = talent.molten_thunder->effectN( 2 ).percent();
+    molten_thunder_resetted = false;
+  }
 }
 
 
