@@ -1056,6 +1056,7 @@ public:
     const spell_data_t* enhancement_shaman;
     const spell_data_t* enhancement_shaman2;
     const spell_data_t* maelstrom_weapon;
+    const spell_data_t* stormstrike;
 
     const spell_data_t* windfury;
     const spell_data_t* lava_lash_2;
@@ -5611,7 +5612,8 @@ struct stormstrike_base_t : public shaman_attack_t
 struct stormstrike_t : public stormstrike_base_t
 {
   stormstrike_t( shaman_t* player, util::string_view options_str, strike_variant sf = strike_variant::NORMAL )
-    : stormstrike_base_t( player, "stormstrike", player->talent.stormstrike, options_str, sf )
+    : stormstrike_base_t( player, "stormstrike",
+      player->dbc->ptr ? player->spec.stormstrike : player->talent.stormstrike, options_str, sf )
   {
     // Actual damaging attacks are done by stormstrike_attack_t
     mh = new stormstrike_attack_t( "stormstrike_mh", player, data().effectN( 1 ).trigger(),
@@ -11717,6 +11719,7 @@ void shaman_t::init_spells()
   spec.enhancement_shaman2= find_specialization_spell( 1214207 );
   spec.stormbringer       = find_specialization_spell( "Stormsurge" );
   spec.maelstrom_weapon   = find_specialization_spell( "Maelstrom Weapon" );
+  spec.stormstrike        = find_specialization_spell( "Stormstrike" );
 
   // Restoration
   spec.purification       = find_specialization_spell( "Purification" );
