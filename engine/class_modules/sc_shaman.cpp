@@ -9,6 +9,7 @@
 
 #include "player/pet_spawner.hpp"
 #include "action/action_callback.hpp"
+#include "action/parse_effects.hpp"
 #include "report/highchart.hpp"
 
 #include "simulationcraft.hpp"
@@ -19,6 +20,224 @@
 #include <regex>
 #include <string>
 
+namespace eff
+{
+template <typename BUILDER, typename OBJ>
+class effect_builder_base_t
+{
+  protected:
+    const spell_data_t*              m_spell = spell_data_t::nil();
+    buff_t*                          m_buff = nullptr;
+    std::vector<const spell_data_t*> m_list;
+    std::function<bool()>            m_state_fn = nullptr;
+    unsigned                         m_flags = 0U;
+    double                           m_value = 0.0;
+    effect_mask_t                    m_mask = { true };
+    std::vector<affect_list_t>       m_affect_list;
+
+  public:
+    effect_builder_base_t() = delete;
+
+    effect_builder_base_t( buff_t* b ) : m_buff( b )
+    { }
+
+    effect_builder_base_t( const spell_data_t* s_ptr ) : m_spell( s_ptr )
+    { }
+
+    effect_builder_base_t( const spell_data_t& s ) : m_spell( &( s ) )
+    { }
+
+    virtual ~effect_builder_base_t()
+    { }
+
+    const spell_data_t* target() const
+    {
+      if ( m_spell->ok() )
+      {
+        return m_spell;
+      }
+      else if ( m_buff && m_buff->data().ok() )
+      {
+        return &( m_buff->data() );
+      }
+
+      return nullptr;
+    }
+
+    BUILDER& add_affecting_spell( const spell_data_t* s_ptr )
+    {
+      m_list.emplace_back( s_ptr );
+      return *debug_cast<BUILDER*>( this );
+    }
+
+    template <typename... ARGS>
+    BUILDER& add_affecting_spell( const spell_data_t* s_ptr, ARGS... args )
+    {
+      add_affecting_spell( s_ptr );
+      return add_affecting_spell( args... );
+    }
+
+    BUILDER& add_affecting_spell( const spell_data_t& s )
+    { return add_affecting_spell( &( s ) ); }
+
+    template <typename... ARGS>
+    BUILDER& add_affecting_spell( const spell_data_t& s, ARGS... args )
+    {
+      add_affecting_spell( s );
+      return add_affecting_spell( args... );
+    }
+
+    BUILDER& set_state_fn( std::function<bool()> fn )
+    {
+      m_state_fn = std::move( fn );
+      return *debug_cast<BUILDER*>( this );
+    }
+
+    BUILDER& set_flag( parse_flag_e flag )
+    {
+      m_flags |= flag;
+      return *debug_cast<BUILDER*>( this );
+    }
+
+    template <typename... ARGS>
+    BUILDER& set_flag( parse_flag_e flag, ARGS... args )
+    {
+      set_flag( flag );
+      return set_flag( args... );
+    }
+
+    BUILDER& unset_flag( parse_flag_e flag )
+    {
+      m_flags &= ~flag;
+      return *debug_cast<BUILDER*>( this );
+    }
+
+    template <typename... ARGS>
+    BUILDER& unset_flag( parse_flag_e flag, ARGS... args )
+    {
+      unset_flag( flag );
+      return unset_flag( args... );
+    }
+
+    BUILDER& set_value( double v )
+    {
+      m_value = v;
+      return *debug_cast<BUILDER*>( this );
+    }
+
+    BUILDER& set_effect_mask( effect_mask_t mask )
+    {
+      m_mask = std::move( mask );
+      return *debug_cast<BUILDER*>( this );
+    }
+
+    BUILDER& add_affect_list( affect_list_t list )
+    {
+      m_affect_list.emplace_back( std::move( list ) );
+      return *debug_cast<BUILDER*>( this );
+    }
+
+    template <typename... ARGS>
+    BUILDER& add_affect_list( affect_list_t list, ARGS... args )
+    {
+      add_affect_list( list );
+      return add_affect_list( args... );
+    }
+
+    OBJ create_base() const
+    {
+      OBJ pe( target() );
+
+      if ( m_buff )
+      {
+        pe.data.buff = m_buff;
+      }
+
+      if ( !m_list.empty() )
+      {
+        pe.list = m_list;
+      }
+
+      if ( m_state_fn )
+      {
+        pe.data.func = m_state_fn;
+      }
+
+      if ( m_flags & IGNORE_STACKS )
+      {
+        pe.data.use_stacks = false;
+      }
+
+      if ( m_flags & USE_CURRENT )
+      {
+        pe.data.type |= USE_CURRENT;
+      }
+
+      if ( m_flags & USE_DEFAULT )
+      {
+        pe.data.type |= USE_DEFAULT;
+      }
+
+      if ( m_value != 0.0 )
+      {
+        pe.data.value = m_value;
+        pe.data.type &= ~( USE_DEFAULT | USE_CURRENT );
+        pe.data.type |= VALUE_OVERRIDE;
+      }
+
+      pe.mask = m_mask;
+
+      if ( !m_affect_list.empty() )
+      {
+        pe.affect_lists = m_affect_list;
+      }
+
+      return pe;
+    }
+
+    virtual void build( parse_effects_t* obj ) const = 0;
+};
+
+class source_eff_builder_t : public effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>
+{
+public:
+  source_eff_builder_t( buff_t* b ) :
+    effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>( b )
+  { }
+
+  source_eff_builder_t( const spell_data_t* s_ptr ) :
+    effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>( s_ptr )
+  { }
+
+  source_eff_builder_t( const spell_data_t& s ) :
+    effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>( s )
+  { }
+
+  void build( parse_effects_t* obj ) const override
+  {
+    if ( !this->target() )
+    {
+      return;
+    }
+
+    auto pe = this->create_base();
+
+    for ( auto idx = 1U; idx <= this->target()->effect_count(); ++idx )
+    {
+      if ( pe.mask & 1 << ( idx - 1U ) )
+      {
+        continue;
+      }
+ 
+      // local copy of pack per effect
+      auto tmp = pe;
+
+      obj->parse_effect( tmp, idx, false );
+    }
+  }
+};
+} // Namespace eff ends
+ 
 // ==========================================================================
 // Shaman
 // ==========================================================================
@@ -1565,6 +1784,27 @@ struct splintered_elements_buff_t : public buff_t
   };
 };
 
+// Overridden to take advantage of parse_effects system. Individual Elemental Spirit buffs are
+// initialized with USE_CURRENT AND IGNORE_STACKS, because otherwise the overriding is impossible
+// within the context of the system. Note that the overrides for value here alter how buffs
+// function, normally the x_value() methods return the current value only, not the stack-multiplied
+// one.
+struct elemental_spirit_buff_t : public buff_t
+{
+  elemental_spirit_buff_t( shaman_t* p, util::string_view name, const spell_data_t* spell ) :
+    buff_t( p, name, spell )
+  { }
+
+  double check_value() const override
+  { return std::pow( 1.0 + current_value, current_stack ) - 1.0; }
+
+  double value() override
+  {
+    stack();
+    return check_value();
+  }
+};
+
 shaman_td_t::shaman_td_t( player_t* target, shaman_t* p ) : actor_target_data_t( target, p )
 {
   heal.riptide = nullptr;
@@ -1748,10 +1988,12 @@ struct shaman_action_state_t : public action_state_t
 };
 
 template <class Base>
-struct shaman_action_t : public Base
+struct shaman_action_t : public parse_action_effects_t<Base>
 {
 private:
-  using ab = Base;  // action base, eg. spell_t
+  using ab = parse_action_effects_t<Base>;  // action base, eg. spell_t
+
+  void parse_action_effects();
 public:
   using base_t = shaman_action_t<Base>;
 
@@ -1767,14 +2009,6 @@ public:
   double maelstrom_gain_coefficient;
   bool maelstrom_gain_per_target;
 
-  bool affected_by_molten_weapon_da;
-  bool affected_by_molten_weapon_ta;
-  bool affected_by_crackling_surge_da;
-  bool affected_by_crackling_surge_ta;
-  bool affected_by_icy_edge_da;
-  bool affected_by_icy_edge_ta;
-  bool affected_by_earthen_weapon_da;
-  bool affected_by_earthen_weapon_ta;
   bool affected_by_natures_fury;
   bool affected_by_ns_cost;
   bool affected_by_ns_cast_time;
@@ -1827,12 +2061,6 @@ public:
       maelstrom_gain( 0 ),
       maelstrom_gain_coefficient( 1.0 ),
       maelstrom_gain_per_target( true ),
-      affected_by_molten_weapon_da( false ),
-      affected_by_molten_weapon_ta( false ),
-      affected_by_crackling_surge_da( false ),
-      affected_by_crackling_surge_ta( false ),
-      affected_by_icy_edge_da( false ),
-      affected_by_icy_edge_ta( false ),
       affected_by_natures_fury( false ),
       affected_by_ns_cost( false ),
       affected_by_ns_cast_time( false ),
@@ -1884,25 +2112,6 @@ public:
         ab::data().affected_by( player->find_spell( 191634 )->effectN( 1 ) );
     affected_by_stormkeeper_damage    =
         ab::data().affected_by( player->find_spell( 191634 )->effectN( 2 ) );
-    affected_by_molten_weapon_da =
-        ab::data().affected_by( player->find_spell( 224125 )->effectN( 1 ) );
-    affected_by_molten_weapon_ta =
-        ab::data().affected_by( player->find_spell( 224125 )->effectN( 2 ) );
-
-    affected_by_crackling_surge_da =
-        ab::data().affected_by( player->find_spell( 224127 )->effectN( 1 ) );
-    affected_by_crackling_surge_ta =
-        ab::data().affected_by( player->find_spell( 224127 )->effectN( 2 ) );
-
-    affected_by_icy_edge_da =
-        ab::data().affected_by( player->find_spell( 224126 )->effectN( 1 ) );
-    affected_by_icy_edge_ta =
-        ab::data().affected_by( player->find_spell( 224126 )->effectN( 2 ) );
-
-    affected_by_earthen_weapon_da =
-        ab::data().affected_by( player->find_spell( 392375 )->effectN( 1 ) );
-    affected_by_earthen_weapon_ta =
-        ab::data().affected_by( player->find_spell( 392375 )->effectN( 2 ) );
 
     affected_by_natures_fury =
       ab::data().affected_by( player->talent.natures_fury->effectN( 1 ) ) ||
@@ -1955,6 +2164,11 @@ public:
       p()->spell.elemental_weapons->effectN( 1 ) );
     affected_by_elemental_weapons_ta = p()->talent.elemental_weapons.ok() && ab::data().affected_by(
       p()->spell.elemental_weapons->effectN( 2 ) );
+
+    if ( this->data().ok() )
+    {
+      parse_action_effects();
+    }
   }
 
   std::string full_name() const
@@ -2057,38 +2271,6 @@ public:
       m *= 1.0 + p()->buff.legacy_of_the_frost_witch->value();
     }
 
-    if ( affected_by_molten_weapon_da && p()->buff.molten_weapon->check() )
-    {
-      for ( int x = 1; x <= p()->buff.molten_weapon->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.molten_weapon->value();
-      }
-    }
-
-    if ( affected_by_crackling_surge_da && p()->buff.crackling_surge->check() )
-    {
-      for ( int x = 1; x <= p()->buff.crackling_surge->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.crackling_surge->value();
-      }
-    }
-
-    if ( affected_by_icy_edge_da && p()->buff.icy_edge->check() )
-    {
-      for ( int x = 1; x <= p()->buff.icy_edge->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.icy_edge->value();
-      }
-    }
-
-    if ( affected_by_earthen_weapon_da && p()->buff.earthen_weapon->check() )
-    {
-      for ( int x = 1; x <= p()->buff.earthen_weapon->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.earthen_weapon->value();
-      }
-    }
-
     if ( affected_by_arc_discharge && p()->buff.arc_discharge->check() )
     {
       m *= 1.0 + p()->buff.arc_discharge->value();
@@ -2160,38 +2342,6 @@ public:
     if ( affected_by_lotfw_ta && p()->buff.legacy_of_the_frost_witch->check() )
     {
       m *= 1.0 + p()->buff.legacy_of_the_frost_witch->value();
-    }
-
-    if ( affected_by_molten_weapon_ta && p()->buff.molten_weapon->check() )
-    {
-      for ( int x = 1; x <= p()->buff.molten_weapon->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.molten_weapon->value();
-      }
-    }
-
-    if ( affected_by_crackling_surge_ta && p()->buff.crackling_surge->up() )
-    {
-      for ( int x = 1; x <= p()->buff.crackling_surge->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.crackling_surge->value();
-      }
-    }
-
-    if ( affected_by_icy_edge_ta && p()->buff.icy_edge->up() )
-    {
-      for ( int x = 1; x <= p()->buff.icy_edge->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.icy_edge->value();
-      }
-    }
-
-    if ( affected_by_earthen_weapon_ta && p()->buff.earthen_weapon->up() )
-    {
-      for ( int x = 1; x <= p()->buff.earthen_weapon->check(); x++ )
-      {
-        m *= 1.0 + p()->buff.earthen_weapon->value();
-      }
     }
 
     if ( affected_by_amplification_core_ta && p()->buff.amplification_core->check() )
@@ -13444,19 +13594,19 @@ void shaman_t::create_buffs()
                             ->set_refresh_behavior( buff_refresh_behavior::DISABLED )
                             ->set_default_value_from_effect_type( A_ADD_PCT_MODIFIER, P_GENERIC );
 
-  buff.icy_edge = make_buff<buff_t>( this, "icy_edge", find_spell( 224126 ) )
+  buff.icy_edge = make_buff<elemental_spirit_buff_t>( this, "icy_edge", find_spell( 224126 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
-  buff.molten_weapon    = make_buff<buff_t>( this, "molten_weapon", find_spell( 224125 ) )
+  buff.molten_weapon = make_buff<elemental_spirit_buff_t>( this, "molten_weapon", find_spell( 224125 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
-  buff.crackling_surge  = make_buff<buff_t>( this, "crackling_surge", find_spell( 224127 ) )
+  buff.crackling_surge  = make_buff<elemental_spirit_buff_t>( this, "crackling_surge", find_spell( 224127 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
-  buff.earthen_weapon = make_buff<buff_t>( this, "earthen_weapon", find_spell( 392375 ) )
+  buff.earthen_weapon = make_buff<elemental_spirit_buff_t>( this, "earthen_weapon", find_spell( 392375 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
@@ -13807,6 +13957,16 @@ void shaman_t::apply_affecting_auras( action_t& action )
     sim->print_debug( "{} critical damage bonus multiplier modified by {}%", *this,
       talent.elemental_fury->effectN( 2 ).base_value() + talent.primordial_fury->effectN( 2 ).base_value() );
   }
+}
+
+template <class Base>
+void shaman_action_t<Base>::parse_action_effects()
+{
+  // Enhancement
+  eff::source_eff_builder_t( p()->buff.crackling_surge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
+  eff::source_eff_builder_t( p()->buff.molten_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
+  eff::source_eff_builder_t( p()->buff.icy_edge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
+  eff::source_eff_builder_t( p()->buff.earthen_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
 }
 
 // shaman_t::generate_bloodlust_options =====================================
