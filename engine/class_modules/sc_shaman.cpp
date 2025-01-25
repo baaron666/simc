@@ -307,7 +307,8 @@ enum class spell_variant : unsigned
   LIQUID_MAGMA_TOTEM,
   SURGE_OF_POWER,
   ARC_DISCHARGE,
-  EARTHSURGE
+  EARTHSURGE,
+  PRIMORDIAL_STORM
 };
 
 enum class strike_variant : unsigned
@@ -701,8 +702,10 @@ public:
     attack_t* crash_lightning_aoe;
     action_t* lightning_bolt_pw;
     action_t* lightning_bolt_ti;
+    action_t* lightning_bolt_ps;
     action_t* tempest_ti;
     action_t* chain_lightning_ti;
+    action_t* chain_lightning_ps;
     action_t* ti_trigger;
     action_t* lava_burst_pw;
     action_t* flame_shock_asc;
@@ -871,6 +874,8 @@ public:
 
     buff_t* voltaic_blaze;
     buff_t* stormblast;
+
+    buff_t* primordial_storm;
 
     // Shared talent stuff
     buff_t* tempest;
@@ -1192,6 +1197,7 @@ public:
     player_talent_t legacy_of_the_frost_witch;
     player_talent_t static_accumulation;
     // Row 10
+    player_talent_t primordial_storm;
     player_talent_t alpha_wolf;
     player_talent_t elemental_spirits;
     player_talent_t thorims_invocation;
@@ -2776,11 +2782,15 @@ public:
 
   ancestor_cast ancestor_trigger;
 
+  // Maelstrom-consuming parent spell to inherit stacks from its cast
+  action_t* mw_parent;
+
   shaman_spell_base_t( util::string_view n, shaman_t* player,
                        const spell_data_t* s = spell_data_t::nil(),
                        spell_variant type_ = spell_variant::NORMAL )
     : ab( n, player, s, type_ ), mw_consume_max_stack( 0 ), mw_consumed_stacks( 0 ),
-      mw_affected_stacks( 0 ), mw_multiplier( 0.0 ), ancestor_trigger( ancestor_cast::DISABLED )
+      mw_affected_stacks( 0 ), mw_multiplier( 0.0 ), ancestor_trigger( ancestor_cast::DISABLED ),
+      mw_parent( nullptr )
   {
     if ( this->data().affected_by( player->spell.maelstrom_weapon->effectN( 1 ) ) )
     {
@@ -2839,13 +2849,22 @@ public:
 
   void snapshot_state( action_state_t* s, result_amount_type rt ) override
   {
+    // Inherit Maelstrom Weapon multiplier from the parent. Presumes that the parent always executes
+    // before this action.
+    if ( mw_parent )
+    {
+        spell_base_state( s )->mw_mul = spell_base_state( mw_parent->execute_state )->mw_mul;
+    }
     // Compute and cache Maelstrom Weapon multiplier before executing the spell. MW multiplier is
     // used to compute the damage of the spell, either during execute or during impact (Lava Burst).
-    compute_mw_multiplier();
-
-    if ( affected_by_maelstrom_weapon )
+    else
     {
-      spell_base_state( s )->mw_mul = mw_multiplier;
+      compute_mw_multiplier();
+
+      if ( affected_by_maelstrom_weapon )
+      {
+        spell_base_state( s )->mw_mul = mw_multiplier;
+      }
     }
 
     ab::snapshot_state( s, rt );
@@ -6445,6 +6464,17 @@ struct chain_lightning_t : public chained_base_t
         }
         break;
       }
+      case spell_variant::PRIMORDIAL_STORM:
+      {
+        background = true;
+        base_execute_time = 0_s;
+        base_costs[ RESOURCE_MANA ] = 0;
+        if ( auto ps_action = p()->find_action( "primordial_storm" ) )
+        {
+          ps_action->add_child( this );
+        }
+        break;
+      }
       default:
         break;
     }
@@ -7369,6 +7399,17 @@ struct lightning_bolt_t : public shaman_spell_t
         if ( auto ptr = p()->find_action( "lightning_bolt" ) )
         {
           ptr->add_child( this );
+        }
+        break;
+      }
+      case spell_variant::PRIMORDIAL_STORM:
+      {
+        background = true;
+        base_execute_time = 0_s;
+        base_costs[ RESOURCE_MANA ] = 0;
+        if ( auto ps_action = p()->find_action( "primordial_storm" ) )
+        {
+          ps_action->add_child( this );
         }
         break;
       }
@@ -10584,6 +10625,82 @@ struct primordial_wave_t : public shaman_spell_t
     {
       p()->buff.lava_surge->trigger();
     }
+
+    p()->buff.primordial_storm->trigger();
+    assert( p()->buff.primordial_storm->check() );
+  }
+
+  bool ready() override
+  {
+    if ( p()->buff.primordial_storm->check() )
+    {
+      return false;
+    }
+
+    return shaman_spell_t::ready();
+  }
+};
+
+// ==========================================================================
+// Primordial Storm 
+// ==========================================================================
+
+struct primordial_storm_t : public shaman_spell_t
+{
+  struct primordial_damage_t : public shaman_spell_t
+  {
+    primordial_damage_t( primordial_storm_t* parent, util::string_view name, const spell_data_t* s ) :
+      shaman_spell_t( name, parent->p(), s )
+    {
+      // Inherit Maelstrom Weapon stacks from the parent cast
+      mw_parent = parent;
+      background = true;
+
+      reduced_aoe_targets = p()->talent.primordial_storm->effectN( 3 ).base_value();
+      full_amount_targets = 1;
+    }
+
+    bool consume_maelstrom_weapon() const override
+    { return false; }
+  };
+
+  primordial_damage_t* fire, *frost, *nature;
+
+  primordial_storm_t( shaman_t* player, util::string_view options_str ) :
+    shaman_spell_t( "primordial_storm", player, player->find_spell( 1218090 ) )
+  {
+    parse_options( options_str );
+
+    fire = new primordial_damage_t( this, "primordial_fire",
+      player->find_spell( 1218113 ) );
+    frost = new primordial_damage_t( this, "primordial_frost",
+      player->find_spell( 1218116 ) );
+    nature = new primordial_damage_t( this, "primordial_lightning",
+      player->find_spell( 1218118 ) );
+
+    // Spell data does not indicate this, textual description does
+    affected_by_maelstrom_weapon = true;
+  }
+
+  void execute() override
+  {
+    shaman_spell_t::execute();
+
+    fire->execute_on_target( execute_state->target );
+    frost->execute_on_target( execute_state->target );
+    nature->execute_on_target( execute_state->target );
+
+    p()->buff.primordial_storm->decrement();
+  }
+
+  bool ready() override
+  {
+    if ( ! p()->buff.primordial_storm->check() )
+    {
+      return false;
+    }
+
+    return shaman_spell_t::ready();
   }
 };
 
@@ -11131,6 +11248,8 @@ action_t* shaman_t::create_action( util::string_view name, util::string_view opt
     return new doom_winds_t( this, options_str );
   if ( name == "voltaic_blaze" )
     return new voltaic_blaze_t( this, options_str );
+  if ( name == "primordial_storm" )
+    return new primordial_storm_t( this, options_str );
 
   // restoration
   if ( name == "spiritwalkers_grace" )
@@ -11435,6 +11554,12 @@ void shaman_t::create_actions()
   if ( talent.reactivity.ok() )
   {
     action.reactivity = new sundering_reactivity_t( this );
+  }
+
+  if ( talent.primordial_storm.ok() )
+  {
+    action.lightning_bolt_ps = new lightning_bolt_t( this, spell_variant::PRIMORDIAL_STORM );
+    action.chain_lightning_ps = new chain_lightning_t( this, spell_variant::PRIMORDIAL_STORM );
   }
 
   // Generic Actions
@@ -11906,6 +12031,7 @@ void shaman_t::init_spells()
   talent.static_accumulation = _ST( "Static Accumulation" );
   talent.flowing_spirits = _ST( "Flowing Spirits" );
   // Row 10
+  talent.primordial_storm = _ST( "Primordial Storm" );
   talent.alpha_wolf = _ST( "Alpha Wolf" );
   talent.elemental_spirits = _ST( "Elemental Spirits" );
   talent.thorims_invocation = _ST( "Thorim's Invocation" );
@@ -13771,6 +13897,7 @@ void shaman_t::create_buffs()
     ->set_cooldown( 0_ms ) // Stormblast uses ICD for something else than applications
     ->set_trigger_spell( talent.stormblast );
 
+  buff.primordial_storm = make_buff( this, "primordial_storm", talent.primordial_storm->effectN( 1 ).trigger() );
   //
   // Restoration
   //
