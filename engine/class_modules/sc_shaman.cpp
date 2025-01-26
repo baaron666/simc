@@ -2777,8 +2777,6 @@ public:
   bool affected_by_maelstrom_weapon = false;
 
   int mw_consume_max_stack, mw_consumed_stacks, mw_affected_stacks;
-  // Cache execute MW multiplier into a variable upon cast finish
-  double mw_multiplier;
 
   ancestor_cast ancestor_trigger;
 
@@ -2789,7 +2787,7 @@ public:
                        const spell_data_t* s = spell_data_t::nil(),
                        spell_variant type_ = spell_variant::NORMAL )
     : ab( n, player, s, type_ ), mw_consume_max_stack( 0 ), mw_consumed_stacks( 0 ),
-      mw_affected_stacks( 0 ), mw_multiplier( 0.0 ), ancestor_trigger( ancestor_cast::DISABLED ),
+      mw_affected_stacks( 0 ), ancestor_trigger( ancestor_cast::DISABLED ),
       mw_parent( nullptr )
   {
     if ( this->data().affected_by( player->spell.maelstrom_weapon->effectN( 1 ) ) )
@@ -2859,11 +2857,9 @@ public:
     // used to compute the damage of the spell, either during execute or during impact (Lava Burst).
     else
     {
-      compute_mw_multiplier();
-
       if ( affected_by_maelstrom_weapon )
       {
-        spell_base_state( s )->mw_mul = mw_multiplier;
+        spell_base_state( s )->mw_mul = compute_mw_multiplier();
       }
     }
 
@@ -2905,15 +2901,15 @@ public:
     return m;
   }
 
-  void compute_mw_multiplier()
+  double compute_mw_multiplier()
   {
     if ( ( !this->p()->spec.maelstrom_weapon->ok() && !this->p()->talent.maelstrom_weapon.ok() ) ||
       !affected_by_maelstrom_weapon )
     {
-      return;
+      return 0.0;
     }
 
-    mw_multiplier = 0.0;
+    double mw_multiplier = 0.0;
     mw_affected_stacks = maelstrom_weapon_stacks();
     mw_consumed_stacks = consume_maelstrom_weapon() ? mw_affected_stacks : 0;
 
@@ -2933,6 +2929,8 @@ public:
         benefit_from_maelstrom_weapon(), mw_consumed_stacks,
         mw_affected_stacks, mw_multiplier );
     }
+
+    return mw_multiplier;
   }
 
   void execute() override
