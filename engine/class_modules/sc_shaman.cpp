@@ -10577,9 +10577,12 @@ struct primordial_wave_t : public shaman_spell_t
     {
       shaman_spell_t::impact( s );
 
-      p()->buff.primordial_wave->trigger();
+      if ( ! p()->dbc->ptr )
+      {
+        p()->buff.primordial_wave->trigger();
 
-      p()->trigger_secondary_flame_shock( s, spell_variant::PRIMORDIAL_WAVE );
+        p()->trigger_secondary_flame_shock( s, spell_variant::PRIMORDIAL_WAVE );
+      }
     }
   };
 
@@ -10587,6 +10590,11 @@ struct primordial_wave_t : public shaman_spell_t
     shaman_spell_t( "primordial_wave", player, player->talent.primordial_wave )
   {
     parse_options( options_str );
+
+    if ( player->dbc->ptr )
+    {
+      aoe = -1;
+    }
 
     impact_action = new primordial_wave_damage_t( player );
     add_child( impact_action );
@@ -10608,6 +10616,18 @@ struct primordial_wave_t : public shaman_spell_t
     }
   }
 
+  size_t available_targets( std::vector<player_t*>& tl ) const override
+  {
+    shaman_spell_t::available_targets( tl );
+
+    if ( p()->dbc->ptr )
+    {
+      p()->regenerate_flame_shock_dependent_target_list( this );
+    }
+
+    return tl.size();
+  }
+
   void execute() override
   {
     // Primordial Wave that summons an Ancestor will trigger a Lava Burst
@@ -10620,6 +10640,11 @@ struct primordial_wave_t : public shaman_spell_t
       p()->generate_maelstrom_weapon( execute_state,
                                       as<int>( p()->talent.primal_maelstrom->effectN( 1 ).base_value() ) );
     }
+    else if ( p()->specialization() == SHAMAN_ENHANCEMENT && p()->dbc->ptr )
+    {
+      p()->generate_maelstrom_weapon( execute_state,
+                                      as<int>( p()->talent.primordial_wave->effectN( 5 ).base_value() ) );
+    }
 
     if ( p()->spec.lava_surge->ok() )
     {
@@ -10627,7 +10652,6 @@ struct primordial_wave_t : public shaman_spell_t
     }
 
     p()->buff.primordial_storm->trigger();
-    assert( p()->buff.primordial_storm->check() );
   }
 
   bool ready() override
@@ -10677,6 +10701,10 @@ struct primordial_storm_t : public shaman_spell_t
       player->find_spell( 1218116 ) );
     nature = new primordial_damage_t( this, "primordial_lightning",
       player->find_spell( 1218118 ) );
+
+    add_child( fire );
+    add_child( frost );
+    add_child( nature );
 
     // Spell data does not indicate this, textual description does
     affected_by_maelstrom_weapon = true;
