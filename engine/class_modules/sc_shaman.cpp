@@ -10588,6 +10588,12 @@ struct primordial_wave_t : public shaman_spell_t
 
         p()->trigger_secondary_flame_shock( s, spell_variant::PRIMORDIAL_WAVE );
       }
+
+      if ( p()->dbc->ptr && p()->specialization() == SHAMAN_ENHANCEMENT &&
+        p()->talent.conductive_energy.ok() )
+      {
+        trigger_lightning_rod_debuff( s->target );
+      }
     }
   };
 
