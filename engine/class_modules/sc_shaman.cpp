@@ -5813,7 +5813,14 @@ struct ice_strike_t : public shaman_attack_t
   {
     shaman_attack_t::execute();
 
-    p()->trigger_swirling_maelstrom( execute_state );
+    if ( player->dbc->ptr )
+    {
+      p()->generate_maelstrom_weapon( this, as<int>( data().effectN( 4 ).base_value() ) );
+    }
+    else
+    {
+      p()->trigger_swirling_maelstrom( execute_state );
+    }
     p()->buff.ice_strike->trigger();
 
     if ( result_is_hit( execute_state->result ) && p()->buff.crash_lightning->up() )
