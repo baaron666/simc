@@ -10659,6 +10659,12 @@ struct primordial_wave_t : public shaman_spell_t
       return false;
     }
 
+    if ( player->dbc->ptr &&
+      player->get_active_dots( p()->action.flame_shock->get_dot( target ) ) == 0 )
+    {
+      return false;
+    }
+
     return shaman_spell_t::ready();
   }
 };
@@ -10712,9 +10718,32 @@ struct primordial_storm_t : public shaman_spell_t
   {
     shaman_spell_t::execute();
 
-    fire->execute_on_target( execute_state->target );
-    frost->execute_on_target( execute_state->target );
-    nature->execute_on_target( execute_state->target );
+    make_event( sim, 200_ms, [ this, t = execute_state->target ]() {
+      if ( t->is_sleeping() )
+      {
+        return;
+      }
+
+      fire->execute_on_target( t );
+    } );
+
+    make_event( sim, 400_ms, [ this, t = execute_state->target ]() {
+      if ( t->is_sleeping() )
+      {
+        return;
+      }
+
+      frost->execute_on_target( t );
+    } );
+
+    make_event( sim, 600_ms, [ this, t = execute_state->target ]() {
+      if ( t->is_sleeping() )
+      {
+        return;
+      }
+
+      nature->execute_on_target( t );
+    } );
 
     p()->buff.primordial_storm->decrement();
   }
