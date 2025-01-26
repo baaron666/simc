@@ -20,6 +20,13 @@
 #include <regex>
 #include <string>
 
+// TODO 11.1
+//
+// Enhancement
+// - Chain Lightning with Conductive Energy will apply Lightning Rods to secondary targets that are
+//   not already affected by Lightning Rod. If the main target and all the secondary targets are
+//   already affected, it will refresh the Lightning Rod on the main target.
+
 namespace eff
 {
 template <typename BUILDER, typename OBJ>
@@ -10308,7 +10315,7 @@ struct surging_totem_pulse_t : public spell_totem_action_t
 
     if ( o()->buff.ascendance->up() && o()->talent.oversurge.ok() )
     {
-      m *= 1.0 + o()->talent.oversurge->effectN( 1 ).percent();
+      m *= 1.0 + o()->talent.oversurge->effectN( o()->dbc->ptr ? 2 : 1 ).percent();
     }
 
     if ( variant == spell_variant::EARTHSURGE )
@@ -10342,7 +10349,7 @@ struct surging_bolt_t : public spell_totem_action_t
 
     if ( o()->buff.ascendance->up() && o()->talent.oversurge.ok() )
     {
-      m *= 1.0 + o()->talent.oversurge->effectN( 1 ).percent();
+      m *= 1.0 + o()->talent.oversurge->effectN( o()->dbc->ptr ? 2 : 1 ).percent();
     }
 
     return m;
