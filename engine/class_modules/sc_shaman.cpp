@@ -1544,7 +1544,7 @@ public:
   template <typename T>
   void trigger_tempest( T resource_count );
   void trigger_awakening_storms( const action_state_t* state );
-  void trigger_earthsurge( const action_state_t* state );
+  void trigger_earthsurge( const action_state_t* state, double mul = 1.0 );
   void trigger_whirling_air( const action_state_t* state );
   void trigger_reactivity( const action_state_t* state );
   void trigger_fusion_of_elements( const action_state_t* state );
@@ -4869,9 +4869,19 @@ struct sundering_reactivity_t : public shaman_attack_t
     shaman_attack_t::init();
 
     may_proc_flametongue = false;
-    may_proc_windfury = false;
+    may_proc_windfury = player->dbc->ptr;
     may_proc_flowing_spirits = false;
     p()->set_mw_proc_state( this, mw_proc_state::DISABLED );
+  }
+
+  void execute() override
+  {
+    shaman_attack_t::execute();
+
+    if ( p()->dbc->ptr )
+    {
+      p()->trigger_earthsurge( execute_state, p()->talent.reactivity->effectN( 1 ).percent() );
+    }
   }
 };
 
@@ -10377,6 +10387,15 @@ struct surging_totem_t : public spell_totem_pet_t
     }
   }
 
+  void trigger_earthsurge( player_t* target, double mul = 1.0 )
+  {
+    if ( earthsurge )
+    {
+      earthsurge->base_multiplier = mul;
+      earthsurge->execute_on_target( target );
+    }
+  }
+
   void init_spells() override
   {
     spell_totem_pet_t::init_spells();
@@ -13337,7 +13356,7 @@ void shaman_t::trigger_awakening_storms( const action_state_t* state )
   action.awakening_storms->execute_on_target( state->target );
 }
 
-void shaman_t::trigger_earthsurge( const action_state_t* state )
+void shaman_t::trigger_earthsurge( const action_state_t* state, double mul )
 {
   if ( !talent.earthsurge.ok() )
   {
@@ -13350,7 +13369,7 @@ void shaman_t::trigger_earthsurge( const action_state_t* state )
     return;
   }
 
-  totem->earthsurge->execute_on_target( state->target );
+  totem->trigger_earthsurge( state->target, mul );
 }
 
 void shaman_t::trigger_whirling_air( const action_state_t* state )
