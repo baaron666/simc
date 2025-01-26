@@ -26,6 +26,7 @@
 // - Chain Lightning with Conductive Energy will apply Lightning Rods to secondary targets that are
 //   not already affected by Lightning Rod. If the main target and all the secondary targets are
 //   already affected, it will refresh the Lightning Rod on the main target.
+// - Legacy of Frost Witch affects Primordial Frost twice (flags 24, 58) [bug?]
 
 namespace eff
 {
@@ -883,6 +884,8 @@ public:
     buff_t* stormblast;
 
     buff_t* primordial_storm;
+
+    buff_t* tww2_enh_2pc; // Winning Streak!
 
     // Shared talent stuff
     buff_t* tempest;
@@ -2709,6 +2712,8 @@ public:
     {
       p()->trigger_flowing_spirits( execute_state );
     }
+
+    p()->buff.tww2_enh_2pc->trigger();
   }
 
   void impact( action_state_t* state ) override
@@ -3134,6 +3139,8 @@ struct shaman_spell_t : public shaman_spell_base_t<spell_t>
         p()->summon_elemental( elemental::GREATER_FIRE, p()->find_spell( 1215675 )->effectN( 1 ).time_value() );
       }
     }
+
+    p()->buff.tww2_enh_2pc->trigger();
   }
 
   void schedule_travel( action_state_t* s ) override
@@ -12889,6 +12896,12 @@ void shaman_t::consume_maelstrom_weapon( const action_state_t* state, int stacks
       buff.ice_strike_cast->trigger();
     }
   }
+
+  if ( buff.tww2_enh_2pc->check() &&
+    rng().roll( sets->set( SHAMAN_ENHANCEMENT, TWW2, B2 )->effectN( 1 ).base_value() * 0.001 * stacks ) )
+  {
+    buff.tww2_enh_2pc->expire();
+  }
 }
 
 void shaman_t::trigger_maelstrom_gain( double maelstrom_gain, gain_t* gain )
@@ -13995,6 +14008,10 @@ void shaman_t::create_buffs()
     ->set_trigger_spell( talent.stormblast );
 
   buff.primordial_storm = make_buff( this, "primordial_storm", talent.primordial_storm->effectN( 1 ).trigger() );
+
+  buff.tww2_enh_2pc = make_buff( this, "winning_streak", find_spell( 1218616 ) )
+    ->set_trigger_spell( sets->set( SHAMAN_ENHANCEMENT, TWW2, B2 ) );
+
   //
   // Restoration
   //
@@ -14303,6 +14320,8 @@ void shaman_action_t<Base>::parse_action_effects()
   eff::source_eff_builder_t( p()->buff.molten_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
   eff::source_eff_builder_t( p()->buff.icy_edge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
   eff::source_eff_builder_t( p()->buff.earthen_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
+
+  eff::source_eff_builder_t( p()->buff.tww2_enh_2pc ).build( this );
 }
 
 // shaman_t::generate_bloodlust_options =====================================
