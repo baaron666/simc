@@ -13736,7 +13736,7 @@ void shaman_t::create_buffs()
     ->set_refresh_behavior( buff_refresh_behavior::DISABLED );
   buff.arc_discharge = make_buff( this, "arc_discharge", find_spell( 455097 ) )
     ->set_max_stack(
-      specialization() == SHAMAN_ELEMENTAL
+      specialization() == SHAMAN_ELEMENTAL || dbc->ptr
       ? find_spell( 455097 )->max_stacks()
       : as<int>( find_spell( 455097 ) -> effectN( 3 ).base_value() )
     )
