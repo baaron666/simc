@@ -13945,8 +13945,11 @@ void shaman_t::create_buffs()
     ->set_trigger_spell( talent.windfury_weapon );
 
   buff.voltaic_blaze = make_buff( this, "voltaic_blaze", find_spell( 470058 ) )
-    ->set_chance( talent.voltaic_blaze->effectN( 1 ).percent() )
     ->set_trigger_spell( talent.voltaic_blaze );
+  if ( !dbc->ptr )
+  {
+    buff.voltaic_blaze->set_chance( talent.voltaic_blaze->effectN( 1 ).percent() );
+  }
 
   buff.stormblast = make_buff( this, "stormblast", find_spell( 470466 ) )
     ->set_cooldown( 0_ms ) // Stormblast uses ICD for something else than applications
