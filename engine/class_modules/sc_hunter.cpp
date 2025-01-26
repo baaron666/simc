@@ -550,6 +550,8 @@ public:
 
     proc_t* deathblow;
 
+    proc_t* precision_detonation;
+
     proc_t* sentinel_stacks;
     proc_t* sentinel_implosions;
     proc_t* extrapolated_shots_stacks;
@@ -938,6 +940,7 @@ public:
     events::tar_trap_aoe_t* tar_trap_aoe = nullptr;
     timespan_t tensile_bowstring_extension = 0_s;
     event_t* current_volley = nullptr;
+    action_t* traveling_explosive = nullptr;
     timespan_t sentinel_watch_reduction = 0_s;
   } state;
 
@@ -4146,6 +4149,20 @@ struct explosive_shot_t : public explosive_shot_base_t
       p()->buffs.tip_of_the_spear_explosive->trigger();
     }
   }
+
+  void schedule_travel( action_state_t* s ) override
+  {
+    explosive_shot_base_t::schedule_travel( s );
+
+    p()->state.traveling_explosive = this;
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    explosive_shot_base_t::impact( s );
+
+    p()->state.traveling_explosive = nullptr;
+  }
 };
 
 struct explosive_shot_background_t : public explosive_shot_base_t
@@ -5038,7 +5055,8 @@ struct multishot_mm_t: public hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::impact( s );
 
-    if ( debug_cast<state_t*>( s )->empowered_by_precise_shots )
+    // Multi-Shot only ever seems to trigger Spotter's Mark on the primary target
+    if ( s->chain_target == 0 && debug_cast<state_t*>( s )->empowered_by_precise_shots )
       p()->trigger_spotters_mark( s->target );
 
     td( s->target )->debuffs.shrapnel_shot->expire();
@@ -5186,18 +5204,48 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
 
     hunter_td_t* target_data = td( s->target );
 
-    // TODO 23/1/25: secondary targets of a Trick Shots or Aspect of the Hydra Aimed Shot consistently trigger the immediate detonation (modeled)
-    // it is wildly inconsistent though whether they are all affected by the damage increase (not modeled, pray for fixes and buff all for now)
-    // perhaps tied to the trigger and expiration timing of the hidden buff 474199
+    // TODO 25/1/25: All forms of Aimed Shot impacts reliably trigger both existing and queued Explosive Shots, but there is a lot 
+    // of inconsistency on bonus applications of Precision Detonation and TWW S2 4pc, perhaps tied to the trigger and expiration 
+    // timing of the hidden buff 474199. Pray for fixes and buff all for now.
     if ( p()->talents.precision_detonation->ok() )
     {
+      bool ticking = target_data->dots.explosive_shot->is_ticking();
       if ( s->chain_target == 0 )
       {
-        p()->buffs.precision_detonation_hidden->trigger();
-        // Expire after other bounces hit
-        make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+        bool traveling = p()->state.traveling_explosive && p()->state.traveling_explosive->has_travel_events_for( s->target );
+
+        if ( ticking || traveling )
+        {
+          p()->buffs.precision_detonation_hidden->trigger();
+
+          // Precision Detonation will affect an Explosive Shot queued immediately after an Aimed Shot, which intuitively shouldn't work
+          // since they have the same travel time and the Aimed Shot should impact before the Explosive Shot, so it seems there's some
+          // fudging going on to make it work, once again probably related to the use and timing of the hidden buff 474199, so just 
+          // schedule the detonation to occur after the next Explosive Shot impact if there is one in flight.
+          if ( traveling )
+            make_event( p()->sim, p()->state.traveling_explosive->shortest_travel_event(), [ this, target_data ]()
+              {
+                p()->procs.precision_detonation->occur();
+                target_data->dots.explosive_shot->cancel();
+                p()->buffs.precision_detonation_hidden->expire();
+              } );
+          else
+            // Expire Precision Detonation after other possible impacts.
+            make_event( p()->sim, [ this, target_data ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+        }
+        else
+        {
+          // Expire Precision Detonation after other possible impacts in case they trigger the buff.
+          make_event( p()->sim, [ this, target_data ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+        }
       }
-      target_data->dots.explosive_shot->cancel();
+
+      if ( ticking )
+      {
+        p()->procs.precision_detonation->occur();
+        p()->buffs.precision_detonation_hidden->trigger();
+        target_data->dots.explosive_shot->cancel();
+      }
     }
 
     if ( p()->talents.phantom_pain.ok() )
@@ -5286,7 +5334,7 @@ struct aimed_shot_t : public aimed_shot_base_t
 
   aimed_shot_aspect_of_the_hydra_t* aspect_of_the_hydra = nullptr;
   aimed_shot_double_tap_t* double_tap = nullptr;
-  explosive_shot_tww_s2_mm_4pc_t* tww_s2_mm_4pc_t = nullptr;
+  explosive_shot_tww_s2_mm_4pc_t* tww_s2_mm_4pc = nullptr;
   bool lock_and_loaded = false;
 
   aimed_shot_t( hunter_t* p, util::string_view options_str ) : 
@@ -5316,7 +5364,7 @@ struct aimed_shot_t : public aimed_shot_base_t
       deathblow.chance = p->talents.improved_deathblow.ok() ? p->talents.improved_deathblow->effectN( 2 ).percent() : p->talents.deathblow->effectN( 1 ).percent();
   
     if ( p->tier_set.tww_s2_mm_4pc.ok() )
-      tww_s2_mm_4pc_t = p->get_background_action<explosive_shot_tww_s2_mm_4pc_t>( "explosive_shot_tww_s2_mm_4pc_t" );
+      tww_s2_mm_4pc = p->get_background_action<explosive_shot_tww_s2_mm_4pc_t>( "explosive_shot_tww_s2_mm_4pc" );
   }
 
   double cost() const override
@@ -5368,6 +5416,10 @@ struct aimed_shot_t : public aimed_shot_base_t
 
   void execute() override
   {
+    // The Explosive Shot hits before the Aimed Shot, so it must be cast beforehand.
+    if ( lock_and_loaded && tww_s2_mm_4pc )
+      tww_s2_mm_4pc->execute_on_target( target );
+
     aimed_shot_base_t::execute();
 
     // Lock and Load completely supresses consumption of Streamline
@@ -5408,8 +5460,6 @@ struct aimed_shot_t : public aimed_shot_base_t
     {
       p()->buffs.lock_and_load->decrement();
       p()->cooldowns.explosive_shot->adjust( p()->talents.magnetic_gunpowder->effectN( 2 ).time_value() );
-      if ( tww_s2_mm_4pc_t )
-        tww_s2_mm_4pc_t->execute_on_target( target );
     }
     lock_and_loaded = false;
   }
@@ -8326,7 +8376,13 @@ void hunter_t::create_buffs()
 
   buffs.lunar_storm_ready = make_buff( this, "lunar_storm_ready", talents.lunar_storm_ready_buff );
   
-  buffs.lunar_storm_cooldown = make_buff( this, "lunar_storm_cooldown", talents.lunar_storm_cooldown_buff );
+  buffs.lunar_storm_cooldown = make_buff( this, "lunar_storm_cooldown", talents.lunar_storm_cooldown_buff )
+    ->set_stack_change_callback(
+      [this]( buff_t* b, int old, int cur ) {
+        player_t* p = b -> player;
+        if ( cur == 0 )
+          buffs.lunar_storm_ready->trigger();
+      } );
 
   buffs.withering_fire =
     make_buff( this, "withering_fire", talents.withering_fire_buff );
@@ -8391,6 +8447,9 @@ void hunter_t::init_procs()
   
   if ( talents.deathblow.ok() )
     procs.deathblow = get_proc( "Deathblow" );
+
+  if ( talents.precision_detonation.ok() )
+    procs.precision_detonation = get_proc( "Precision Detonations" );
 
   if ( talents.sentinel.ok() )
   {
@@ -8680,6 +8739,8 @@ void hunter_t::combat_begin()
   if ( talents.outland_venom.ok() )
     make_repeating_event( *sim, talents.outland_venom_debuff->effectN( 2 ).period(),
                           [ this ] { trigger_outland_venom_update(); } );
+
+  buffs.lunar_storm_ready->trigger();
 
   player_t::combat_begin();
 }
