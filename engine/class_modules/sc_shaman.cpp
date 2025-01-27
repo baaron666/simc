@@ -10788,9 +10788,36 @@ struct primordial_storm_t : public shaman_spell_t
     affected_by_maelstrom_weapon = true;
   }
 
+  void trigger_lightning_damage()
+  {
+    shaman_spell_t* damage = nullptr;
+    if ( fire->target_list().size() == 1 )
+    {
+      damage = debug_cast<shaman_spell_t*>( p()->action.lightning_bolt_ps );
+    }
+    else if ( fire->target_list().size() > 1 )
+    {
+      damage = debug_cast<shaman_spell_t*>( p()->action.chain_lightning_ps );
+    }
+
+    if ( damage == nullptr )
+    {
+      return;
+    }
+
+    damage->mw_parent = this;
+    damage->execute_on_target( execute_state->target );
+  }
+
   void execute() override
   {
     shaman_spell_t::execute();
+
+    // Set targets early so we can use fire target list to figure out whether LB or CL can be shot,
+    // before the fire damage spell executes.
+    fire->set_target( execute_state->target );
+    frost->set_target( execute_state->target );
+    nature->set_target( execute_state->target );
 
     make_event( sim, 200_ms, [ this, t = execute_state->target ]() {
       if ( t->is_sleeping() )
@@ -10798,7 +10825,7 @@ struct primordial_storm_t : public shaman_spell_t
         return;
       }
 
-      fire->execute_on_target( t );
+      fire->execute();
     } );
 
     make_event( sim, 400_ms, [ this, t = execute_state->target ]() {
@@ -10807,7 +10834,7 @@ struct primordial_storm_t : public shaman_spell_t
         return;
       }
 
-      frost->execute_on_target( t );
+      frost->execute();
     } );
 
     make_event( sim, 600_ms, [ this, t = execute_state->target ]() {
@@ -10816,8 +10843,10 @@ struct primordial_storm_t : public shaman_spell_t
         return;
       }
 
-      nature->execute_on_target( t );
+      nature->execute();
     } );
+
+    trigger_lightning_damage();
 
     p()->buff.primordial_storm->decrement();
   }
