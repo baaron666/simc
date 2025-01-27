@@ -777,6 +777,9 @@ public:
 
     // Reactivity
     action_t* reactivity;
+
+    // Doom Winds damage
+    action_t* doom_winds;
   } action;
 
   // Pets
@@ -9439,8 +9442,12 @@ struct doom_winds_t : public shaman_attack_t
     weapon_multiplier = 0.0;
     may_proc_flowing_spirits = may_proc_flametongue = may_proc_stormbringer = may_proc_windfury = false;
 
-    damage = new doom_winds_damage_t( player );
-    add_child( damage );
+    if ( player->action.doom_winds == nullptr )
+    {
+      player->action.doom_winds = new doom_winds_damage_t( player );
+    }
+
+    add_child( player->action.doom_winds );
   }
 
   void init() override
@@ -9452,20 +9459,9 @@ struct doom_winds_t : public shaman_attack_t
 
   void execute() override
   {
-    p()->buff.doom_winds->trigger();
-
     shaman_attack_t::execute();
 
-    if ( damage )
-    {
-      make_event<ground_aoe_event_t>( *sim, p(),
-        ground_aoe_params_t()
-          .target( execute_state->target )
-          .pulse_time( timespan_t::from_seconds( p()->buff.doom_winds->data().effectN( 5 ).base_value() ) )
-          .duration( p()->buff.doom_winds->buff_duration() )
-          .action( damage ),
-        true );
-    }
+    p()->buff.doom_winds->trigger();
   }
 };
 
@@ -13997,7 +13993,18 @@ void shaman_t::create_buffs()
       generate_maelstrom_weapon( action.ascendance, as<int>( b->value() ) );
     } );
   buff.doom_winds = make_buff( this, "doom_winds", talent.doom_winds->effectN( 1 ).trigger() )
+    ->set_tick_on_application( true )
+    ->set_period( timespan_t::from_seconds( talent.doom_winds->effectN( 1 ).trigger()->effectN( 5 ).base_value() ) )
+    ->set_tick_callback( [ this ]( buff_t*, int, timespan_t ) {
+      if ( target->is_sleeping() )
+      {
+        return;
+      }
+
+      action.doom_winds->execute_on_target( target );
+    } )
     ->set_trigger_spell( talent.doom_winds );
+
   buff.ice_strike = make_buff( this, "ice_strike", find_spell( 384357 ) )
     ->set_trigger_spell( talent.ice_strike_cast.ok()
                          ? talent.ice_strike_cast
