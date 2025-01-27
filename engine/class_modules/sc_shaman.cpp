@@ -10788,6 +10788,20 @@ struct primordial_storm_t : public shaman_spell_t
       full_amount_targets = 1;
     }
 
+    double action_multiplier() const override
+    {
+      double m = shaman_spell_t::action_multiplier();
+
+      // 2025-01-27 Primordial Frost apparently double-dips on Legacy of the Frost Witch buff due to
+      // being flagged with families 24 and 58.
+      if ( p()->bugs && id == 1218116 )
+      {
+        m *= 1.0 + p()->buff.legacy_of_the_frost_witch->value();
+      }
+
+      return m;
+    }
+
     bool consume_maelstrom_weapon() const override
     { return false; }
   };
