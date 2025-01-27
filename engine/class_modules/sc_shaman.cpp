@@ -34,6 +34,7 @@
 #include <cassert>
 #include <regex>
 #include <string>
+#include <sstream>
 
 // TODO 11.1
 //
