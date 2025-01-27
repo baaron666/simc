@@ -5,15 +5,30 @@
 
 #include "config.hpp"
 
+#include "action/action_state.hpp"
+#include "action/attack.hpp"
+#include "action/dot.hpp"
+#include "action/heal.hpp"
+#include "action/residual_action.hpp"
+#include "action/spell.hpp"
 #include "class_modules/apl/apl_shaman.hpp"
-
+#include "class_modules/class_module.hpp"
+#include "dbc/dbc.hpp"
+#include "item/item.hpp"
+#include "item/special_effect.hpp"
+#include "player/action_priority_list.hpp"
+#include "player/actor_target_data.hpp"
+#include "player/ground_aoe.hpp"
+#include "player/pet.hpp"
 #include "player/pet_spawner.hpp"
 #include "action/action_callback.hpp"
 #include "action/parse_effects.hpp"
 #include "report/highchart.hpp"
-
-#include "simulationcraft.hpp"
-
+#include "player/player_scaling.hpp"
+#include "player/set_bonus.hpp"
+#include "report/decorators.hpp"
+#include "sim/cooldown.hpp"
+#include "sim/proc.hpp"
 #include "util/string_view.hpp"
 
 #include <cassert>
@@ -13402,14 +13417,11 @@ void shaman_t::trigger_whirling_air( const action_state_t* state )
     return;
   }
 
-  for ( auto totem : pet.surging_totem )
+  for ( auto i = 0U;
+        i < as<unsigned>( buff.whirling_air->data().effectN( 3 ).base_value() ); ++i )
   {
-    for ( auto i = 0U;
-          i < as<unsigned>( buff.whirling_air->data().effectN( 3 ).base_value() ); ++i )
-    {
-      // First Whirling Air Surging Bolt seems to trigger around 300ms later
-      trigger_totemic_rebound( state, true, 300_ms + i * 500_ms );
-    }
+    // First Whirling Air Surging Bolt seems to trigger around 300ms later
+    trigger_totemic_rebound( state, true, 300_ms + i * 500_ms );
   }
 
   buff.whirling_air->decrement();
@@ -15852,8 +15864,6 @@ public:
 };
 
 // SHAMAN MODULE INTERFACE ==================================================
-
-using namespace unique_gear;
 
 struct shaman_module_t : public module_t
 {
