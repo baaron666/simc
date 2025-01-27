@@ -728,7 +728,6 @@ public:
 
   /// Molten Thunder 11.1
   double molten_thunder_chance;
-  bool molten_thunder_resetted;
 
   // Cached actions
   struct actions_t
@@ -5935,32 +5934,30 @@ struct sundering_t : public shaman_attack_t
 
     if ( p()->dbc->ptr )
     {
-      // First, increase proc chance by number of targets hit
-      auto mul = ( 1.0 + p()->talent.molten_thunder->effectN( 3 ).percent() ) *
-        std::min( num_targets_hit,
-                  as<int>( p()->talent.molten_thunder->effectN( 4 ).base_value() ) );
+      // Calculate multiplier to start proc chain
+      if ( p()->molten_thunder_chance == -1.0 )
+      {
+        p()->molten_thunder_chance = p()->talent.molten_thunder->effectN( 2 ).percent();
+        p()->molten_thunder_chance += p()->talent.molten_thunder->effectN( 3 ).percent() *
+          std::min( num_targets_hit,
+            as<int>( p()->talent.molten_thunder->effectN( 4 ).base_value() ) );
+      }
 
-      p()->molten_thunder_chance *= mul;
-
-      sim->out_debug.print( "{} molten_thunder chance={}, increase_by={}, reset={}",
-        player->name(), p()->molten_thunder_chance, mul, p()->molten_thunder_resetted );
+      sim->out_debug.print( "{} molten_thunder chance={}", player->name(),
+        p()->molten_thunder_chance );
 
       if ( p()->rng().roll( p()->molten_thunder_chance ) )
       {
         cooldown->reset( true );
         p()->proc.molten_thunder->occur();
 
-        // Previous Sundering procced Molten Thunder, so cut chance in half
-        if ( p()->molten_thunder_resetted )
-        {
-          p()->molten_thunder_chance *= 0.5;
-        }
-
-        p()->molten_thunder_resetted = true;
+        // Proc success, cut chance in half
+        p()->molten_thunder_chance *= 0.5;
       }
+      // Proc failure, reset chance on next go
       else
       {
-        p()->molten_thunder_resetted = false;
+        p()->molten_thunder_chance = -1.0;
       }
     }
   }
@@ -15310,8 +15307,7 @@ void shaman_t::reset()
 
   if ( dbc->ptr )
   {
-    molten_thunder_chance = talent.molten_thunder->effectN( 2 ).percent();
-    molten_thunder_resetted = false;
+    molten_thunder_chance = -1.0;
   }
 }
 
