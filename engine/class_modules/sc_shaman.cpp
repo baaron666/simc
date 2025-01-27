@@ -5943,7 +5943,7 @@ struct sundering_t : public shaman_attack_t
             as<int>( p()->talent.molten_thunder->effectN( 4 ).base_value() ) );
       }
 
-      sim->out_debug.print( "{} molten_thunder chance={}", player->name(),
+      sim->print_debug( "{} molten_thunder chance={}", player->name(),
         p()->molten_thunder_chance );
 
       if ( p()->rng().roll( p()->molten_thunder_chance ) )
