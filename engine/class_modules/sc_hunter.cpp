@@ -410,7 +410,6 @@ public:
     spell_data_ptr_t tww_s1_bm_4pc;
     spell_data_ptr_t tww_s1_mm_2pc;
     spell_data_ptr_t tww_s1_mm_4pc;
-    spell_data_ptr_t tww_s1_mm_4pc_buff;
     spell_data_ptr_t tww_s1_sv_2pc;
     spell_data_ptr_t tww_s1_sv_4pc;
 
@@ -477,7 +476,6 @@ public:
     // Tier Set Bonuses
     // TWW - S1
     buff_t* harmonize; // BM 4pc
-    buff_t* tww_s1_mm_4pc_moving_target; // shares name with talent buff
     // TWW - S2
     buff_t* jackpot; // MM 2pc
 
@@ -1085,7 +1083,7 @@ public:
   void trigger_basilisk_collar_update();
   void trigger_outland_venom_update();
   void consume_trick_shots();
-  void trigger_deathblow( player_t* target );
+  void trigger_deathblow( player_t* target, bool activated = false );
   void trigger_sentinel( player_t* target, bool force = false, proc_t* proc = nullptr );
   void trigger_sentinel_implosion( hunter_td_t* td );
   void trigger_symphonic_arsenal();
@@ -1132,7 +1130,6 @@ public:
     bool spearhead_crit_damage = false;
 
     // Tier Set
-    damage_affected_by tww_s1_mm_4pc;
     damage_affected_by tww_s2_mm_2pc;
   } affected_by;
 
@@ -1172,7 +1169,6 @@ public:
     affected_by.spearhead_crit_chance = check_affected_by( this, p->talents.spearhead_attack->effectN( 2 ) );
     affected_by.spearhead_crit_damage = check_affected_by( this, p->talents.spearhead_attack->effectN( 3 ) );
 
-    affected_by.tww_s1_mm_4pc = parse_damage_affecting_aura( this, p -> tier_set.tww_s1_mm_4pc_buff );
     affected_by.tww_s2_mm_2pc = parse_damage_affecting_aura( this, p -> tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() );
 
     // Hunter Tree passives
@@ -1212,6 +1208,7 @@ public:
 
     // Set Bonus passives
     ab::apply_affecting_aura( p -> tier_set.tww_s1_mm_2pc );
+    ab::apply_affecting_aura( p -> tier_set.tww_s1_mm_4pc );
     ab::apply_affecting_aura( p -> tier_set.tww_s1_sv_2pc );
 
     // Hero Tree passives
@@ -3463,9 +3460,6 @@ void hunter_t::consume_precise_shots()
 {
   if ( buffs.precise_shots->check() )
   {
-    if ( tier_set.tww_s1_mm_4pc.ok() )
-      buffs.tww_s1_mm_4pc_moving_target->trigger();
-
     if ( talents.moving_target.ok() )
     {
       buffs.moving_target->trigger();
@@ -3518,14 +3512,23 @@ void hunter_t::trigger_spotters_mark( player_t* target, bool force )
   }
 }
 
-void hunter_t::trigger_deathblow( player_t* target )
+void hunter_t::trigger_deathblow( player_t* target, bool activated )
 {
   if ( !talents.deathblow.ok() )
     return;
 
   procs.deathblow->occur();
-  buffs.razor_fragments->trigger();
-  buffs.deathblow->trigger();
+  if ( activated )
+  {
+    buffs.razor_fragments->increment();
+    buffs.deathblow->increment();
+  }
+  else
+  {
+    buffs.razor_fragments->trigger();
+    buffs.deathblow->trigger();
+  }
+  
   talents.black_arrow.ok() ? cooldowns.black_arrow->reset( true ) : cooldowns.kill_shot->reset( true );
 }
 
@@ -4222,8 +4225,8 @@ struct kill_shot_base_t : hunter_ranged_attack_t
   {
     hunter_ranged_attack_t::execute();
 
-    p()->buffs.deathblow->expire();
-    p()->buffs.razor_fragments->decrement();
+    p()->buffs.deathblow->cancel();
+    p()->buffs.razor_fragments->cancel();
 
     if ( p()->talents.headshot.ok() )
       p()->consume_precise_shots();
@@ -5139,7 +5142,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     double m = hunter_ranged_attack_t::composite_da_multiplier( s );
 
     m *= 1 + p()->buffs.bulletstorm->check_stack_value();
-    m *= 1 + p()->buffs.tww_s1_mm_4pc_moving_target->value();
     m *= 1 + p()->buffs.moving_target->value();
 
     return m;
@@ -5186,7 +5188,6 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     // and consume the Moving Target
     // likewise if the primary Aimed Shot cast consumes a Moving Target and it is not triggered again
     // with a queued Precise Shot spender, a secondary Aimed Shot will not receive a bonus from it
-    p()->buffs.tww_s1_mm_4pc_moving_target->expire();
     p()->buffs.moving_target->expire();
   }
 
@@ -7016,7 +7017,7 @@ struct trueshot_t: public hunter_spell_t
     if ( p()->talents.withering_fire.ok() && !is_precombat )
     {
       p()->buffs.withering_fire->trigger( p()->buffs.trueshot->data().duration() );
-      p()->trigger_deathblow( target );
+      p()->trigger_deathblow( target, true );
     }
 
     if ( p()->talents.feathered_frenzy.ok() )
@@ -7956,7 +7957,6 @@ void hunter_t::init_spells()
   tier_set.tww_s1_bm_4pc = sets -> set( HUNTER_BEAST_MASTERY, TWW1, B4 );
   tier_set.tww_s1_mm_2pc = sets -> set( HUNTER_MARKSMANSHIP, TWW1, B2 );
   tier_set.tww_s1_mm_4pc = sets -> set( HUNTER_MARKSMANSHIP, TWW1, B4 );
-  tier_set.tww_s1_mm_4pc_buff = tier_set.tww_s1_mm_4pc.ok() ? find_spell( 457116 ) : spell_data_t::not_found();
   tier_set.tww_s1_sv_2pc = sets -> set( HUNTER_SURVIVAL, TWW1, B2 );
   tier_set.tww_s1_sv_4pc = sets -> set( HUNTER_SURVIVAL, TWW1, B4 );
 
@@ -8049,7 +8049,8 @@ void hunter_t::create_buffs()
   // Hunter Tree
 
   buffs.deathblow =
-    make_buff( this, "deathblow", talents.deathblow_buff );
+    make_buff( this, "deathblow", talents.deathblow_buff )
+      ->set_activated( false );
 
   // Marksmanship Tree
 
@@ -8103,7 +8104,8 @@ void hunter_t::create_buffs()
 
   buffs.razor_fragments =
     make_buff( this, "razor_fragments", talents.razor_fragments_buff )
-      ->set_default_value_from_effect( 1 );
+      ->set_default_value_from_effect( 1 )
+      ->set_activated( false );
 
   buffs.bullseye =
     make_buff( this, "bullseye", talents.bullseye_buff )
@@ -8128,6 +8130,7 @@ void hunter_t::create_buffs()
       -> set_refresh_behavior( buff_refresh_behavior::DURATION );
 
   // Beast Mastery Tree
+
   const spell_data_t* barbed_shot = find_spell( 246152 );
   for ( size_t i = 0; i < buffs.barbed_shot.size(); i++ )
   {
@@ -8330,12 +8333,9 @@ void hunter_t::create_buffs()
       -> add_invalidate( CACHE_LEECH );
 
   // Tier Set Bonuses
+
   buffs.harmonize =
     make_buff( this, "harmonize", find_spell( 457072 ) )
-      -> set_default_value_from_effect( 1 );
-
-  buffs.tww_s1_mm_4pc_moving_target
-    = make_buff( this, "tww_s1_mm_4pc_moving_target", tier_set.tww_s1_mm_4pc_buff )
       -> set_default_value_from_effect( 1 );
 
   buffs.jackpot
@@ -8343,6 +8343,7 @@ void hunter_t::create_buffs()
       ->set_default_value_from_effect( 1 );
 
   // Hero Talents
+
   buffs.vicious_hunt = 
     make_buff( this, "vicious_hunt", find_spell( 431917 ) )
       -> apply_affecting_aura( talents.pack_assault )
