@@ -6830,10 +6830,10 @@ struct erupting_lava_t : public shaman_spell_t
 
 // Lava Burst Spell =========================================================
 
-struct lava_burst_state_t : public shaman_action_state_t
+struct lava_burst_state_t : public shaman_spell_base_state_t
 {
   lava_burst_state_t( action_t* action_, player_t* target_ ) :
-    shaman_action_state_t( action_, target_ )
+    shaman_spell_base_state_t( action_, target_ )
   { }
 };
 
