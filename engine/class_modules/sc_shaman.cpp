@@ -9964,26 +9964,20 @@ struct totem_pulse_action_t : public T
 
     if ( affected_by_molten_weapon_da && o()->buff.molten_weapon->check() )
     {
-      for ( int x = 1; x <= o()->buff.molten_weapon->check(); x++ )
-      {
-        m *= 1.0 + o()->buff.molten_weapon->value();
-      }
+      // Note, elemental_spirits_buff_t overrides value()
+      m *= 1.0 + o()->buff.molten_weapon->value();
     }
 
     if ( affected_by_crackling_surge_da && o()->buff.crackling_surge->check() )
     {
-      for ( int x = 1; x <= o()->buff.crackling_surge->check(); x++ )
-      {
-        m *= 1.0 + o()->buff.crackling_surge->value();
-      }
+      // Note, elemental_spirits_buff_t overrides value()
+      m *= 1.0 + o()->buff.crackling_surge->value();
     }
 
     if ( affected_by_earthen_weapon_da && o()->buff.earthen_weapon->check() )
     {
-      for ( int x = 1; x <= o()->buff.earthen_weapon->check(); x++ )
-      {
-        m *= 1.0 + o()->buff.earthen_weapon->value();
-      }
+      // Note, elemental_spirits_buff_t overrides value()
+      m *= 1.0 + o()->buff.earthen_weapon->value();
     }
 
     if ( affected_by_elemental_weapons_da )
