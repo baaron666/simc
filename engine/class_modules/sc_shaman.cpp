@@ -52,6 +52,7 @@ class effect_builder_base_t
     std::function<bool()>            m_state_fn = nullptr;
     unsigned                         m_flags = 0U;
     double                           m_value = 0.0;
+    std::function<double(double)>    m_value_fn = nullptr;
     effect_mask_t                    m_mask = { true };
     std::vector<affect_list_t>       m_affect_list;
 
@@ -145,6 +146,12 @@ class effect_builder_base_t
       return *debug_cast<BUILDER*>( this );
     }
 
+    BUILDER& set_value( const std::function<double(double)>& fn )
+    {
+      m_value_fn = fn;
+      return *debug_cast<BUILDER*>( this );
+    }
+
     BUILDER& set_effect_mask( effect_mask_t mask )
     {
       m_mask = std::move( mask );
@@ -203,6 +210,11 @@ class effect_builder_base_t
         pe.data.value = m_value;
         pe.data.type &= ~( USE_DEFAULT | USE_CURRENT );
         pe.data.type |= VALUE_OVERRIDE;
+      }
+
+      if ( m_value_fn )
+      {
+        pe.data.value_func = m_value_fn;
       }
 
       pe.mask = m_mask;
