@@ -574,6 +574,7 @@ static std::string action_name( util::string_view name, spell_variant t )
     case spell_variant::SURGE_OF_POWER: return fmt::format( "{}_sop", name );
     case spell_variant::ARC_DISCHARGE: return fmt::format( "{}_ad", name );
     case spell_variant::EARTHSURGE: return fmt::format( "{}_es", name );
+    case spell_variant::PRIMORDIAL_STORM: return fmt::format( "{}_ps", name );
     default: return std::string( name );
   }
 }
@@ -591,6 +592,7 @@ static util::string_view exec_type_str( spell_variant t )
     case spell_variant::SURGE_OF_POWER: return "surge_of_power";
     case spell_variant::ARC_DISCHARGE: return "arc_discharge";
     case spell_variant::EARTHSURGE: return "earthsurge";
+    case spell_variant::PRIMORDIAL_STORM: return "primordial_storm";
     default: return "normal";
   }
 }
@@ -904,6 +906,8 @@ public:
     buff_t* primordial_storm;
 
     buff_t* tww2_enh_2pc; // Winning Streak!
+    buff_t* tww2_enh_4pc; // Electrostatic Wager (visible buff)
+    buff_t* tww2_enh_4pc_damage; // Electrostatic Wager (hidden damage to CL)
 
     // Shared talent stuff
     buff_t* tempest;
@@ -6199,6 +6203,13 @@ struct crash_lightning_t : public shaman_attack_t
     }
 
     p()->buff.cl_crash_lightning->expire();
+
+    p()->buff.tww2_enh_4pc->decrement( p()->buff.tww2_enh_4pc_damage->check() );
+    p()->buff.tww2_enh_4pc_damage->expire();
+    if ( p()->buff.tww2_enh_4pc->check() )
+    {
+      p()->buff.tww2_enh_4pc_damage->trigger( p()->buff.tww2_enh_4pc->check() );
+    }
   }
 };
 
@@ -9427,14 +9438,20 @@ struct doom_winds_damage_t : public shaman_attack_t
 
     may_proc_flametongue = may_proc_stormbringer = may_proc_windfury = false;
   }
+
+  void execute() override
+  {
+    shaman_attack_t::execute();
+
+    p()->buff.tww2_enh_4pc->trigger();
+    p()->buff.tww2_enh_4pc_damage->trigger();
+  }
 };
 
 struct doom_winds_t : public shaman_attack_t
 {
-  doom_winds_damage_t* damage;
-
   doom_winds_t( shaman_t* player, util::string_view options_str ) :
-    shaman_attack_t( "doom_winds", player, player->talent.doom_winds ), damage( nullptr )
+    shaman_attack_t( "doom_winds", player, player->talent.doom_winds )
   {
     parse_options( options_str );
 
@@ -12912,6 +12929,11 @@ void shaman_t::consume_maelstrom_weapon( const action_state_t* state, int stacks
     rng().roll( sets->set( SHAMAN_ENHANCEMENT, TWW2, B2 )->effectN( 1 ).base_value() * 0.001 * stacks ) )
   {
     buff.tww2_enh_2pc->expire();
+    if ( sets->has_set_bonus( SHAMAN_ENHANCEMENT, TWW2, B4 ) )
+    {
+      buff.doom_winds->extend_duration_or_trigger(
+        sets->set( SHAMAN_ENHANCEMENT, TWW2, B4 )->effectN( 1 ).time_value() );
+    }
   }
 }
 
@@ -14030,6 +14052,11 @@ void shaman_t::create_buffs()
 
   buff.tww2_enh_2pc = make_buff( this, "winning_streak", find_spell( 1218616 ) )
     ->set_trigger_spell( sets->set( SHAMAN_ENHANCEMENT, TWW2, B2 ) );
+  buff.tww2_enh_4pc = make_buff( this, "electrostatic_wager", find_spell( 1223410 ) )
+    ->set_trigger_spell( sets->set( SHAMAN_ENHANCEMENT, TWW2, B4 ) );
+  buff.tww2_enh_4pc_damage = make_buff( this, "electrostatic_wager_dmg", find_spell( 1223332 ) )
+    ->set_quiet( true )
+    ->set_trigger_spell( sets->set( SHAMAN_ENHANCEMENT, TWW2, B4 ) );
 
   //
   // Restoration
@@ -14341,6 +14368,7 @@ void shaman_action_t<Base>::parse_action_effects()
   eff::source_eff_builder_t( p()->buff.earthen_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
 
   eff::source_eff_builder_t( p()->buff.tww2_enh_2pc ).build( this );
+  eff::source_eff_builder_t( p()->buff.tww2_enh_4pc_damage ).build( this );
 }
 
 // shaman_t::generate_bloodlust_options =====================================
