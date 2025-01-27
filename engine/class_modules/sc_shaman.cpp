@@ -38,9 +38,6 @@
 // TODO 11.1
 //
 // Enhancement
-// - Chain Lightning with Conductive Energy will apply Lightning Rods to secondary targets that are
-//   not already affected by Lightning Rod. If the main target and all the secondary targets are
-//   already affected, it will refresh the Lightning Rod on the main target.
 // - Legacy of Frost Witch affects Primordial Frost twice (flags 24, 58) [bug?]
 
 namespace eff
@@ -6538,6 +6535,33 @@ struct chain_lightning_t : public chained_base_t
     }
   }
 
+  void proc_lightning_rod()
+  {
+    if ( p()->specialization() != SHAMAN_ENHANCEMENT || !p()->talent.conductive_energy.ok() )
+    {
+      return;
+    }
+
+    if ( !p()->dbc->ptr )
+    {
+      trigger_lightning_rod_debuff( target_list()[ 0 ] );
+    }
+    else
+    {
+      auto t = target_list()[ 0 ];
+      for ( size_t i = 0; i < std::min( as<size_t>( n_targets() ), target_list().size() ); ++i )
+      {
+        if ( !td( target_list()[ i ] )->debuff.lightning_rod->check() )
+        {
+          t = target_list()[ i ];
+          break;
+        }
+      }
+
+      trigger_lightning_rod_debuff( t );
+    }
+  }
+
   size_t available_targets( std::vector<player_t*>& tl ) const override
   {
     tl.clear();
@@ -6690,6 +6714,8 @@ struct chain_lightning_t : public chained_base_t
     {
       p()->trigger_deeply_rooted_elements( execute_state );
     }
+
+    proc_lightning_rod();
   }
 
   void impact( action_state_t* state ) override
@@ -6700,12 +6726,6 @@ struct chain_lightning_t : public chained_base_t
     if ( p()->talent.lightning_rod.ok() || p()->talent.conductive_energy.ok() )
     {
       accumulate_lightning_rod_damage( state );
-    }
-
-    if ( state->chain_target == 0 && p()->talent.conductive_energy.ok() &&
-         p()->specialization() == SHAMAN_ENHANCEMENT )
-    {
-      trigger_lightning_rod_debuff( state->target );
     }
 
     // Chain Lightning Arc Discharge actually targets the last target hit, not the first one.
