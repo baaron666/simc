@@ -9508,7 +9508,8 @@ struct doom_winds_t : public shaman_attack_t
   {
     shaman_attack_t::execute();
 
-    p()->buff.doom_winds->trigger();
+    p()->buff.doom_winds->extend_duration_or_trigger(
+      data().effectN( 1 ).trigger()->duration() );
   }
 };
 
@@ -14081,9 +14082,10 @@ void shaman_t::create_buffs()
     ->set_tick_callback( [ this ]( buff_t* b, int, timespan_t ) {
       generate_maelstrom_weapon( action.ascendance, as<int>( b->value() ) );
     } );
-  buff.doom_winds = make_buff( this, "doom_winds", talent.doom_winds->effectN( 1 ).trigger() )
+  buff.doom_winds = make_buff( this, "doom_winds", find_spell( 466772 ) )
     ->set_tick_on_application( true )
-    ->set_period( timespan_t::from_seconds( talent.doom_winds->effectN( 1 ).trigger()->effectN( 5 ).base_value() ) )
+    ->set_period( timespan_t::from_seconds( find_spell( 466772 )->effectN( 5 ).base_value() ) )
+    ->set_cooldown( 0_ms ) // Handled by the action
     ->set_tick_callback( [ this ]( buff_t*, int, timespan_t ) {
       if ( target->is_sleeping() )
       {
@@ -14091,8 +14093,7 @@ void shaman_t::create_buffs()
       }
 
       action.doom_winds->execute_on_target( target );
-    } )
-    ->set_trigger_spell( talent.doom_winds );
+    } );
 
   buff.ice_strike = make_buff( this, "ice_strike", find_spell( 384357 ) )
     ->set_trigger_spell( talent.ice_strike_cast.ok()
