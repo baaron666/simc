@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58774 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
 bonus_id={ 1 }, desc={ Heroic }, stats={ 100% Sta [1.5789] }
 bonus_id={ 2 }, desc={ Crafting Material }, quality={ epic }
 bonus_id={ 3 }, suffix={ of Power }, socket={ 2 }, stats={ 100% StrAgiInt [0.5263] }
@@ -7094,3 +7094,5 @@ bonus_id={ 12163 }, desc={ Rank 3/4 }, quality={ rare }, effects={ Adding (id=47
 bonus_id={ 12164 }, desc={ Rank 4/4 }, quality={ epic }, effects={ Adding (id=474629, index=0, type=use) }
 bonus_id={ 12173 }, effects={ C.H.E.T.T. List (id=1217214, index=0, type=use) }
 bonus_id={ 12174 }, effects={ C.H.E.T.T. List (id=1219241, index=0, type=unknown) }
+bonus_id={ 12263 }, ilevel={ 24 @plvl 1 - 623 @plvl 80 }
+bonus_id={ 12264 }, desc={ Timewarped }, ilevel={ 19 @plvl 1 - 587 @plvl 80 }

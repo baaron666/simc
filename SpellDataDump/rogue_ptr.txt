@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58774 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
 Name             : Backstab (id=53) [Spell Family (8)] 
 Replaces         : Sinister Strike (id=1752)
 Class            : Subtlety Rogue
@@ -1678,6 +1678,7 @@ Labels           : 16: Class Spells
                  : 292
 Proc Chance      : 100%
 Proc Flags       : White Melee, Yellow Melee, White Ranged, Yellow Ranged
+Affecting Spells : So Tricky (441403 effect#3)
 Family Flags     : 49
 Attributes       : Is Ability (4), Not Shapeshifted (16), Do Not Sheath (18), Cooldown On Event (25), Allow While Stealthed (37), No Threat (42), Exclude Caster (51), Require All Targets (58), Allow Low Level Buff (67), Only On Player (104), Aura Points On Client (268), Allow Class Ability Procs (416)
 Aura Interrupt   : Change Specialization (38), Change Talent (46), Change Glyph (47)
@@ -9330,7 +9331,8 @@ Labels           : 16: Class Spells
 Attributes       : Passive (6), Not In Spellbook (143), Do Not Log on Learn (355)
 Effects          :
 #1 (id=1012937)  : Apply Aura (6) | Dummy (4)
-                   Base Value: 16 | Scaled Value: 16 | Target: Self (1)
+                   Base Value: 20 | Scaled Value: 20 | Target: Self (1)
+Hotfixed         : Base Value (16 -> 20)
 Description      : Roll the Bones has a $s1% increased chance of granting additional matches.
 
 Name             : Audacity (id=381845) [Spell Family (8), Passive] 
@@ -13222,6 +13224,10 @@ Effects          :
 #2 (id=1135837)  : Apply Aura (6) | Apply Flat Modifier w/ Label (219): Spell Duration (1)
                    Base Value: 3594000 | Scaled Value: 3594000 | Misc Value: 1 | Misc Value 2: 3304 (Label) | Target: Self (1)
                    Affected Spells (Label): Tricks of the Trade (59628)
+#3 (id=1212570)  : Apply Aura (6) | Override Action Spell (Misc /w Base) (332)
+                   Base Value: 1224098 | Scaled Value: 1224098 | Target: Self (1)
+                   Affected Spells: Tricks of the Trade (57934), Tricks of the Trade (1224098)
+                   Family Flags: 49
 Description      : Tricks of the Trade's threat redirect duration is increased to $m1 $Lhour:min;.
 
 Name             : Don't Be Suspicious (id=441415) [Spell Family (8), Passive] 
@@ -13392,7 +13398,7 @@ Class            : Rogue
 School           : Physical
 Spell Type       : Melee
 Range            : 30 yards
-Requires weapon  : One-handed Axe, One-handed Mace, One-handed Sword, Fist Weapon
+Requires weapon  : One-handed Axe, One-handed Mace, One-handed Sword, Fist Weapon, Dagger
 Labels           : 16: Class Spells
                  : 20: Rogue Spells
                  : 292
@@ -15985,7 +15991,8 @@ Labels           : 16: Class Spells
 Attributes       : Passive (6), Do Not Display (Spellbook, Aura Icon, Combat Log) (7), Allow Aura While Dead (116), Can Proc From Procs (122), Allow Entering Arena (149), Disable Aura While Dead (226), Only Proc From Class Abilities (415)
 Effects          :
 #1 (id=1198826)  : Apply Aura (6) | Dummy (4)
-                   Base Value: 16 | Scaled Value: 16 | PvP Coefficient: 0.5 | Target: Self (1)
+                   Base Value: 40 | Scaled Value: 40 | PvP Coefficient: 0.5 | Target: Self (1)
+Hotfixed         : Base Value (16 -> 40)
 #2 (id=1200925)  : Apply Aura (6) | Dummy (4)
                    Base Value: 1 | Scaled Value: 1 | Target: Self (1)
 Description      : Roll the Bones has a $s1% increased chance of granting additional combat enhancements and also applies $m2 $Lstack:stacks; of |cFFFFFFFF Winning Streak!|r for each combat enhancement granted.
@@ -16069,5 +16076,33 @@ Effects          :
                    Family Flags: 20, 35, 81
 Description      : $@spelldesc1215719
 Tooltip          : On a|cFFFFFFFF Winning Streak!|r Envenom, Rupture, and Crimson Tempest damage increased by $w1%.
+
+Name             : Tricks of the Trade (id=1224098) [Spell Family (8)] 
+Class            : Rogue
+School           : Physical
+Spell Type       : None
+Spell Level      : 48
+Range            : 100 yards
+Duration         : 30 seconds
+Cooldown         : 30 seconds
+Labels           : 16: Class Spells
+                 : 20: Rogue Spells
+                 : 180
+                 : 292
+Proc Chance      : 100%
+Proc Flags       : White Melee, Yellow Melee, White Ranged, Yellow Ranged
+Affecting Spells : So Tricky (441403 effect#3)
+Family Flags     : 49
+Attributes       : Is Ability (4), Not Shapeshifted (16), Do Not Sheath (18), Cooldown On Event (25), Allow While Stealthed (37), No Threat (42), Exclude Caster (51), Require All Targets (58), Allow Low Level Buff (67), Only On Player (104), Aura Points On Client (268), Allow Class Ability Procs (416)
+Aura Interrupt   : Change Specialization (38), Change Talent (46), Change Glyph (47)
+Effects          :
+#1 (id=1212565)  : Redirect Threat (130)
+                   Base Value: 100 | Scaled Value: 100 | Misc Value: 600000 | Target: Raid Target (57)
+#2 (id=1212566)  : Apply Aura (6) | Dummy (4)
+                   Base Value: 0 | Scaled Value: 0 | Target: Self (1)
+#3 (id=1212567)  : Apply Aura (6) | Dummy (4)
+                   Base Value: 100 | Scaled Value: 100 | Target: Raid Target (57)
+Description      : $?s221622[Increases the target's damage by $221622m1%, and redirects][Redirects] all threat you cause to the targeted party or raid member, beginning with your next damaging attack within the next $d and lasting $59628d.
+Tooltip          : Threat redirected from Rogue.
 
 

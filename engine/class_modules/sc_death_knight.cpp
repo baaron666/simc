@@ -14393,8 +14393,8 @@ void death_knight_t::create_buffs()
 
   buffs.murderous_frenzy = make_fallback( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ), this,
                                           "murderous_frenzy", spell.murderous_frenzy )
-                               ->set_default_value_from_effect_type( A_HASTE_ALL )
-                               ->set_pct_buff_type( STAT_PCT_BUFF_HASTE );
+                               ->set_default_value_from_effect_type( A_MOD_MASTERY_PCT )
+                               ->set_pct_buff_type( STAT_PCT_BUFF_MASTERY );
 
   // Unholy
   buffs.dark_transformation = make_fallback<dark_transformation_buff_t>(

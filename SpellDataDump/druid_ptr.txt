@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58774 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
 Name             : Incapacitating Roar (id=99) [Spell Family (7)] 
 Talent Entry     : Generic [tree=class, row=9, col=1, max_rank=1, req_points=20, select_idx=100]
 Class            : Druid
@@ -2362,7 +2362,8 @@ Family Flags     : 18, 89
 Attributes       : Not Shapeshifted (16), Allow While Not Shapeshifted (caster form) (83), Allow Class Ability Procs (416), Prevent Jumping During Precast (448)
 Effects          :
 #1 (id=68268)    : School Damage (2): astral
-                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | SP Coefficient: 2.632 | PvP Coefficient: 0.926 | Target: Enemy (6)
+                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | SP Coefficient: 2.736 | PvP Coefficient: 0.926 | Target: Enemy (6)
+Hotfixed         : SP Coefficient (2.632 -> 2.736)
 #2 (id=816907)   : Dummy (3)
                    Base Value: 0 | Scaled Value: 0 | Target: Enemy (6)
 #3 (id=845292)   : Dummy (3)
@@ -4279,13 +4280,15 @@ Labels           : 16: Class Spells
 Attributes       : Is Ability (4), Passive (6), Do Not Display (Spellbook, Aura Icon, Combat Log) (7), Do Not Log (8), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=179694)   : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
-                   Base Value: 3 | Scaled Value: 3 | Target: Self (1)
+                   Base Value: 11 | Scaled Value: 11 | Target: Self (1)
                    Affected Spells: Rip (1079), Rake (1822), Shred (5221), Ferocious Bite (22568), Maim (22570), Swipe (106785), Thrash (106830), Moonfire (155625), Rake (155722), Brutal Slash (202028), Feral Frenzy (274838), Primal Wrath (285381), Sickle of the Lion (363830), Rampant Ferocity (391710), Adaptive Swarm (391889), Thrash (405233), Bloodseeker Vines (439531), Bursting Growth (440122), Ravage (441591), Dreadful Wound (441812)
                    Family Flags: 98
+Hotfixed         : Base Value (3 -> 11)
 #2 (id=191154)   : Apply Aura (6) | Add Percent Modifier (108): Spell Periodic Amount (22)
-                   Base Value: 3 | Scaled Value: 3 | Misc Value: 22 | Target: Self (1)
+                   Base Value: 11 | Scaled Value: 11 | Misc Value: 22 | Target: Self (1)
                    Affected Spells: Rip (1079), Rake (1822), Shred (5221), Ferocious Bite (22568), Maim (22570), Swipe (106785), Thrash (106830), Moonfire (155625), Rake (155722), Brutal Slash (202028), Feral Frenzy (274838), Primal Wrath (285381), Sickle of the Lion (363830), Rampant Ferocity (391710), Adaptive Swarm (391889), Thrash (405233), Bloodseeker Vines (439531), Bursting Growth (440122), Ravage (441591), Dreadful Wound (441812)
                    Family Flags: 98
+Hotfixed         : Base Value (3 -> 11)
 #3 (id=191155)   : Apply Aura (6) | Add Flat Modifier (107): Spell Cooldown (11)
                    Base Value: 0 | Scaled Value: 0 | Misc Value: 11 | Target: Self (1)
                    Affected Spells: Moonkin Form (24858), Moonkin Form (197625)
@@ -4299,9 +4302,11 @@ Effects          :
 #6 (id=260767)   : Apply Aura (6) | Modify Power Regen (110)
                    Base Value: 10 | Scaled Value: 10 | Misc Value: 3 | Target: Self (1)
 #7 (id=260768)   : Apply Aura (6) | Modify Pet Damage Done% (429)
-                   Base Value: 3 | Scaled Value: 3 | Target: Self (1)
+                   Base Value: 11 | Scaled Value: 11 | Target: Self (1)
+Hotfixed         : Base Value (3 -> 11)
 #8 (id=260769)   : Apply Aura (6) | Modify Guardian Damage Done% (531)
-                   Base Value: 3 | Scaled Value: 3 | Target: Self (1)
+                   Base Value: 11 | Scaled Value: 11 | Target: Self (1)
+Hotfixed         : Base Value (3 -> 11)
 #9 (id=260770)   : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
                    Base Value: 15 | Scaled Value: 15 | Target: Self (1)
                    Affected Spells: Swiftmend (18562), Swiftmend (422094)
@@ -14770,7 +14775,8 @@ Effects          :
                    Base Value: 0 | Scaled Value: 0 | Misc Value 2: 2445 (Label) | Target: Self (1)
                    Affected Spells (Label): Goldrinn's Fang (394047)
 #3 (id=1109174)  : School Damage (2): astral
-                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 0.62 | PvP Coefficient: 0.5
+                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.5 | PvP Coefficient: 0.4
+Hotfixed         : SP Coefficient (0.62 -> 1.5), PvP Coefficient (0.5 -> 0.4)
 Description      : Starsurge has a chance to summon the Spirit of Goldrinn, which immediately deals ${$s3*$<mastery>} Astral damage to the target.
 Variables        : $mastery=${(1+$393014s1/100)*(1+$393014s3/100)}
 
@@ -14791,7 +14797,8 @@ Family Flags     : 18
 Attributes       : Allow Class Ability Procs (416)
 Effects          :
 #1 (id=1033385)  : School Damage (2): astral
-                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 0.775 | PvP Coefficient: 0.4 | Target: Enemy (6)
+                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.5 | PvP Coefficient: 0.4 | Target: Enemy (6)
+Hotfixed         : SP Coefficient (0.775 -> 1.5)
 Description      : $@spelldesc394046
 
 Name             : Balance of All Things (id=394048) [Spell Family (7), Passive] 
@@ -19428,9 +19435,11 @@ Proc Flags       : Magic Hostile Spell
 Attributes       : Passive (6), Can Proc From Procs (122), Not In Spellbook (143), Do Not Log on Learn (355), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=1150218)  : Apply Aura (6) | Dummy (4)
-                   Base Value: 15 | Scaled Value: 15 | Target: Self (1)
+                   Base Value: 18 | Scaled Value: 18 | Target: Self (1)
+Hotfixed         : Base Value (15 -> 18)
 #2 (id=1150219)  : Apply Aura (6) | Dummy (4)
-                   Base Value: 22 | Scaled Value: 22 | Misc Value: 23 | Target: Self (1)
+                   Base Value: 25 | Scaled Value: 25 | Misc Value: 23 | Target: Self (1)
+Hotfixed         : Base Value (22 -> 25)
 Description      : Casting Wrath in an Eclipse has a $s1% chance to make your next Starsurge or Starfall free.
 
 Casting Starfire in an Eclipse has a $s2% chance to make your next Starsurge or Starfall free.
@@ -20756,7 +20765,7 @@ Effects          :
 #1 (id=1199261)  : Apply Aura (6) | Proc Trigger Spell (42): Luck of the Draw!
                    Base Value: 0 | Scaled Value: 0 | Trigger Spell: 1218163 | Target: Self (1)
 #2 (id=1202837)  : Apply Aura (6) | Dummy (4)
-                   Base Value: 4000 | Scaled Value: 4000 | Trigger Spell: 1218163 | Target: Self (1)
+                   Base Value: 4000 | Scaled Value: 4000 | PvP Coefficient: 0.5 | Trigger Spell: 1218163 | Target: Self (1)
 Description      : Each time you take damage you have a chance to cast Shield Wall for ${$s2/1000}.1 sec and gain |cFFFFFFFF Luck of the Draw!|r, which increases your damage dealt by $1218163s1% for $1218163d.
 
 Name             : Control of the Dream - Reset Tracker (id=1216895) [Spell Family (7), Hidden] 
@@ -20877,17 +20886,17 @@ Triggered By     : Druid Guardian 11.1 Class Set 2pc (1215986), Warrior Protecti
 Attributes       : Aura Points On Client (268)
 Effects          :
 #1 (id=1202836)  : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
-                   Base Value: 15 | Scaled Value: 15 | Target: Self (1)
+                   Base Value: 15 | Scaled Value: 15 | PvP Coefficient: 0.5 | Target: Self (1)
                    Affected Spells: Rend (772), Cleave (845), Slam (1464), Hamstring (1715), Thunder Clap (6343), Revenge (6572), Overpower (7384), Mortal Strike (12294), Devastate (20243), Bloodthirst (23881), Shield Slam (23922), Victory Rush (34428), Whirlwind Off-Hand (44949), Shockwave (46968), Bladestorm (50622), Heroic Leap (52174), Heroic Throw (57755), Shattering Throw (64382), Raging Blow (85384), Bladestorm Off-Hand (95738), Raging Blow (96103), Storm Bolt (107570), Bloodbath (113344), Deep Wounds (115767), Dragon Roar (118000), Charge (126664), Ravager (156287), Execute Off-Hand (163558), Colossus Smash (167105), Rampage (184707), Rampage (184709), Ignore Pain (190456), Whirlwind (199658), Whirlwind (199667), Whirlwind (199850), Whirlwind Off-Hand (199851), Whirlwind (199852), Rampage (201363), Rampage (201364), Impending Victory (202168), Rampage (218617), Devastator (236282), Skullsplitter (260643), Execute (260798), Deep Wounds (262115), Warbreaker (262161), Seismic Wave (278497), Iron Fortress (279142), Siegebreaker (280772), Execute (280849), Reckless Flurry (283810), Gushing Wound (288091), Spear of Bastion (307871), Onslaught (315720), Dreadnaught (315961), Condemn (317483), Condemn (317488), Condemn Off-Hand (317489), Ancient Aftershock (325886), Ancient Aftershock (326062), Repulsive Pennant (333860), Bloodbath (335096), Crushing Blow (335098), Crushing Blow (335100), Mortal Strike (339385), Whirlwind (347360), Whirlwind Off-Hand (347362), Whirlwind (347363), Nature's Fury (354163), Heroic Leap (362043), Champion's Spear (376080), Fatal Mark (383706), Annihilator (383915), Wrecking Throw (384110), Thunderous Roar (384318), Sidearm (384391), Gushing Wound (385042), Odyn's Fury (385059), Odyn's Fury (385060), Odyn's Fury Off-Hand (385061), Odyn's Fury (385062), Whirlwind (385228), Whirlwind (385233), Whirlwind Off-Hand (385234), Shield Charge (385954), Rend (388539), Rend (394062), Rend (394063), Shattering Throw (394352), Wrecking Throw (394354), Onslaught (396718), Thunderous Roar (397364), Max A FX Testing Warrior Spear - (2) Damage (409404), Earthen Smash (410219), Whirlwind (411547), Crushing Advance (411703), Thunder Blast (435222), Lightning Strike (435791), Demolish (440884), Demolish (440886), Demolish (440888), Slayer's Strike (445579), Reap the Storm (446005), Cleave (458459), Lightning Strike Ground Current (460670), Arms Execute FX Test (463815), Fury Execute FX Test (463816), Fury Execute Off-Hand FX Test (463817), Revenge (1215174)
                    Family Flags: 9, 109
 #2 (id=1202850)  : Apply Aura (6) | Add Flat Modifier (107): Spell Critical Chance (7)
-                   Base Value: 0 | Scaled Value: 0 | Misc Value: 7 | Target: Self (1)
+                   Base Value: 0 | Scaled Value: 0 | PvP Coefficient: 0.5 | Misc Value: 7 | Target: Self (1)
                    Affected Spells: Shield Slam (23922)
                    Family Flags: 41
 #3 (id=1202851)  : Apply Aura (6) | Dummy (4)
                    Base Value: 0 | Scaled Value: 0 | Target: Self (1)
 #4 (id=1204386)  : Apply Aura (6) | Add Percent Modifier (108): Spell Critical Chance (7)
-                   Base Value: 15 | Scaled Value: 15 | Misc Value: 7 | Target: Self (1)
+                   Base Value: 15 | Scaled Value: 15 | PvP Coefficient: 0.5 | Misc Value: 7 | Target: Self (1)
                    Affected Spells: Rend (772), Cleave (845), Slam (1464), Hamstring (1715), Thunder Clap (6343), Revenge (6572), Overpower (7384), Mortal Strike (12294), Devastate (20243), Bloodthirst (23881), Shield Slam (23922), Victory Rush (34428), Whirlwind Off-Hand (44949), Shockwave (46968), Bladestorm (50622), Heroic Leap (52174), Heroic Throw (57755), Shattering Throw (64382), Raging Blow (85384), Bladestorm Off-Hand (95738), Raging Blow (96103), Storm Bolt (107570), Bloodbath (113344), Deep Wounds (115767), Dragon Roar (118000), Charge (126664), Ravager (156287), Execute Off-Hand (163558), Colossus Smash (167105), Rampage (184707), Rampage (184709), Whirlwind (199658), Whirlwind (199667), Whirlwind (199850), Whirlwind Off-Hand (199851), Whirlwind (199852), Rampage (201363), Rampage (201364), Impending Victory (202168), Rampage (218617), Devastator (236282), Skullsplitter (260643), Execute (260798), Deep Wounds (262115), Warbreaker (262161), Seismic Wave (278497), Iron Fortress (279142), Siegebreaker (280772), Execute (280849), Reckless Flurry (283810), Gushing Wound (288091), Spear of Bastion (307871), Onslaught (315720), Dreadnaught (315961), Condemn (317483), Condemn (317488), Condemn Off-Hand (317489), Ancient Aftershock (325886), Ancient Aftershock (326062), Repulsive Pennant (333860), Bloodbath (335096), Crushing Blow (335098), Crushing Blow (335100), Mortal Strike (339385), Whirlwind (347360), Whirlwind Off-Hand (347362), Whirlwind (347363), Nature's Fury (354163), Heroic Leap (362043), Champion's Spear (376080), Fatal Mark (383706), Annihilator (383915), Wrecking Throw (384110), Thunderous Roar (384318), Sidearm (384391), Gushing Wound (385042), Odyn's Fury (385059), Odyn's Fury (385060), Odyn's Fury Off-Hand (385061), Odyn's Fury (385062), Whirlwind (385228), Whirlwind (385233), Whirlwind Off-Hand (385234), Shield Charge (385954), Rend (388539), Rend (394062), Rend (394063), Shattering Throw (394352), Wrecking Throw (394354), Onslaught (396718), Thunderous Roar (397364), Max A FX Testing Warrior Spear - (2) Damage (409404), Earthen Smash (410219), Whirlwind (411547), Crushing Advance (411703), Thunder Blast (435222), Lightning Strike (435791), Demolish (440884), Demolish (440886), Demolish (440888), Slayer's Strike (445579), Reap the Storm (446005), Cleave (458459), Lightning Strike Ground Current (460670), Arms Execute FX Test (463815), Fury Execute FX Test (463816), Fury Execute Off-Hand FX Test (463817), Revenge (1215174)
                    Family Flags: 9
 Description      : $@spelldesc1215994

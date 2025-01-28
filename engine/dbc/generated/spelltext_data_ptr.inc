@@ -1,5 +1,5 @@
-// Spell text, wow build 11.1.0.58774
-static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
+// Spell text, wow build 11.1.0.58819
+static const std::array<spelltext_data_t, 27232> __ptr_spelltext_data { {
   {      17, "Shields an ally for $d, absorbing $s1 damage.", "Absorbs $w1 damage.", 0 },
   {      53, "Stab the target, causing ${$s2*$<mult>} Physical damage. Damage increased by $s4% when you are behind your target$?s319949[, and critical strikes apply Find Weakness for $319949s1 sec][].\r\n\r\n|cFFFFFFFFAwards $s3 combo $lpoint:points;.|r", 0, 0 },
   {      56, "Stuns target for $d.", "Stunned.", 0 },
@@ -9831,7 +9831,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   {  258897, "$@spelldesc258896", "Causes $s1 Nature damage every $t sec.", 0 },
   {  258907, "Your melee attacks have a chance to grant a shield, absorbing ${$258911s1+$s1} Physical damage. Lasts $258911d.", 0, 0 },
   {  258911, "$@spelldesc258885", "Absorbs $s1 Physical damage.", 0 },
-  {  258920, "Engulf yourself in flames, $?a320364 [instantly causing $258921s1 $@spelldesc395020 damage to enemies within $258921A1 yards and ][]radiating ${$258922s1*$d} $@spelldesc395020 damage over $d.$?s320374[\r\n\r\n|cFFFFFFFFGenerates $<havocTalentFury> Fury over $d.|r][]$?(s212612 & !s320374)[\r\n\r\n|cFFFFFFFFGenerates $<havocFury> Fury.|r][]$?s212613[\r\n\r\n|cFFFFFFFFGenerates $<vengeFury> Fury over $d.|r][]", "Burning nearby enemies for $258922s1 $@spelldesc395020 damage every $t1 sec.$?a207548[\r\n\r\nMovement speed increased by $w4%.][]$?a320331[\r\n\r\nArmor increased by $w5%. Attackers suffer $@spelldesc395020 damage.][]", 0 },
+  {  258920, "Engulf yourself in flames, $?a320364 [instantly causing $258921s1 $@spelldesc1224451 damage to enemies within $258921A1 yards and ][]radiating ${$258922s1*$d} $@spelldesc1224451 damage over $d.$?s320374[\r\n\r\n|cFFFFFFFFGenerates $<havocTalentFury> Fury over $d.|r][]$?(s212612 & !s320374)[\r\n\r\n|cFFFFFFFFGenerates $<havocFury> Fury.|r][]$?s212613[\r\n\r\n|cFFFFFFFFGenerates $<vengeFury> Fury over $d.|r][]", "Burning nearby enemies for $258922s1 $@spelldesc395020 damage every $t1 sec.$?a207548[\r\n\r\nMovement speed increased by $w4%.][]$?a320331[\r\n\r\nArmor increased by $w5%. Attackers suffer $@spelldesc395020 damage.][]", 0 },
   {  258921, "$@spelldesc258920", 0, 0 },
   {  258922, "$@spelldesc258920", 0, 0 },
   {  258925, "Unleash a torrent of Fel energy, rapidly consuming Fury to inflict $258926s1 Chaos damage to all enemies within $258926A1 yds, lasting $d or until Fury is depleted. Deals reduced damage beyond $258926s2 targets.", "Unleashing Fel.", 0 },
@@ -15744,7 +15744,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   {  342216, "Throw a ball of gooey gorm gunk at a target slowing their movement for $d. Only usable on creatures outdoors in the Shadowlands. ", "Movement speed slowed by $s1%.", 0 },
   {  342231, "Direct damage you deal to enemies affected by Touch of the Magi, causes an explosion that deals $342232s1 Arcane damage to all nearby enemies. Deals reduced damage beyond $s1 targets.", 0, 0 },
   {  342232, "$@spelldesc342231", 0, 0 },
-  {  342240, "Strike your target with an icy blade, dealing $s1 Frost damage and snaring them by $s2% for $d.\r\n\r\nIce Strike increases the damage of your next Frost Shock by and generates $s4 stack of Maelstrom Weapon.", "Movement speed reduced by $s2%.", 0 },
+  {  342240, "Strike your target with an icy blade, dealing $s1 Frost damage and snaring them by $s2% for $d.\r\n\r\nIce Strike increases the damage of your next Frost Shock by $384357s1% and generates $s4 stack of Maelstrom Weapon.", "Movement speed reduced by $s2%.", 0 },
   {  342242, "$@spelldesc210805", "Haste increased by $w1%.", 0 },
   {  342243, "Discharge excess energy from your Lightning Shield, dealing $342244s1 Nature damage to an enemy within $342244A1 yds every $t1 sec for $d.\r\n\r\nTargets with your Flame Shock on them are preferred.", "Discharging excess Lightning Shield energy at your enemies.", 0 },
   {  342245, "Alters the fabric of time, returning you to your current location and health when cast a second time, or after ${$110909d+$s3} sec. Effect negated by long distance or death.", 0, 0 },
@@ -22419,7 +22419,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   {  427687, "$@spelldesc427684", "Damage increased by $s1%.", 0 },
   {  427729, "$@spelldesc422912", "Burning for $w1 damage every $t1 sec.", 0 },
   {  427773, "$@spelldesc2094", "Disoriented.", 0 },
-  {  427775, "Immolation Aura has $m1 additional $Lcharge:charges; and $s3% chance to refund a charge when used.\r\n\r\nYou can have multiple Immolation Auras active at a time.", 0, 0 },
+  {  427775, "Immolation Aura has $m1 additional $Lcharge:charges;, $s3% chance to refund a charge when used, and deals Chaos damage instead of Fire.\r\n\r\nYou can have multiple Immolation Auras active at a time.", 0, 0 },
   {  427776, "You deflect incoming attacks while Blade Dancing, absorbing damage up to $s1% of your maximum health.", 0, 0 },
   {  427785, "Rush back towards where you started, incinerating anything in your path for $192611s1 Chaos damage.", 0, 0 },
   {  427793, "$@spelldesc427794", 0, 0 },
@@ -26258,7 +26258,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   {  466990, "$?c1[While Call of the Wild is active][While Trueshot is active], you surrender to darkness, granting you Deathblow$?c1[ every $466991t4 sec][].\r\n\r\nCasting Black Arrow while under the effects of Withering Fire causes you to additionally fire a barrage of $s3 additional Black Arrows at nearby targets at $s4% effectiveness.", 0, 0 },
   {  466991, "$@spelldesc466990", "If you would gain Deathblow, instead fire a Black Arrow at your target at $466991s3% effectiveness.", 0 },
   {  467024, "Mislaid Curiosities now have a $1214434s1% chance to contain $1214434s2 Kaja'Colas and once per delve Brann now summons a Kaja'6-Pack when creating campfires.\r\n\r\nThere are various Kaja'Cola flavors, each one with its own effect that applies when collected.\r\n\r\n", 0, "Rank 1/4" },
-  {  467026, "Brann has a chance during combat to toss a GMB Grenade at an enemy target dealing moderate Nature damage with a $1215588s1% chance to stun for $1215627d. This has a $1215588s2% chance to bounce to a new target.\r\n\r\nThe grenade can safely bounce on party members.", "Brann has a chance during combat to toss a GMB Grenade at an enemy target dealing moderate Nature damage with a $1215588w1% chance to stun for $1215627d. This has a $1215588w2% chance to bounce to a new target.\r\n\r\nThe grenade can safely bounce on party members.", "Rank 1/4" },
+  {  467026, "Brann has a chance during combat to toss a GMB grenade at an enemy target dealing moderate Nature damage with a $1215588s1% chance to stun for $1215627d. This has a $1215588s2% chance to bounce to a new target.\r\n\r\nThe grenade can safely bounce on party members.", "Brann has a chance during combat to toss a GMB grenade at an enemy target dealing moderate Nature damage with a $1215588w1% chance to stun for $1215627d. This has a $1215588w2% chance to bounce to a new target.\r\n\r\nThe grenade can safely bounce on party members.", "Rank 1/4" },
   {  467029, "Upon entering combat, Brann activates the conversion matrix for $s2 sec. A small percent of all party damage dealt during this time is converted to primary stat and split between party members.\r\n\r\nAfter the conversion matrix powers down, the primary stat buff persists for $s3 sec. This effect cannot occur more than once every $1216075d.", 0, "Rank 1/4" },
   {  467033, "Every $473679t sec or $1219068d after entering combat, scan the environment highlighting Mislaid Curiosities and making enemies below $s1% health take $468210s1% more damage for $468210d.", "Every $473679t sec or $1219068d after entering combat, scan the environment highlighting Mislaid Curiosities and making enemies below $w1% health take $468210w1% more damage for $468210d.", "Rank 1/4" },
   {  467034, "When any player's health falls below $1214930s1% during combat, Brann throws a giant bomb that explodes on impact.\r\n\r\nThe explosion knocks back and slows surrounding enemies by $1214975s1% for $1214975d and heals nearby party members for $1214975s3% of their maximum health. Can only occur every $1214994d.", 0, "Rank 1/4" },
@@ -26559,11 +26559,11 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   {  471878, "$@spelldesc471876", "Your next Kill Command$?(a472358&a137015)['s damage is increased by $472358s1% and it]?(a472358&a137017)[ generates an additional stack of Tip of the Spear and it][] summons a Wyvern.", 0 },
   {  471881, "$@spelldesc471876", "You and your pet's damage is increased by $s1%.", 0 },
   {  471938, "$@spelldesc471876", 0, 0 },
-  {  471999, "$@spelldesc471876", 0, 0 },
+  {  471999, "$@spelldesc471876", "Suffering $w1 damage every $t1 sec.", 0 },
   {  472030, "$@spelldesc471059", 0, 0 },
   {  472084, "$@spelldesc467911", 0, 0 },
   {  472120, "Upon entering combat, and every $472195t sec, gain either $@spellname472185 or $@spellname472184 for 30 sec.\r\n\r\n$@spellicon472184$@spellname472184\r\n$@spelldesc472184\r\n\r\n$@spellicon472185$@spellname472185\r\n$@spelldesc472185", 0, 0 },
-  {  472125, "Your harmful spells and abilities have a chance to drain your target's electrical power, dealing $s1 Nature damage over $472127d. If the target dies while being drained, you gain $472350s1% movement speed for $472350d.", 0, 0 },
+  {  472125, "Your harmful spells and abilities have a chance to drain your target's electrical power, dealing ${$s1*$<rolemult>} Nature damage over $472127d. If the target dies while being drained, you gain $472350s1% movement speed for $472350d.", 0, 0 },
   {  472127, "$@spelldesc472125", "Inflicting $w1 damage every $t1 sec.", 0 },
   {  472167, 0, "Haste increased by $w1.", 0 },
   {  472170, 0, "The Scrapfield 9001 is recharging. Manufacturer's tip: \"Consider taking less damage.\"", 0 },
@@ -26782,7 +26782,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1213494, "Every $1213487t sec or $1219068d after entering combat, scan the environment highlighting Mislaid Curiosities and making enemies below $s1% health take $1213371s1% more damage for $1213371d.", "Every $1213487t sec or $1219068d after entering combat, scan the environment highlighting Mislaid Curiosities and making enemies below $w1% health take $1213371w1% more damage for $1213371d.", "Rank 3/4" },
   { 1213495, "Every $1213488t sec or $1219068d after entering combat, scan the environment highlighting Mislaid Curiosities and making enemies below $s1% health take $1213370s1% more damage for $1213370d.", "Every $1213488t sec or $1219068d after entering combat, scan the environment highlighting Mislaid Curiosities and making enemies below $w1% health take $1213370w1% more damage for $1213370d.", "Rank 2/4" },
   { 1213551, "During combat a pilot is designated over $1215044d before airdropping the Pacifist Rig MK-$1215045s1 at their location, equipping them with it for $1215054d, and knocking back nearby enemies.", 0, "Rank 1/4" },
-  { 1213554, "Brann's spells and abilities have a chance to drop $s1 Footbombs on the field for $1214581d.\r\n\r\nRunning into the Footbomb kicks it at your enemy target dealing significant Fire damage to all enemies in a $1214604a-yard radius.", 0, "Rank 1/4" },
+  { 1213554, "Brann's spells and abilities have a chance to drop $s1 footbombs on the field for $1214581d.\r\n\r\nRunning into the footbomb kicks it at your enemy target dealing significant Fire damage to all enemies in a $1214604a-yard radius.", 0, "Rank 1/4" },
   { 1213555, "$@spelldesc1215339", "$@spelldesc1215339", "Rank 1/4" },
   { 1213556, "Pistol Shot now uses the appearance of Ashvane when firing.", 0, 0 },
   { 1213561, "$@spelldesc1213556", 0, 0 },
@@ -26844,7 +26844,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1214907, "$@spelldesc467037", "Maximum health increased by $w1%.\r\nDamage and healing dealt increased by $w2%.", 0 },
   { 1214930, "$@spelldesc467034", "$@spelldesc467034", 0 },
   { 1214932, "$@spelldesc467034", 0, 0 },
-  { 1214941, "Launch a random number of deadly grenades at your enemies, each dealing $1214939s1 Fire damage split between nearby targets caught in the blast.", 0, 0 },
+  { 1214941, "Launch a random number of deadly grenades at your enemies, each dealing ${$1214939s1*$<rolemult>} Fire damage split between nearby targets caught in the blast.", 0, 0 },
   { 1214972, "$@spelldesc467034", 0, 0 },
   { 1214975, "$@spelldesc467034", "Sharp shrapnel slows speed by $w1%.", 0 },
   { 1214986, "$@spelldesc1216547", "$@spelldesc1216547", "Rank 1/4" },
@@ -26894,7 +26894,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1215321, "$@spelldesc1215238", 0, 0 },
   { 1215331, "$@spelldesc439668", 0, 0 },
   { 1215336, "$@spelldesc1215238", "Movement speed increased by $w1%.", 0 },
-  { 1215339, "$@spellname421382 now houses $s2 mechasaurs that taunt enemies for ${$s1/1000} sec while within the egg.\r\n\r\nIn addition to it's usual abilities, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.\r\n\r\n$@spellicon421382$@spellname421382\r\n$@spelldesc421382", "$@spellname421382 now houses $w2 mechasaurs that taunt enemies for ${$w1/1000} sec while within the egg.\r\n\r\nIn addition to it's usual abilities, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.\r\n\r\n$@spellicon421382$@spellname421382\r\n$@spelldesc421382", 0 },
+  { 1215339, "$@spellname421382 now houses $s2 mechasaurs that taunt enemies for ${$s1/1000} sec while within the egg.\r\n\r\nMechasaurs will periodically stomp in addition to their usual abilities, dealing moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.\r\n\r\n$@spellicon421382$@spellname421382\r\n$@spelldesc421382", "$@spellname421382 now houses $w2 mechasaurs that taunt enemies for ${$w1/1000} sec while within the egg.\r\n\r\nMechasaurs will periodically stomp in addition to their usual abilities, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking moderate Fire damage.\r\n\r\n$@spellicon421382$@spellname421382\r\n$@spelldesc421382", 0 },
   { 1215349, "$@spelldesc1215319", "Healing $s1 every $t sec.\r\n\r\n|cFFFFFFFFInsurance!|r is consumed to heal for $1215354s1 if brought below $s2% health.", 0 },
   { 1215354, "$@spelldesc1215319", 0, 0 },
   { 1215365, "$@spellname421382 now houses $s2 mechasaurs that taunt enemies for ${$s1/1000} sec while within the egg.\r\n\r\nIn addition to it's usual abilities, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.\r\n\r\n$@spellicon421382$@spellname421382\r\n$@spelldesc421382", "$@spellname421382 now houses $w2 mechasaurs that taunt enemies for ${$w1/1000} sec while within the egg.\r\n\r\nIn addition to it's usual abilities, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.\r\n\r\n$@spellicon421382$@spellname421382\r\n$@spelldesc421382", 0 },
@@ -26962,7 +26962,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1215702, "Your damaging spells have a chance to hit a |cFFFFFFFFJackpot!|r that fires a Void Bolt at an enemy at $s1% effectiveness. Casting Dark Ascension or Void Eruption always hits a |cFFFFFFFFJackpot!|r", 0, 0 },
   { 1215703, "Hitting a |cFFFFFFFFJackpot!|r grants you ${$s1/1000}.1 seconds of Power Infusion. Mind Blast$?a450405[, Void Blast,][] and Void Bolt deal $s2% increased damage while Power Infusion is active.", 0, 0 },
   { 1215707, "Your spells and abilities have a chance to activate a|cFFFFFFFF Winning Streak!|r increasing the damage of your Templar's Verdict and Divine Storm by $1216828s1% stacking up to $1216828u times. Spending Holy Power on damaging abilities has a $1216828s2% chance to remove |cFFFFFFFFWinning Streak!|r", 0, 0 },
-  { 1215709, "When you lose your |cFFFFFFFFWinning Streak!|r you get the last Holy Power spent back, and for ${$1216837d }.1 you cannot lose Holy Power and the damage of your your Holy Power abilities are increased by $1216837s1%.", 0, 0 },
+  { 1215709, "When you lose your |cFFFFFFFFWinning Streak!|r you get the last Holy Power spent back, you cannot lose Holy Power for the next ${$1216837d }.1 sec, and the damage of your your Holy Power abilities are increased by $1216837s1%.", 0, 0 },
   { 1215710, "Your spells and abilities have a chance to activate a|cFFFFFFFF Winning Streak!|r increasing the damage of your Stormstrike, Lava Lash and Doom Winds by $1218616s1%, up to ${$1218616s1*$1218616u}%. Maelstrom Weapon spenders have a ${$s1/10}.1% chance to remove |cFFFFFFFFWinning Streak!|r per Maelstrom Weapon spent.", 0, 0 },
   { 1215712, "When you lose your |cFFFFFFFFWinning Streak!|r the winds shift into Doom Winds for ${$s1/1000} sec. When Doom Winds deal damage, your next Crash Lightning deals ${$1223332s1}.1% increased damage, up to ${$1223332s1*$1223332u}.1%. This effect can be stored up to $1223410u stacks. Additionally, Crash Lightning deals $s2% more damage to your main target.", 0, 0 },
   { 1215713, "Your abilities have a chance to begin a |cFFFFFFFFWinning Streak!|r, increasing the damage of Overpower by $1216552s1%, stacking up to $1216552U times. \r\nOverpower has a $1216552H% chance to end your |cFFFFFFFFWinning Streak!|r", 0, 0 },
@@ -26980,7 +26980,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1215726, "Your spells and abilities have a chance to activate a |cFFFFFFFFWinning Streak!|r increasing the damage of your Death Coil and Epidemic by 3% stacking up to $1216813u times. Death Coil and Epidemic have a $s1% chance to remove|cFFFFFFFF Winning Streak!|r", 0, 0 },
   { 1215727, "Your spells and abilities have a chance to activate a|cFFFFFFFF Winning Streak!|r increasing the damage of your Frost Strike and Glacial Advance by $1217897s1% stacking up to $1217897u times. Frost Strike and Glacial Advance have a $s1% chance to remove|cFFFFFFFF Winning Streak!|r", 0, 0 },
   { 1215728, "Casting Dark Transformation grants up to, $1216813u  stacks of |cFFFFFFFFWinning Streak!|r and while Dark Transformation is active the effectiveness of |cFFFFFFFFWinning Streak!|r is increased by $s1% and no longer has a chance to reset.", 0, 0 },
-  { 1215729, "|cFFFFFFFFWinning Streak!|r causes Frost Strike and Glacial Advance to have a $s2% chance to cast Frostscythe per stack at $s1% effectiveness. Losing |cFFFFFFFFWinning Streak!|r sends you into a Murderous Frenzy, casting Frostscythe at $s3% effectiveness and gaining $1222698s1% Haste for $1222698d. Additionally, Frostscythe deals $s4% more damage to the first target struck.", 0, 0 },
+  { 1215729, "|cFFFFFFFFWinning Streak!|r causes Frost Strike and Glacial Advance to have a $s2% chance to cast Frostscythe per stack at $s1% effectiveness. Losing |cFFFFFFFFWinning Streak!|r sends you into a Murderous Frenzy, casting Frostscythe at $s3% effectiveness and gaining ${$1222698s1*$mastery}% Mastery for $1222698d. Additionally, Frostscythe deals $s4% more damage to the first target struck.", 0, 0 },
   { 1215730, "Your spells and abilities have a chance to activate a|cFFFFFFFF Winning Streak!|r increasing the damage of your Wildfire Bomb by $1216874s1% stacking up to $1216874U times. \r\n\r\nWildfire Bomb has a $1216874H% chance to end your|cFFFFFFFF Winning Streak!|r", 0, 0 },
   { 1215731, "Your spells and abilities have a chance to activate a|cFFFFFFFF Winning Streak!|r increasing the damage of your Blade Dance and Chaos Strike by $1217011s1% stacking up to $1217011u times. Blade Dance and Chaos Strike have a $s1% chance to remove|cFFFFFFFF Winning Streak!|r", 0, 0 },
   { 1215732, "|cFFFFFFFFWinning Streak!|r persists for $1220706d after being removed by Blade Dance or Chaos Strike.\r\n\r\nEntering demon form sacrifices all |cFFFFFFFFWinning Streak!|r stacks to gain $1217055s1% critical strike chance per stack consumed. Lasts $1217055d.", 0, 0 },
@@ -27051,7 +27051,7 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1216517, "Apply a Charged Armor Kit to your leg armor, causing it to permanently gain $ec2 to all Primary stats and $ec1 Stamina.", 0, 0 },
   { 1216518, "Apply a Charged Armor Kit to your leg armor, causing it to permanently gain $ec2 to all Primary stats and $ec1 Stamina.", 0, 0 },
   { 1216519, "Apply a Charged Armor Kit to your leg armor, causing it to permanently gain $ec2 to all Primary stats and $ec1 Stamina.", 0, 0 },
-  { 1216547, "Brann's spells and abilities have the chance to commission the Pocket Factory to build $s1 Turrets to assist for $s2 sec.", "Brann's spells and abilities have the chance to commission the Pocket Factory to build $w1 Turrets to assist for $w2 sec.", 0 },
+  { 1216547, "Brann's spells and abilities have the chance to commission the pocket factory to build $s1 turrets to assist for $s2 sec.", "Brann's spells and abilities have the chance to commission the pocket factory to build $w1 turrets to assist for $w2 sec.", 0 },
   { 1216548, "$@spelldesc1216351", "$@spelldesc1216351", "Rank 2/4" },
   { 1216549, "$@spelldesc1216210", "$@spelldesc1216210", "Rank 3/4" },
   { 1216550, "$@spelldesc1216352", "$@spelldesc1216352", "Rank 4/4" },
@@ -27059,12 +27059,13 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1216556, "$@spelldesc1215716", "Haste increased by $w1%.", 0 },
   { 1216561, "$@spelldesc1215714", "Rampage damage increased by $w1%.", 0 },
   { 1216565, "$@spelldesc1215715", "Bloodthirst damage increased by $w1% and critical strike chance increased by $w2%.", 0 },
-  { 1216569, "$@spelldesc1215715", "Raging Blow damage increased by $w1% and Rage generated increased by ${w2/10}.", 0 },
+  { 1216569, "$@spelldesc1215715", "Raging Blow damage increased by $w1% and Rage generated increased by ${$w2/10}.", 0 },
   { 1216593, "$@spelldesc469888", 0, 0 },
   { 1216594, "$@spelldesc469888", 0, 0 },
   { 1216601, "$@spelldesc1215623", "Healing increased by ${$W1}.1%.", 0 },
   { 1216603, "Your harmful spells and abilities apply Ratfang Toxin to your target, stacking up to $s1 times.", 0, 0 },
-  { 1216605, "Release all toxin stacks to deal $1216603s2 Nature damage, plus $1216603s3 per stack over $1216606d1.", 0, 0 },
+  { 1216604, 0, "Your harmful spells and abilities apply Ratfang Toxin to your target.", 0 },
+  { 1216605, "Release all toxin stacks to deal ${$1216603s2*$<rolemult>} Nature damage, plus ${$1216603s3*$<rolemult>} per stack over $1216606d1.", 0, 0 },
   { 1216606, 0, "Inflicting $w1 damage every $t1 sec.", 0 },
   { 1216625, "When you use harmful spells or abilities, there is a chance you also take a sip of the energy drink, increasing your Mastery by $s1 for $1216650d. Gain an additional $s2 Mastery if you are below $s3% health.\r\n", 0, 0 },
   { 1216650, 0, "Increases Mastery Rating by $w1.", 0 },
@@ -27129,10 +27130,9 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1217789, "Grievously wounds the target, reducing the effectiveness of any healing received for $d.", "Healing effects received reduced by $w1%.", 0 },
   { 1217798, "$@spelldesc1215681", "Mastery increased by $s1% and your spells gain maximum benefit from Mastery: Chaotic Energies.", 0 },
   { 1217897, "$@spelldesc1215727", "The damage of Frost Strike and Glacial Advance is increased by $w1%.", 0 },
-  { 1217956, "$@spelldesc1215727", 0, 0 },
   { 1217990, "$@spelldesc1215997", "Damage and healing increased by $s1%", 0 },
   { 1217999, "$@spelldesc1215997", "Your next Blackout Kick deals $s2% increased damage and its cooldown is reduced by ${$s1/1000}.1 sec.", 0 },
-  { 1218003, "$@spelldesc1215644", "Infused with a powerful mutagen, causing auto-attacks to deal $1218004s1 Nature damage to up to $1218004i nearby enemies. \r\n\r\nEach strike reduces the cooldown of Bestial Wrath by $1218004s2.", 0 },
+  { 1218003, "$@spelldesc1215644", "Infused with a powerful mutagen, causing auto-attacks to deal $1218004s1 Nature damage to up to $1218004i nearby enemies. \r\n\r\nEach strike reduces the cooldown of Bestial Wrath by $1218004s2 sec.", 0 },
   { 1218004, "$@spelldesc1215644", 0, 0 },
   { 1218033, "$@spelldesc1215633", "Auto shot damage increased by $s1% and the time between auto shots is reduced by ${$s2/-1000}.1 sec.", 0 },
   { 1218047, "Primordial Wave transforms into a single use Primordial Storm for $1218125d after it is cast.\r\n\r\n$@spellname1218047$@spellicon1218047\r\nDevastate nearby enemies with a Primordial Storm dealing $1218113s1 Flamestrike, $1218116s1 Froststrike, $1218118s1 Stormstrike damage, and unleashing a Lightning Bolt or a Chain Lightning at $s2% effectiveness. Deals reduced damage beyond $s3 targets.\r\n\r\n|cFFFFFFFFConsumes Maelstrom Weapon for increased damage.|r", 0, 0 },
@@ -27229,14 +27229,17 @@ static const std::array<spelltext_data_t, 27229> __ptr_spelltext_data { {
   { 1223798, "Casting a damaging spell has a $s1% chance to make your next Arcane Barrage deal $1223797s1% increased damage and generate $1223799s1 Arcane Charges.", 0, 0 },
   { 1223799, "$@spelldesc449394", 0, 0 },
   { 1223800, "When Arcane Barrage hits more than $s1 targets, it explodes for $210817s1 additional Arcane damage to all enemies within $210817A1 yds of the primary target.", 0, 0 },
+  { 1224098, "$?s221622[Increases the target's damage by $221622m1%, and redirects][Redirects] all threat you cause to the targeted party or raid member, beginning with your next damaging attack within the next $d and lasting $59628d.", "Threat redirected from Rogue.", 0 },
+  { 1224131, "$@spelldesc1218417", 0, 0 },
+  { 1224451, "$?a427775[Chaos][Fire]", 0, 0 },
 } };
 
-// spelltext hotfix entries, wow build 11.1.0.58774
+// spelltext hotfix entries, wow build 11.1.0.58819
 static constexpr std::array<hotfix::client_hotfix_entry_t, 0> __ptr_spelltext_hotfix_data { {
 } };
 
-// Spell description variables, wow build 11.1.0.58774
-static const std::array<spelldesc_vars_data_t, 632> __ptr_spelldesc_vars_data { {
+// Spell description variables, wow build 11.1.0.58819
+static const std::array<spelldesc_vars_data_t, 635> __ptr_spelldesc_vars_data { {
   {      53, "$mult=${($max(0,$min($pl-10,10))*11+260)/370}" },
   {     120, "$arctic1=$?s31674[${1.01}][${1}]\r\n$arctic2=$?s31675[${1.02}][${$<arctic1>}]\r\n$arctic3=$?s31676[${1.03}][${$<arctic2>}]\r\n$arctic4=$?s31677[${1.04}][${$<arctic3>}]\r\n$arctic5=$?s31678[${1.05}][${$<arctic4>}]\r\n$piercing1=$?s11151[${1.02}][${1}]\r\n$piercing2=$?s12952[${1.04}][${$<piercing1>}]\r\n$piercing3=$?s12953[${1.06}][${$<piercing2>}]\r\n$mult=${$<arctic5>*$<piercing3>}" },
   {     122, "$arctic1=$?s31674[${1.01}][${1}]\r\n$arctic2=$?s31675[${1.02}][${$<arctic1>}]\r\n$arctic3=$?s31676[${1.03}][${$<arctic2>}]\r\n$arctic4=$?s31677[${1.04}][${$<arctic3>}]\r\n$arctic5=$?s31678[${1.05}][${$<arctic4>}]\r\n$piercing1=$?s11151[${1.02}][${1}]\r\n$piercing2=$?s12952[${1.04}][${$<piercing1>}]\r\n$piercing3=$?s12953[${1.06}][${$<piercing2>}]\r\n$mult=${$<arctic5>*$<piercing3>}" },
@@ -27860,18 +27863,21 @@ static const std::array<spelldesc_vars_data_t, 632> __ptr_spelldesc_vars_data { 
   {  471142, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   {  471212, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   {  471316, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
+  {  472125, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   {  472174, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   {  472175, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   {  472302, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
+  { 1214941, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   { 1215238, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   { 1216398, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
+  { 1216605, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   { 1217356, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   { 1218716, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   { 1219103, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
   { 1219410, "$rolemult=$?a137048|a137028|a137023|a137010|a212613|a137008|a137039|a137031|a137032|a137029|a137024|a137024|a356810|a137012[${0.66}.2][${1}]" },
 } };
 
-// spelldesc_vars hotfix entries, wow build 11.1.0.58774
+// spelldesc_vars hotfix entries, wow build 11.1.0.58819
 static constexpr std::array<hotfix::client_hotfix_entry_t, 0> __ptr_spelldesc_vars_hotfix_data { {
 } };
 

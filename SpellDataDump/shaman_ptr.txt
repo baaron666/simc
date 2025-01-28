@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58774 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
 Name             : Block (desc=Passive) (id=107) [Passive] 
 Class            : Warrior, Paladin, Shaman
 School           : Physical
@@ -9919,7 +9919,7 @@ Effects          :
                    Base Value: 1 | Scaled Value: 1
 Description      : Strike your target with an icy blade, dealing $s1 Frost damage and snaring them by $s2% for $d.
 
-Ice Strike increases the damage of your next Frost Shock by and generates $s4 stack of Maelstrom Weapon.
+Ice Strike increases the damage of your next Frost Shock by $384357s1% and generates $s4 stack of Maelstrom Weapon.
 Tooltip          : Movement speed reduced by $s2%.
 
 Name             : Static Discharge (id=342243) [Spell Family (11)] 
