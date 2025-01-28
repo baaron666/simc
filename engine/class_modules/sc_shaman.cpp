@@ -2858,6 +2858,12 @@ public:
       return true;
     }
 
+    // Don't consume MW stacks if the spell inherits MW stacks from a parent MW-consuming spell
+    if ( this->mw_parent != nullptr )
+    {
+      return false;
+    }
+
     return benefit_from_maelstrom_weapon() && !this->background;
   }
 
@@ -10800,9 +10806,6 @@ struct primordial_storm_t : public shaman_spell_t
 
       return m;
     }
-
-    bool consume_maelstrom_weapon() const override
-    { return false; }
   };
 
   primordial_damage_t* fire, *frost, *nature;
@@ -10844,8 +10847,16 @@ struct primordial_storm_t : public shaman_spell_t
       return;
     }
 
-    damage->mw_parent = this;
-    damage->execute_on_target( execute_state->target );
+    make_event( sim, rng().gauss( 950_ms, 25_ms ),
+      [ this, damage, t = execute_state->target ]() {
+      if ( t->is_sleeping() )
+      {
+        return;
+      }
+
+      damage->mw_parent = this;
+      damage->execute_on_target( t );
+    } );
   }
 
   void execute() override
@@ -10858,16 +10869,12 @@ struct primordial_storm_t : public shaman_spell_t
     frost->set_target( execute_state->target );
     nature->set_target( execute_state->target );
 
-    make_event( sim, 200_ms, [ this, t = execute_state->target ]() {
-      if ( t->is_sleeping() )
-      {
-        return;
-      }
+    // Primordial Fire seems to execute instantly
+    fire->execute();
 
-      fire->execute();
-    } );
-
-    make_event( sim, 400_ms, [ this, t = execute_state->target ]() {
+    // Frost follows roughly 300ms later
+    make_event( sim, rng().gauss( 300_ms, 20_ms ) ,
+      [ this, t = execute_state->target ]() {
       if ( t->is_sleeping() )
       {
         return;
@@ -10876,7 +10883,9 @@ struct primordial_storm_t : public shaman_spell_t
       frost->execute();
     } );
 
-    make_event( sim, 600_ms, [ this, t = execute_state->target ]() {
+    // Lightning follows roughly 600ms later
+    make_event( sim, rng().gauss( 600_ms, 30_ms ),
+      [ this, t = execute_state->target ]() {
       if ( t->is_sleeping() )
       {
         return;
@@ -10885,6 +10894,7 @@ struct primordial_storm_t : public shaman_spell_t
       nature->execute();
     } );
 
+    // Triggered LB/CL follows roughly 950ms from initial cast
     trigger_lightning_damage();
 
     p()->buff.primordial_storm->decrement();
