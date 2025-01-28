@@ -1423,7 +1423,6 @@ public:
     // Tier Sets
     const spell_data_t* icy_vigor;
     const spell_data_t* winning_streak_frost;
-    const spell_data_t* winning_streak_frostscythe;
     const spell_data_t* murderous_frenzy;
 
     // Unholy
@@ -3255,6 +3254,8 @@ struct army_ghoul_pet_t final : public base_ghoul_pet_t
     {
       // Currently has a 1.29948x modifier as of 12-18-2024, also not in spell data
       owner_coeff.ap_from_ap *= 1.29948;
+      if ( dk()->is_ptr() )
+        owner_coeff.ap_from_ap *= 1.25;
     }
   }
 
@@ -3979,6 +3980,8 @@ struct magus_pet_t : public death_knight_pet_t
     // Ensures parity between all pets that share this ap_from_ap mod.
     owner_coeff.ap_from_ap = army_ghoul_ap_mod;
     owner_coeff.ap_from_ap *= 0.85;
+    if (dk()->is_ptr())
+      owner_coeff.ap_from_ap *= 1.15;
   }
 
   void init_action_list() override
@@ -13567,8 +13570,6 @@ void death_knight_t::spell_lookups()
   spell.icy_vigor = conditional_spell_lookup( sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW1, B4 ), 457189 );
   spell.winning_streak_frost =
       conditional_spell_lookup( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B2 ), 1217897 );
-  spell.winning_streak_frostscythe =
-      conditional_spell_lookup( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ), 1217956 );
   spell.murderous_frenzy = conditional_spell_lookup( is_ptr() && sets->has_set_bonus( DEATH_KNIGHT_FROST, TWW2, B4 ), 1222698 );
 
   // Unholy
