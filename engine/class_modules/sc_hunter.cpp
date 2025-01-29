@@ -1105,7 +1105,7 @@ public:
   void trigger_sentinel( player_t* target, bool force = false, proc_t* proc = nullptr );
   void trigger_sentinel_implosion( hunter_td_t* td );
   void trigger_symphonic_arsenal();
-  void trigger_lunar_storm();
+  void trigger_lunar_storm( player_t* target );
   void consume_precise_shots();
   void trigger_spotters_mark( player_t* target, bool force = false );
   double calculate_tip_of_the_spear_value( double base_value ) const;
@@ -3627,12 +3627,13 @@ void hunter_t::trigger_symphonic_arsenal()
         actions.symphonic_arsenal->execute_on_target( t );
 }
 
-void hunter_t::trigger_lunar_storm()
+void hunter_t::trigger_lunar_storm( player_t* target )
 {
   if ( talents.lunar_storm.ok() )
   {
     buffs.lunar_storm_ready->expire();
     buffs.lunar_storm_cooldown->trigger();
+    actions.lunar_storm_initial->execute_on_target( target );
     make_repeating_event(
         sim, talents.lunar_storm_periodic_trigger->effectN( 2 ).period(),
         [ this ] {
@@ -5544,9 +5545,6 @@ struct rapid_fire_t: public hunter_spell_t
       hunter_ranged_attack_t::execute();
 
       p()->buffs.trick_shots->up(); // Benefit tracking
-
-      if ( p()->buffs.lunar_storm_ready->up() )
-        p()->trigger_lunar_storm();
     }
 
     void impact( action_state_t* state ) override
@@ -5617,6 +5615,9 @@ struct rapid_fire_t: public hunter_spell_t
       p()->buffs.precise_shots->trigger();
 
     p()->buffs.bulletstorm->expire();
+
+    if ( p()->buffs.lunar_storm_ready->up() )
+      p()->trigger_lunar_storm( target );
   }
 
   void tick( dot_t* d ) override
@@ -7341,7 +7342,7 @@ struct wildfire_bomb_base_t: public hunter_spell_t
         p()->cooldowns.explosive_shot->reset( true );
 
       if ( p()->buffs.lunar_storm_ready->up() )
-        p()->trigger_lunar_storm();
+        p()->trigger_lunar_storm( target );
 
       p()->buffs.wildfire_arsenal->expire();
     }
