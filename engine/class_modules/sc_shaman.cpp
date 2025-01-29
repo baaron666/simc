@@ -946,7 +946,7 @@ public:
   struct options_t
   {
     rotation_type_e rotation = ROTATION_STANDARD;
-    int dre_flat_chance = -1;
+    double dre_flat_chance = -1.0;
     unsigned dre_forced_failures = 2U;
 
     // Tempest options
@@ -1594,6 +1594,7 @@ public:
   void trigger_legacy_of_the_frost_witch( const action_state_t* state, unsigned consumed_stacks );
   void trigger_elemental_equilibrium( const action_state_t* state );
   void trigger_deeply_rooted_elements( const action_state_t* state );
+  void trigger_deeply_rooted_elements1101( const action_state_t* state ); // 11.1 version
 
   void trigger_secondary_flame_shock( player_t* target, spell_variant variant = spell_variant::NORMAL ) const;
   void trigger_secondary_flame_shock( const action_state_t* state, spell_variant variant = spell_variant::NORMAL ) const;
@@ -2980,6 +2981,16 @@ public:
     }
 
     return mw_multiplier;
+  }
+
+  void consume_resource() override
+  {
+    ab::consume_resource();
+
+    if ( this->last_resource_cost > 0 && this->current_resource() == RESOURCE_MAELSTROM )
+    {
+      this->p()->trigger_deeply_rooted_elements1101( this->execute_state );
+    }
   }
 
   void execute() override
@@ -11796,7 +11807,7 @@ void shaman_t::create_options()
   add_option( opt_int( "shaman.initial_tempest_counter", options.init_tempest_counter, -1, 299 ) );
 
   add_option( opt_obsoleted( "shaman.chain_harvest_allies" ) );
-  add_option( opt_int( "shaman.dre_flat_chance", options.dre_flat_chance, -1, 1 ) );
+  add_option( opt_float( "shaman.dre_flat_chance", options.dre_flat_chance, -1.0, 1.0 ) );
   add_option( opt_uint( "shaman.dre_forced_failures", options.dre_forced_failures, 0U, 10U ) );
 
   add_option( opt_uint( "shaman.icefury_positive", options.icefury_positive, 0U, 100U ) );
@@ -12858,9 +12869,57 @@ void shaman_t::trigger_elemental_equilibrium( const action_state_t* state )
   }
 }
 
+void shaman_t::trigger_deeply_rooted_elements1101( const action_state_t* state )
+{
+  if ( !talent.deeply_rooted_elements.ok() || !dbc->ptr )
+  {
+    return;
+  }
+
+  double proc_chance = 0.0;
+  if ( options.dre_flat_chance == -1.0 )
+  {
+    auto spell = debug_cast<shaman_spell_t*>( state->action );
+
+    switch ( specialization() )
+    {
+      case SHAMAN_ELEMENTAL:
+        proc_chance = 0.01 * talent.deeply_rooted_elements->effectN( 2 ).base_value() * 0.01 *
+          spell->last_resource_cost;
+        break;
+      case SHAMAN_ENHANCEMENT:
+        proc_chance = 0.01 * talent.deeply_rooted_elements->effectN( 3 ).base_value() * 0.1 *
+          spell->mw_consumed_stacks;
+        break;
+      default:
+        break;
+    }
+  }
+  else
+  {
+    proc_chance = options.dre_flat_chance;
+  }
+
+  if ( proc_chance <= 0.0 )
+  {
+    return;
+  }
+
+  dre_attempts++;
+
+  if ( rng().roll( proc_chance ) )
+  {
+    dre_samples.add( as<double>( dre_attempts ) );
+    dre_attempts = 0U;
+
+    action.dre_ascendance->execute_on_target( state->target );
+    proc.deeply_rooted_elements->occur();
+  }
+}
+
 void shaman_t::trigger_deeply_rooted_elements( const action_state_t* state )
 {
-  if ( !talent.deeply_rooted_elements.ok() )
+  if ( !talent.deeply_rooted_elements.ok() || dbc->ptr )
   {
     return;
   }
@@ -12887,7 +12946,7 @@ void shaman_t::trigger_deeply_rooted_elements( const action_state_t* state )
   dre_attempts++;
   if ( specialization() == SHAMAN_ELEMENTAL )
   {
-    if ( options.dre_flat_chance <= 0 )
+    if ( options.dre_flat_chance == -1.0 )
     {
       // per attempt there exists an ever growing 1% chance
       // proc curve is pushed down by 2%, so the first two attempts have a 0% chance to occur
@@ -13001,6 +13060,8 @@ void shaman_t::consume_maelstrom_weapon( const action_state_t* state, int stacks
     {
       buff.ice_strike_cast->trigger();
     }
+
+    trigger_deeply_rooted_elements1101( state );
   }
 
   if ( buff.tww2_enh_2pc->check() &&
