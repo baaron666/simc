@@ -1101,7 +1101,7 @@ public:
   void trigger_basilisk_collar_update();
   void trigger_outland_venom_update();
   void consume_trick_shots();
-  void trigger_deathblow( player_t* target, bool activated = false );
+  void trigger_deathblow( bool activated = false );
   void trigger_sentinel( player_t* target, bool force = false, proc_t* proc = nullptr );
   void trigger_sentinel_implosion( hunter_td_t* td );
   void trigger_symphonic_arsenal();
@@ -2198,7 +2198,7 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
       o() -> pets.animal_companion -> demise();
   }
 
-  double composite_player_target_crit_chance( player_t* target ) const
+  double composite_player_target_crit_chance( player_t* target ) const override
   {
     double m = hunter_main_pet_base_t::composite_player_target_crit_chance( target );
 
@@ -3538,7 +3538,7 @@ double hunter_t::calculate_tip_of_the_spear_value( double base_value ) const
   return tip_bonus;
 }
 
-void hunter_t::trigger_deathblow( player_t* target, bool activated )
+void hunter_t::trigger_deathblow( bool activated )
 {
   if ( !talents.deathblow.ok() )
     return;
@@ -4535,7 +4535,7 @@ struct black_arrow_t final : public black_arrow_base_t
     black_arrow_base_t::execute();
 
     if ( rng().roll( p()->talents.ebon_bowstring->effectN( 1 ).percent() ) )
-      p()->trigger_deathblow( target, true );
+      p()->trigger_deathblow( true );
 
     if ( p()->buffs.withering_fire->up() )
     {
@@ -4584,7 +4584,7 @@ struct bleak_arrows_t : public auto_shot_base_t
     auto_shot_base_t::impact( s );
 
     if ( rng().roll( deathblow_chance ) )
-      p()->trigger_deathblow( s->target );
+      p()->trigger_deathblow();
   }
 };
 
@@ -5263,12 +5263,12 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
               } );
           else
             // Expire Precision Detonation after other possible impacts.
-            make_event( p()->sim, [ this, target_data ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+            make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
         }
         else
         {
           // Expire Precision Detonation after other possible impacts in case they trigger the buff.
-          make_event( p()->sim, [ this, target_data ]() { p()->buffs.precision_detonation_hidden->expire(); } );
+          make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
         }
       }
 
@@ -5473,7 +5473,7 @@ struct aimed_shot_t : public aimed_shot_base_t
     p()->buffs.precise_shots->increment( precise_shot_stacks );
 
     if ( rng().roll( deathblow.chance ) )
-      p()->trigger_deathblow( target );
+      p()->trigger_deathblow();
 
     // TODO 23/1/25: secondary cast is using primary target if no secondary target is near
     if ( aspect_of_the_hydra )
@@ -5555,7 +5555,7 @@ struct rapid_fire_t: public hunter_spell_t
     }
   };
 
-  struct rapid_fire_tick_aspect_of_the_hydra_t : rapid_fire_tick_t
+  struct rapid_fire_tick_aspect_of_the_hydra_t : public rapid_fire_tick_t
   {
     rapid_fire_tick_aspect_of_the_hydra_t( util::string_view n, hunter_t* p ) : rapid_fire_tick_t( n, p )
     {
@@ -5609,7 +5609,7 @@ struct rapid_fire_t: public hunter_spell_t
     p()->buffs.streamline->trigger();
 
     if ( rng().roll( deathblow.chance ) )
-      p()->trigger_deathblow( target );
+      p()->trigger_deathblow();
 
     if ( p()->talents.no_scope.ok() )
       p()->buffs.precise_shots->trigger();
@@ -5656,7 +5656,7 @@ struct rapid_fire_t: public hunter_spell_t
     return base_duration; 
   }
 
-  double tick_time_pct_multiplier( const action_state_t* s ) const
+  double tick_time_pct_multiplier( const action_state_t* s ) const override
   {
     double m = hunter_spell_t::tick_time_pct_multiplier( s );
 
@@ -6701,7 +6701,7 @@ struct kill_command_t: public hunter_spell_t
         chance *= 2;
 
       if ( rng().roll( chance ) )
-        p()->trigger_deathblow( target );
+        p()->trigger_deathblow();
     }
 
     if ( p() -> talents.a_murder_of_crows.ok() )
@@ -6939,7 +6939,7 @@ struct bestial_wrath_t: public hunter_spell_t
       if ( p()->buffs.withering_fire_build_up->at_max_stacks() )
       {
         p()->buffs.withering_fire->trigger();
-        p()->trigger_deathblow( target );
+        p()->trigger_deathblow();
         p()->buffs.withering_fire_build_up->expire();
       }
     }
@@ -7103,7 +7103,7 @@ struct trueshot_t: public hunter_spell_t
     if ( p()->talents.withering_fire.ok() && !is_precombat )
     {
       p()->buffs.withering_fire->trigger( p()->buffs.trueshot->data().duration() );
-      p()->trigger_deathblow( target, true );
+      p()->trigger_deathblow( true );
     }
 
     if ( p()->talents.feathered_frenzy.ok() )
@@ -7519,7 +7519,7 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
 
   debuffs.crescent_steel = make_buff( *this, "crescent_steel", p->talents.crescent_steel_debuff )
     -> set_tick_callback(
-      [ this, p ]( buff_t* b, int, const timespan_t& ) {
+      [ this, p ]( buff_t*, int, const timespan_t& ) {
         p->trigger_sentinel( target, true, p->procs.crescent_steel_stacks );
       } );
 
@@ -7555,7 +7555,7 @@ void hunter_td_t::target_demise()
     p -> cooldowns.harpoon -> reset( true );
   }
   if ( p->talents.soul_drinker.ok() && dots.black_arrow->is_ticking() && p->rng().roll( p->talents.soul_drinker->effectN( 1 ).percent() ) )
-    p->trigger_deathblow( target );
+    p->trigger_deathblow();
 }
 
 /**
@@ -8411,7 +8411,7 @@ void hunter_t::create_buffs()
     make_buff( this, "coordinated_assault", talents.coordinated_assault )
       ->set_default_value( talents.coordinated_assault->effectN( 1 ).percent() )
       ->set_cooldown( 0_ms )
-      ->set_stack_change_callback( [ this ]( buff_t*, int /*old*/, int cur ) {
+      ->set_stack_change_callback( [ this ]( buff_t*, int, int cur ) {
         if ( cur == 0 )
         {
           buffs.relentless_primal_ferocity->expire();
@@ -8518,8 +8518,7 @@ void hunter_t::create_buffs()
   
   buffs.lunar_storm_cooldown = make_buff( this, "lunar_storm_cooldown", talents.lunar_storm_cooldown_buff )
     ->set_stack_change_callback(
-      [this]( buff_t* b, int old, int cur ) {
-        player_t* p = b -> player;
+      [ this ]( buff_t* b, int, int cur ) {
         if ( cur == 0 )
           buffs.lunar_storm_ready->trigger();
       } );
@@ -9082,8 +9081,6 @@ void hunter_t::regen( timespan_t periodicity )
   if ( resources.is_infinite( RESOURCE_FOCUS ) )
     return;
 
-  double total_regen = periodicity.total_seconds() * resource_regen_per_second( RESOURCE_FOCUS );
-  
   if ( buffs.terms_of_engagement -> check() )
     resource_gain( RESOURCE_FOCUS, buffs.terms_of_engagement -> check_value() * periodicity.total_seconds(), gains.terms_of_engagement );
 }
@@ -9113,12 +9110,6 @@ double hunter_t::resource_gain( resource_e type, double amount, gain_t* g, actio
 
     const double initial_amount = floor( amount );
     amount = initial_amount;
-
-    auto add_gain = [&]( double mul, gain_t* gain ) {
-      mul_sum += mul;
-      amount *= 1.0 + mul;
-      mul_gains[ mul_gains_count++ ] = { mul, gain };
-    };
 
     const double additional_amount = floor( amount ) - initial_amount;
     if ( additional_amount > 0 )
