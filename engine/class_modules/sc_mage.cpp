@@ -2530,6 +2530,14 @@ struct arcane_mage_spell_t : public mage_spell_t
           // and the Attunement buff is applied with a delay. Here, we just use
           // max stacks of the buff to track the delay.
           p()->buffs.aether_attunement_counter->trigger();
+
+          if ( rng().roll( p()->talents.leydrinker->effectN( 1 ).percent() ) )
+          {
+            if ( p()->buffs.leydrinker->check() )
+              make_event( *sim, 150_ms, [ this ] { p()->buffs.leydrinker->trigger(); } );
+            else
+              p()->buffs.leydrinker->trigger();
+          }
         }
         break;
       }
@@ -2603,15 +2611,6 @@ struct arcane_mage_spell_t : public mage_spell_t
       return;
 
     p()->buffs.nether_precision->decrement();
-
-    if ( rng().roll( p()->talents.leydrinker->effectN( 1 ).percent() ) )
-    {
-      if ( p()->buffs.leydrinker->check() )
-        make_event( *sim, 150_ms, [ this ] { p()->buffs.leydrinker->trigger(); } );
-      else
-        p()->buffs.leydrinker->trigger();
-    }
-
     p()->trigger_splinter( t );
   }
 };
