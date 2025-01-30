@@ -1488,6 +1488,8 @@ struct arcane_surge_t final : public arcane_phoenix_spell_t
   {
     reduced_aoe_targets = data().effectN( 3 ).base_value(); // TODO: Verify this
     is_mage_spell = true;
+    // TODO: Check this; also see the player arcane_surge_t
+    base_multiplier *= 1.0 + o()->sets->set( MAGE_ARCANE, TWW1, B4 )->effectN( 1 ).percent();
   }
 
   double composite_da_multiplier( const action_state_t* s ) const override
@@ -3817,6 +3819,7 @@ struct arcane_missiles_tick_t final : public custom_state_spell_t<arcane_mage_sp
     background = proc = true;
     affected_by.savant = affected_by.arcane_debilitation = true;
     base_multiplier *= 1.0 + p->talents.eureka->effectN( 1 ).percent();
+    base_multiplier *= 1.0 + p->sets->set( MAGE_ARCANE, TWW1, B4 )->effectN( 1 ).percent();
 
     const auto& aa = p->buffs.aether_attunement->data();
     base_aoe_multiplier *= ( 1.0 + aa.effectN( 4 ).percent() ) / ( 1.0 + aa.effectN( 1 ).percent() );
@@ -4039,6 +4042,8 @@ struct arcane_surge_t final : public arcane_mage_spell_t
     aoe = -1;
     affected_by.savant = true;
     reduced_aoe_targets = data().effectN( 3 ).base_value();
+    // TODO 11.1: Applies to Arcane Surge instead of Arcane Orb
+    base_multiplier *= 1.0 + p->sets->set( MAGE_ARCANE, TWW1, B4 )->effectN( 1 ).percent();
   }
 
   timespan_t travel_time() const override
