@@ -405,6 +405,7 @@ public:
 
     // Sunfury
     buff_t* arcane_soul;
+    buff_t* arcane_soul_damage;
     buff_t* burden_of_power;
     buff_t* glorious_incandescence;
     buff_t* lingering_embers;
@@ -3512,6 +3513,7 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     {
       p()->trigger_clearcasting( 1.0, 0_ms );
       p()->trigger_arcane_charge( arcane_soul_charges );
+      p()->buffs.arcane_soul_damage->trigger();
     }
 
     consume_nether_precision( target );
@@ -3565,6 +3567,7 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     am *= 1.0 + p()->buffs.arcane_harmony->check_stack_value();
     am *= 1.0 + p()->buffs.nether_precision->check_value();
     am *= 1.0 + p()->buffs.intuition->check_value();
+    am *= 1.0 + p()->buffs.arcane_soul_damage->check_stack_value();
 
     return am;
   }
@@ -8552,7 +8555,10 @@ void mage_t::create_buffs()
 
   // Sunfury
   buffs.arcane_soul            = make_buff( this, "arcane_soul", find_spell( 451038 ) )
+                                   ->set_stack_change_callback( [ this ] ( buff_t*, int, int ) { buffs.arcane_soul_damage->expire(); } )
                                    ->set_chance( specialization() == MAGE_ARCANE && talents.memory_of_alar.ok() );
+  buffs.arcane_soul_damage     = make_buff( this, "arcane_soul_damage", find_spell( 1223522 ) )
+                                   ->set_default_value_from_effect( 1 );
   buffs.burden_of_power        = make_buff( this, "burden_of_power", find_spell( 451049 ) )
                                    ->set_chance( talents.burden_of_power.ok() );
   buffs.glorious_incandescence = make_buff( this, "glorious_incandescence", find_spell( 451073 ) )
