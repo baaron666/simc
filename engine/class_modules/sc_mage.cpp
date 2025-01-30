@@ -710,6 +710,7 @@ public:
     player_talent_t arcane_bombardment;
     player_talent_t leysight;
     player_talent_t aether_fragment;
+    player_talent_t arcane_rebound;
 
     // Row 10
     player_talent_t high_voltage;
@@ -3430,9 +3431,21 @@ struct arcane_orb_t final : public arcane_mage_spell_t
   }
 };
 
+// TODO 11.1: Not a mage spell and thus not affected by a lot of mage stuff
+struct arcane_rebound_t final : public spell_t
+{
+  arcane_rebound_t( std::string_view n, mage_t* p ) :
+    spell_t( n, p, p->find_spell( 210817 ) )
+  {
+    background = proc = true;
+    aoe = -1;
+  }
+};
+
 struct arcane_barrage_t final : public dematerialize_spell_t
 {
   action_t* orb_barrage = nullptr;
+  action_t* rebound = nullptr;
   int snapshot_charges = -1;
   int glorious_incandescence_charges = 0;
   int arcane_soul_charges = 0;
@@ -3454,6 +3467,12 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     {
       orb_barrage = get_action<arcane_orb_t>( "orb_barrage_arcane_orb", p, "", ao_type::ORB_BARRAGE );
       add_child( orb_barrage );
+    }
+
+    if ( p->talents.arcane_rebound.ok() )
+    {
+      rebound = get_action<arcane_rebound_t>( "arcane_rebound", p );
+      add_child( rebound );
     }
   }
 
@@ -3506,6 +3525,9 @@ struct arcane_barrage_t final : public dematerialize_spell_t
       p()->trigger_arcane_charge( intuition_charges );
     }
     p()->buffs.intuition->trigger();
+
+    if ( rebound && num_targets_hit > as<int>( p()->talents.arcane_rebound->effectN( 1 ).base_value() ) )
+      rebound->execute_on_target( target );
 
     snapshot_charges = -1;
   }
@@ -8045,6 +8067,7 @@ void mage_t::init_spells()
   talents.arcane_bombardment         = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Bombardment"         );
   talents.leysight                   = find_talent_spell( talent_tree::SPECIALIZATION, "Leysight"                   );
   talents.aether_fragment            = find_talent_spell( talent_tree::SPECIALIZATION, "Aether Fragment"            );
+  talents.arcane_rebound             = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Rebound"             );
   // Row 10
   talents.high_voltage               = find_talent_spell( talent_tree::SPECIALIZATION, "High Voltage"               );
   talents.arcane_harmony             = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Harmony"             );
