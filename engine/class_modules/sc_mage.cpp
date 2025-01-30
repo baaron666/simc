@@ -3434,7 +3434,7 @@ struct arcane_orb_t final : public arcane_mage_spell_t
 struct arcane_rebound_t final : public spell_t
 {
   arcane_rebound_t( std::string_view n, mage_t* p ) :
-    spell_t( n, p, p->find_spell( 210817 ) )
+    spell_t( n, p, p->find_spell( 1223801 ) )
   {
     background = proc = true;
     aoe = -1;
@@ -3454,7 +3454,7 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     dematerialize_spell_t( n, p, p->find_specialization_spell( "Arcane Barrage" ) )
   {
     parse_options( options_str );
-    base_aoe_multiplier *= data().effectN( 2 ).percent();
+    base_aoe_multiplier *= p->talents.arcing_cleave->effectN( 2 ).percent();
     affected_by.arcane_debilitation = true;
     triggers.clearcasting = true;
     base_multiplier *= 1.0 + p->sets->set( MAGE_ARCANE, TWW1, B2 )->effectN( 1 ).percent();
