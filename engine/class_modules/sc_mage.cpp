@@ -326,7 +326,6 @@ public:
     // Arcane
     buff_t* aether_attunement;
     buff_t* aether_attunement_counter;
-    buff_t* aethervision;
     buff_t* arcane_charge;
     buff_t* arcane_familiar;
     buff_t* arcane_harmony;
@@ -335,7 +334,6 @@ public:
     buff_t* big_brained;
     buff_t* clearcasting;
     buff_t* clearcasting_channel; // Hidden buff which governs tick and channel time
-    buff_t* concentration;
     buff_t* enlightened;
     buff_t* evocation;
     buff_t* high_voltage;
@@ -670,7 +668,6 @@ public:
     player_talent_t charged_orb;
     player_talent_t arcane_tempo;
     player_talent_t concentrated_power;
-    player_talent_t aethervision;
     player_talent_t arcing_cleave;
 
     // Row 4
@@ -713,7 +710,6 @@ public:
     player_talent_t arcane_bombardment;
     player_talent_t leysight;
     player_talent_t aether_fragment;
-    player_talent_t concentration;
 
     // Row 10
     player_talent_t high_voltage;
@@ -2599,7 +2595,7 @@ struct arcane_mage_spell_t : public mage_spell_t
     }
   }
 
-  void consume_nether_precision( player_t* t, bool aethervision = false )
+  void consume_nether_precision( player_t* t )
   {
     int old_stack = p()->buffs.nether_precision->check();
     if ( !old_stack )
@@ -2616,9 +2612,6 @@ struct arcane_mage_spell_t : public mage_spell_t
     }
 
     p()->trigger_splinter( t );
-
-    if ( aethervision )
-      p()->buffs.aethervision->trigger();
   }
 };
 
@@ -3441,7 +3434,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
 {
   action_t* orb_barrage = nullptr;
   int snapshot_charges = -1;
-  int aethervision_charges = 0;
   int glorious_incandescence_charges = 0;
   int arcane_soul_charges = 0;
   int intuition_charges = 0;
@@ -3454,7 +3446,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     affected_by.arcane_debilitation = true;
     triggers.clearcasting = true;
     base_multiplier *= 1.0 + p->sets->set( MAGE_ARCANE, TWW1, B2 )->effectN( 1 ).percent();
-    aethervision_charges = as<int>( p->find_spell( 467636 )->effectN( 1 ).base_value() );
     glorious_incandescence_charges = as<int>( p->find_spell( 451223 )->effectN( 1 ).base_value() );
     arcane_soul_charges = as<int>( p->find_spell( 453413 )->effectN( 1 ).base_value() );
     intuition_charges = as<int>( p->find_spell( 455683 )->effectN( 1 ).base_value() );
@@ -3516,14 +3507,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     }
     p()->buffs.intuition->trigger();
 
-    if ( int av_stack = p()->buffs.aethervision->check() )
-    {
-      if ( p()->buffs.aethervision->at_max_stacks() )
-        p()->trigger_splinter( target );
-      p()->buffs.aethervision->expire();
-      p()->trigger_arcane_charge( av_stack * aethervision_charges );
-    }
-
     snapshot_charges = -1;
   }
 
@@ -3547,7 +3530,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     double am = dematerialize_spell_t::action_multiplier();
 
     am *= arcane_charge_multiplier( true );
-    am *= 1.0 + p()->buffs.aethervision->check_stack_value();
     am *= 1.0 + p()->buffs.arcane_harmony->check_stack_value();
     am *= 1.0 + p()->buffs.nether_precision->check_value();
     am *= 1.0 + p()->buffs.intuition->check_value();
@@ -3574,7 +3556,6 @@ struct arcane_blast_t final : public dematerialize_spell_t
     base_multiplier *= 1.0 + p->talents.consortiums_bauble->effectN( 2 ).percent();
     base_multiplier *= 1.0 + p->sets->set( MAGE_ARCANE, TWW1, B2 )->effectN( 1 ).percent();
     base_costs[ RESOURCE_MANA ] *= 1.0 + p->talents.consortiums_bauble->effectN( 1 ).percent();
-    cost_reductions = { p->buffs.concentration };
   }
 
   timespan_t travel_time() const override
@@ -3616,8 +3597,7 @@ struct arcane_blast_t final : public dematerialize_spell_t
     if ( p()->buffs.presence_of_mind->up() )
       p()->buffs.presence_of_mind->decrement();
 
-    p()->buffs.concentration->trigger();
-    consume_nether_precision( target, true );
+    consume_nether_precision( target );
     p()->buffs.intuition->trigger();
   }
 
@@ -8028,7 +8008,6 @@ void mage_t::init_spells()
   talents.charged_orb                = find_talent_spell( talent_tree::SPECIALIZATION, "Charged Orb"                );
   talents.arcane_tempo               = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Tempo"               );
   talents.concentrated_power         = find_talent_spell( talent_tree::SPECIALIZATION, "Concentrated Power"         );
-  talents.aethervision               = find_talent_spell( talent_tree::SPECIALIZATION, "Aethervision"               );
   talents.arcing_cleave              = find_talent_spell( talent_tree::SPECIALIZATION, "Arcing Cleave"              );
   // Row 4
   talents.arcane_familiar            = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Familiar"            );
@@ -8065,7 +8044,6 @@ void mage_t::init_spells()
   talents.arcane_bombardment         = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Bombardment"         );
   talents.leysight                   = find_talent_spell( talent_tree::SPECIALIZATION, "Leysight"                   );
   talents.aether_fragment            = find_talent_spell( talent_tree::SPECIALIZATION, "Aether Fragment"            );
-  talents.concentration              = find_talent_spell( talent_tree::SPECIALIZATION, "Concentration"              );
   // Row 10
   talents.high_voltage               = find_talent_spell( talent_tree::SPECIALIZATION, "High Voltage"               );
   talents.arcane_harmony             = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Harmony"             );
@@ -8325,10 +8303,6 @@ void mage_t::create_buffs()
                                       ->set_default_value_from_effect( 1 );
   buffs.aether_attunement_counter = make_buff( this, "aether_attunement_counter", find_spell( 458388 ) )
                                       ->set_chance( talents.aether_attunement.ok() );
-  buffs.aethervision              = make_buff( this, "aethervision", find_spell( 467634 ) )
-                                      ->set_default_value_from_effect( 1 )
-                                      ->modify_default_value( talents.aether_fragment->effectN( 1 ).percent() )
-                                      ->set_chance( talents.aethervision.ok() );
   buffs.arcane_charge             = make_buff( this, "arcane_charge", find_spell( 36032 ) )
                                       ->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
   buffs.arcane_familiar           = make_buff( this, "arcane_familiar", find_spell( 210126 ) )
@@ -8370,10 +8344,6 @@ void mage_t::create_buffs()
                                       ->set_chance( spec.clearcasting->ok() ) ;
   buffs.clearcasting_channel      = make_buff( this, "clearcasting_channel", find_spell( 277726 ) )
                                       ->set_quiet( true );
-  buffs.concentration             = make_buff( this, "concentration", find_spell( 384379 ) )
-                                      ->set_default_value_from_effect( 1 )
-                                      ->set_activated( false )
-                                      ->set_trigger_spell( talents.concentration );
   buffs.enlightened               = make_buff( this, "enlightened", find_spell( 1217242 ) )
                                       ->set_schools_from_effect( 4 )
                                       ->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER )
