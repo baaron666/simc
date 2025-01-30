@@ -3514,7 +3514,8 @@ struct arcane_barrage_t final : public dematerialize_spell_t
   {
     double m = dematerialize_spell_t::composite_da_multiplier( s );
 
-    m *= 1.0 + s->n_targets * p()->talents.resonance->effectN( 1 ).percent();
+    if ( s->n_targets > 1 )
+      m *= 1.0 + ( s->n_targets - 1 ) * p()->talents.resonance->effectN( 1 ).percent();
 
     if ( s->target->health_percentage() <= p()->talents.arcane_bombardment->effectN( 1 ).base_value() )
       m *= 1.0 + p()->talents.arcane_bombardment->effectN( 2 ).percent() + p()->talents.sunfury_execution->effectN( 1 ).percent();
