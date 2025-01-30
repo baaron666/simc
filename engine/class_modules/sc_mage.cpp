@@ -338,6 +338,7 @@ public:
     buff_t* evocation;
     buff_t* high_voltage;
     buff_t* impetus;
+    buff_t* intuition;
     buff_t* leydrinker;
     buff_t* nether_precision;
     buff_t* presence_of_mind;
@@ -421,7 +422,6 @@ public:
 
     // Set Bonuses
     buff_t* clarity;
-    buff_t* intuition;
 
     buff_t* blessing_of_the_phoenix;
     buff_t* rollin_hot;
@@ -674,6 +674,7 @@ public:
     player_talent_t arcane_familiar;
     player_talent_t arcane_surge;
     player_talent_t improved_clearcasting;
+    player_talent_t intuition;
 
     // Row 5
     player_talent_t big_brained;
@@ -2248,6 +2249,10 @@ public:
 
     if ( triggers.frostfire_mastery && harmful && !background )
       trigger_frostfire_mastery();
+
+    // Needs to be triggered with a delay so that ABar doesn't eat its own proc
+    if ( !background && harmful && rng().roll( p()->talents.intuition->effectN( 1 ).percent() ) )
+      make_event( *sim, [ this ] { p()->buffs.intuition->trigger(); } );
   }
 
   void impact( action_state_t* s ) override
@@ -3460,7 +3465,7 @@ struct arcane_barrage_t final : public dematerialize_spell_t
     base_multiplier *= 1.0 + p->sets->set( MAGE_ARCANE, TWW1, B2 )->effectN( 1 ).percent();
     glorious_incandescence_charges = as<int>( p->find_spell( 451223 )->effectN( 1 ).base_value() );
     arcane_soul_charges = as<int>( p->find_spell( 453413 )->effectN( 1 ).base_value() );
-    intuition_charges = as<int>( p->find_spell( 455683 )->effectN( 1 ).base_value() );
+    intuition_charges = as<int>( p->find_spell( 1223799 )->effectN( 1 ).base_value() );
 
     if ( p->talents.orb_barrage.ok() )
     {
@@ -3523,7 +3528,6 @@ struct arcane_barrage_t final : public dematerialize_spell_t
       p()->buffs.intuition->decrement();
       p()->trigger_arcane_charge( intuition_charges );
     }
-    p()->buffs.intuition->trigger();
 
     if ( rebound && num_targets_hit > as<int>( p()->talents.arcane_rebound->effectN( 1 ).base_value() ) )
       rebound->execute_on_target( target );
@@ -3620,7 +3624,6 @@ struct arcane_blast_t final : public dematerialize_spell_t
       p()->buffs.presence_of_mind->decrement();
 
     consume_nether_precision( target );
-    p()->buffs.intuition->trigger();
   }
 
   double action_multiplier() const override
@@ -8035,6 +8038,7 @@ void mage_t::init_spells()
   talents.arcane_familiar            = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Familiar"            );
   talents.arcane_surge               = find_talent_spell( talent_tree::SPECIALIZATION, "Arcane Surge"               );
   talents.improved_clearcasting      = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Clearcasting"      );
+  talents.intuition                  = find_talent_spell( talent_tree::SPECIALIZATION, "Intuition"                  );
   // Row 5
   talents.big_brained                = find_talent_spell( talent_tree::SPECIALIZATION, "Big Brained"                );
   talents.energized_familiar         = find_talent_spell( talent_tree::SPECIALIZATION, "Energized Familiar"         );
@@ -8384,6 +8388,9 @@ void mage_t::create_buffs()
   buffs.impetus                   = make_buff( this, "impetus", find_spell( 393939 ) )
                                       ->set_default_value_from_effect( 1 )
                                       ->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER );
+  buffs.intuition                 = make_buff( this, "intuition", find_spell( 1223797 ) )
+                                      ->set_default_value_from_effect( 1 )
+                                      ->set_chance( talents.intuition.ok() );
   buffs.leydrinker                = make_buff( this, "leydrinker", find_spell( 453758 ) )
                                       ->set_chance( talents.leydrinker.ok() );
   buffs.nether_precision          = make_buff( this, "nether_precision", find_spell( 383783 ) )
@@ -8580,12 +8587,9 @@ void mage_t::create_buffs()
 
 
   // Set Bonuses
-  buffs.intuition = make_buff( this, "intuition", find_spell( 455681 ) )
-                      ->set_default_value_from_effect( 1 )
-                      ->set_chance( sets->set( MAGE_ARCANE, TWW1, B4 )->effectN( 1 ).percent() );
-  buffs.clarity   = make_buff( this, "clarity", find_spell( 1216178 ) )
-                      ->set_default_value_from_effect( 1 )
-                      ->set_chance( sets->has_set_bonus( MAGE_ARCANE, TWW2, B2 ) );
+  buffs.clarity = make_buff( this, "clarity", find_spell( 1216178 ) )
+                    ->set_default_value_from_effect( 1 )
+                    ->set_chance( sets->has_set_bonus( MAGE_ARCANE, TWW2, B2 ) );
 
   buffs.blessing_of_the_phoenix = make_buff( this, "blessing_of_the_phoenix", find_spell( 455134 ) )
                                     ->set_default_value_from_effect( 1 )
