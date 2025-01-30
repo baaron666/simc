@@ -3524,6 +3524,7 @@ struct arcane_barrage_t final : public dematerialize_spell_t
       p()->trigger_arcane_charge( glorious_incandescence_charges );
       p()->state.trigger_glorious_incandescence = true;
     }
+    p()->consume_burden_of_power();
 
     if ( p()->buffs.intuition->check() )
     {
@@ -3546,6 +3547,9 @@ struct arcane_barrage_t final : public dematerialize_spell_t
 
     if ( s->target->health_percentage() <= p()->talents.arcane_bombardment->effectN( 1 ).base_value() )
       m *= 1.0 + p()->talents.arcane_bombardment->effectN( 2 ).percent() + p()->talents.sunfury_execution->effectN( 1 ).percent();
+
+    if ( p()->buffs.burden_of_power->check() )
+      m *= 1.0 + p()->buffs.burden_of_power->data().effectN( 4 ).percent();
 
     if ( p()->buffs.glorious_incandescence->check() )
       m *= 1.0 + p()->buffs.glorious_incandescence->data().effectN( 2 ).percent();
