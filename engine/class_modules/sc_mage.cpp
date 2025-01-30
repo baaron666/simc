@@ -8395,6 +8395,7 @@ void mage_t::create_buffs()
                                       ->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER );
   buffs.intuition                 = make_buff( this, "intuition", find_spell( 1223797 ) )
                                       ->set_default_value_from_effect( 1 )
+                                      ->modify_default_value( talents.aether_fragment->effectN( 1 ).percent() )
                                       ->set_chance( talents.intuition.ok() );
   buffs.leydrinker                = make_buff( this, "leydrinker", find_spell( 453758 ) )
                                       ->set_chance( talents.leydrinker.ok() );
