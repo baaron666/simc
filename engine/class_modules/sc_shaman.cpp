@@ -229,6 +229,8 @@ class effect_builder_base_t
     }
 
     virtual void build( parse_effects_t* obj ) const = 0;
+    void build( parse_effects_t& obj ) const
+    { build( &obj ); }
 };
 
 class source_eff_builder_t : public effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>
@@ -245,6 +247,8 @@ public:
   source_eff_builder_t( const spell_data_t& s ) :
     effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>( s )
   { }
+
+  using effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>::build;
 
   void build( parse_effects_t* obj ) const override
   {
@@ -1640,6 +1644,7 @@ public:
   double resource_loss( resource_e resource_type, double amount, gain_t* source, action_t* ) override;
 
   void apply_affecting_auras( action_t& ) override;
+  void apply_action_effects( parse_effects_t& );
 
   void moving() override;
   void invalidate_cache( cache_e c ) override;
@@ -2046,8 +2051,6 @@ struct shaman_action_t : public parse_action_effects_t<Base>
 {
 private:
   using ab = parse_action_effects_t<Base>;  // action base, eg. spell_t
-
-  void parse_action_effects();
 public:
   using base_t = shaman_action_t<Base>;
 
@@ -2221,7 +2224,7 @@ public:
 
     if ( this->data().ok() )
     {
-      parse_action_effects();
+      p()->apply_action_effects( *this );
     }
   }
 
@@ -14497,17 +14500,16 @@ void shaman_t::apply_affecting_auras( action_t& action )
   }
 }
 
-template <class Base>
-void shaman_action_t<Base>::parse_action_effects()
+void shaman_t::apply_action_effects( parse_effects_t& a )
 {
   // Enhancement
-  eff::source_eff_builder_t( p()->buff.crackling_surge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
-  eff::source_eff_builder_t( p()->buff.molten_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
-  eff::source_eff_builder_t( p()->buff.icy_edge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
-  eff::source_eff_builder_t( p()->buff.earthen_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( this );
+  eff::source_eff_builder_t( buff.crackling_surge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
+  eff::source_eff_builder_t( buff.molten_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
+  eff::source_eff_builder_t( buff.icy_edge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
+  eff::source_eff_builder_t( buff.earthen_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
 
-  eff::source_eff_builder_t( p()->buff.tww2_enh_2pc ).build( this );
-  eff::source_eff_builder_t( p()->buff.tww2_enh_4pc_damage ).build( this );
+  eff::source_eff_builder_t( buff.tww2_enh_2pc ).build( a );
+  eff::source_eff_builder_t( buff.tww2_enh_4pc_damage ).build( a );
 }
 
 // shaman_t::generate_bloodlust_options =====================================
