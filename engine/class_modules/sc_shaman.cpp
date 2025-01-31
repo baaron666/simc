@@ -229,8 +229,6 @@ class effect_builder_base_t
     }
 
     virtual void build( parse_effects_t* obj ) const = 0;
-    void build( parse_effects_t& obj ) const
-    { build( &obj ); }
 };
 
 class source_eff_builder_t : public effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>
@@ -247,8 +245,6 @@ public:
   source_eff_builder_t( const spell_data_t& s ) :
     effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>( s )
   { }
-
-  using effect_builder_base_t<source_eff_builder_t, pack_t<player_effect_t>>::build;
 
   void build( parse_effects_t* obj ) const override
   {
@@ -666,7 +662,7 @@ struct shaman_td_t : public actor_target_data_t
   }
 };
 
-struct shaman_t : public player_t
+struct shaman_t : public parse_player_effects_t
 {
 public:
   // Misc
@@ -828,8 +824,6 @@ public:
   // Constants
   struct
   {
-    /// Matching Gear multiplier
-    double mul_matching_gear;
     /// Lightning Rod damage_multiplier
     double mul_lightning_rod;
   } constant;
@@ -1432,7 +1426,7 @@ public:
   shaman_attack_t* hailstorm;
 
   shaman_t( sim_t* sim, util::string_view name, race_e r = RACE_TAUREN )
-    : player_t( sim, SHAMAN, name, r ),
+    : parse_player_effects_t( sim, SHAMAN, name, r ),
       lava_surge_during_lvb( false ),
       sk_during_cast(false),
       lotfw_counter( 0U ),
@@ -1623,6 +1617,7 @@ public:
   void init_rng() override;
   void init_items() override;
   void init_special_effects() override;
+  void init_finished() override;
   std::string create_profile( save_e ) override;
   void create_special_effects() override;
   action_t* create_proc_action( util::string_view /* name */, const special_effect_t& /* effect */ ) override;
@@ -1644,7 +1639,8 @@ public:
   double resource_loss( resource_e resource_type, double amount, gain_t* source, action_t* ) override;
 
   void apply_affecting_auras( action_t& ) override;
-  void apply_action_effects( parse_effects_t& );
+  void apply_action_effects( parse_effects_t* );
+  void apply_player_effects();
 
   void moving() override;
   void invalidate_cache( cache_e c ) override;
@@ -1660,7 +1656,6 @@ public:
   double composite_player_pet_damage_multiplier( const action_state_t* state, bool guardian ) const override;
   double composite_maelstrom_gain_coefficient( const action_state_t* /* state */ = nullptr ) const
   { return 1.0; }
-  double matching_gear_multiplier( attribute_e attr ) const override;
   action_t* create_action( util::string_view name, util::string_view options ) override;
   pet_t* create_pet( util::string_view name, util::string_view type = {} ) override;
   void create_pets() override;
@@ -2224,7 +2219,7 @@ public:
 
     if ( this->data().ok() )
     {
-      p()->apply_action_effects( *this );
+      p()->apply_action_effects( this );
     }
   }
 
@@ -12408,8 +12403,6 @@ void shaman_t::init_spells()
   max_active_flame_shock   = as<unsigned>( find_class_spell( "Flame Shock" )->max_targets() );
 
   // Constants
-  constant.mul_matching_gear = spec.mail_specialization->effectN( 1 ).percent();
-
   constant.mul_lightning_rod = find_spell( 210689 )->effectN( 2 ).percent();
 
   if ( talent.charged_conduit->ok() )
@@ -14412,6 +14405,13 @@ void shaman_t::init_special_effects()
 
 }
 
+void shaman_t::init_finished()
+{
+  player_t::init_finished();
+
+  apply_player_effects();
+}
+
 // shaman_t::apply_affecting_auras ==========================================
 
 void shaman_t::apply_affecting_auras( action_t& action )
@@ -14500,7 +14500,13 @@ void shaman_t::apply_affecting_auras( action_t& action )
   }
 }
 
-void shaman_t::apply_action_effects( parse_effects_t& a )
+void shaman_t::apply_player_effects()
+{
+  // Shared
+  eff::source_eff_builder_t( spec.mail_specialization ).build( this );
+}
+
+void shaman_t::apply_action_effects( parse_effects_t* a )
 {
   // Enhancement
   eff::source_eff_builder_t( buff.crackling_surge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
@@ -15090,23 +15096,6 @@ void shaman_t::moving()
   else
   {
     halt();
-  }
-}
-
-// shaman_t::matching_gear_multiplier =======================================
-
-double shaman_t::matching_gear_multiplier( attribute_e attr ) const
-{
-  switch ( specialization() )
-  {
-    case SHAMAN_ENHANCEMENT:
-      return attr == ATTR_AGILITY ? constant.mul_matching_gear : 0;
-    case SHAMAN_RESTORATION:
-      return attr == ATTR_INTELLECT ? constant.mul_matching_gear : 0;
-    case SHAMAN_ELEMENTAL:
-      return attr == ATTR_INTELLECT ? constant.mul_matching_gear : 0;
-    default:
-      return 0.0;
   }
 }
 
