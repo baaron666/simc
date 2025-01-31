@@ -1681,6 +1681,7 @@ class SpellDataGenerator(DataGenerator):
           ( 442419, 0), # Shadow Hounds
           ( 468037, 0), # Withering Fire secondary Black Arrows
           ( 474293, 2 ), # Moving Target buff
+          ( 471947, 0 ), ( 472020, 0 ), # Boar Charge (Pack Leader)
         ),
 
         # Rogue:

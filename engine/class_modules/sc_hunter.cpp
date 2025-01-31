@@ -228,6 +228,13 @@ void print_html_report( const player_t& player, const player_data_t& data, repor
 // in-game the buffs are actually 8 distinct spells, so the player can't get more than 8 simultaneously
 constexpr unsigned BARBED_SHOT_BUFFS_MAX = 8;
 
+enum howl_of_the_pack_leader_beast
+{
+  WYVERN,
+  BOAR,
+  BEAR
+};
+
 struct maybe_bool {
 
   enum class value_e : uint8_t {
@@ -322,6 +329,7 @@ struct dire_critter_t;
 struct dark_hound_t;
 struct fenryr_t;
 struct hati_t;
+struct bear_t;
 struct stable_pet_t;
 struct call_of_the_wild_pet_t;
 struct beast_of_opportunity_pet_t;
@@ -389,6 +397,7 @@ public:
   {
     pets::hunter_main_pet_t* main = nullptr;
     pets::animal_companion_t* animal_companion = nullptr;
+    pets::bear_t* bear = nullptr;
     spawner::pet_spawner_t<pets::dire_critter_t, hunter_t> dire_beast;
     spawner::pet_spawner_t<pets::dark_hound_t, hunter_t> dark_hound;
     spawner::pet_spawner_t<pets::fenryr_t, hunter_t> fenryr;
@@ -470,7 +479,6 @@ public:
     buff_t* aspect_of_the_eagle;
     buff_t* terms_of_engagement;
     buff_t* coordinated_assault;
-    buff_t* exposed_flank;
     buff_t* ruthless_marauder;
     buff_t* relentless_primal_ferocity;
     buff_t* bombardier;
@@ -489,6 +497,12 @@ public:
     // Hero Talents 
 
     // Pack Leader
+    buff_t* howl_of_the_pack_leader_wyvern_ready;
+    buff_t* howl_of_the_pack_leader_boar_ready;
+    buff_t* howl_of_the_pack_leader_bear_ready;
+    buff_t* howl_of_the_pack_leader_cooldown;
+    buff_t* wyverns_cry;
+
     buff_t* vicious_hunt;
     buff_t* howl_of_the_pack;
     buff_t* frenzied_tear; 
@@ -819,10 +833,6 @@ public:
     spell_data_ptr_t bombardier_buff;
     spell_data_ptr_t deadly_duo;
 
-    spell_data_ptr_t exposed_flank;
-
-
-
     // Dark Ranger
     spell_data_ptr_t black_arrow;
     spell_data_ptr_t black_arrow_spell;
@@ -853,6 +863,18 @@ public:
 
 
     // Pack Leader
+    spell_data_ptr_t howl_of_the_pack_leader;
+    spell_data_ptr_t howl_of_the_pack_leader_wyvern_ready_buff;
+    spell_data_ptr_t howl_of_the_pack_leader_boar_ready_buff;
+    spell_data_ptr_t howl_of_the_pack_leader_bear_ready_buff;
+    spell_data_ptr_t howl_of_the_pack_leader_cooldown_buff;
+    spell_data_ptr_t howl_of_the_pack_leader_wyvern_summon;
+    spell_data_ptr_t howl_of_the_pack_leader_wyvern_buff;
+    spell_data_ptr_t howl_of_the_pack_leader_boar_charge_trigger;
+    spell_data_ptr_t howl_of_the_pack_leader_boar_charge_impact;
+    spell_data_ptr_t howl_of_the_pack_leader_boar_charge_cleave;
+    spell_data_ptr_t howl_of_the_pack_leader_bear_summon;
+
     spell_data_ptr_t vicious_hunt;
 
     spell_data_ptr_t pack_coordination;
@@ -942,6 +964,9 @@ public:
     action_t* a_murder_of_crows = nullptr;
 
     action_t* vicious_hunt = nullptr;
+    action_t* wyverns_cry = nullptr;
+    action_t* bear_summon = nullptr;
+    action_t* boar_charge = nullptr;
 
     action_t* sentinel = nullptr;
     action_t* symphonic_arsenal = nullptr;
@@ -959,6 +984,7 @@ public:
     event_t* current_volley = nullptr;
     action_t* traveling_explosive = nullptr;
     timespan_t sentinel_watch_reduction = 0_s;
+    howl_of_the_pack_leader_beast howl_of_the_pack_leader_next_beast = WYVERN;
   } state;
 
   struct options_t {
@@ -1109,6 +1135,8 @@ public:
   void consume_precise_shots();
   void trigger_spotters_mark( player_t* target, bool force = false );
   double calculate_tip_of_the_spear_value( double base_value ) const;
+  void consume_howl_of_the_pack_leader( player_t* target );
+  void trigger_howl_of_the_pack_leader_ready();
 };
 
 // Template for common hunter action code.
@@ -1147,6 +1175,9 @@ public:
     damage_affected_by coordinated_assault;
     bool spearhead = false;
     bool deadly_duo = false;
+
+    // Pack Leader
+    damage_affected_by wyverns_cry;
 
     // Tier Set
     damage_affected_by tww_s2_mm_2pc;
@@ -1187,6 +1218,8 @@ public:
     affected_by.coordinated_assault = parse_damage_affecting_aura( this, p->talents.coordinated_assault );
     affected_by.spearhead = check_affected_by( this, p->talents.spearhead_bleed->effectN( 2 ) );
     affected_by.deadly_duo = check_affected_by( this, p->talents.spearhead_bleed->effectN( 3 ) );
+
+    affected_by.wyverns_cry = parse_damage_affecting_aura( this, p->talents.howl_of_the_pack_leader_wyvern_buff );
 
     affected_by.tww_s2_mm_2pc = parse_damage_affecting_aura( this, p -> tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() );
 
@@ -1326,6 +1359,9 @@ public:
     if ( affected_by.tww_s2_mm_2pc.direct )
       am *= 1 + p()->buffs.jackpot->value();
 
+    if ( affected_by.wyverns_cry.direct )
+      am *= 1 + p()->buffs.wyverns_cry->check_stack_value();
+
     return am;
   }
 
@@ -1353,6 +1389,9 @@ public:
 
     if ( affected_by.coordinated_assault.tick && p()->buffs.coordinated_assault->check() )
       am *= 1 + p()->talents.coordinated_assault->effectN( affected_by.coordinated_assault.tick ).percent();
+
+    if ( affected_by.wyverns_cry.tick )
+      am *= 1 + p()->buffs.wyverns_cry->check_stack_value();
 
     return am;
   }
@@ -1690,6 +1729,30 @@ static std::pair<timespan_t, int> dire_beast_duration( hunter_t* p )
 }
 
 // ==========================================================================
+// Shadow Hounds
+// ==========================================================================
+
+struct dark_hound_t final : public hunter_pet_t
+{
+  dark_hound_t( hunter_t* owner, util::string_view n = "dark_hound" )
+    : hunter_pet_t( owner, n, PET_HUNTER, true /* GUARDIAN */, true /* dynamic */ )
+  {
+    resource_regeneration  = regen_type::DISABLED;
+    owner_coeff.ap_from_ap = 3;
+  }
+
+  void summon( timespan_t duration = 0_ms ) override
+  {
+    hunter_pet_t::summon( duration );
+
+    if ( main_hand_attack )
+      main_hand_attack->execute();
+  }
+
+  void init_spells() override;
+};
+
+// ==========================================================================
 // Dire Critter
 // ==========================================================================
 
@@ -1758,30 +1821,6 @@ struct dire_critter_t : public hunter_pet_t
   }
 };
 
-// ==========================================================================
-// Shadow Hounds
-// ==========================================================================
-
-struct dark_hound_t final : public hunter_pet_t
-{
-  dark_hound_t( hunter_t* owner, util::string_view n = "dark_hound" )
-    : hunter_pet_t( owner, n, PET_HUNTER, true /* GUARDIAN */, true /* dynamic */ )
-  {
-    resource_regeneration  = regen_type::DISABLED;
-    owner_coeff.ap_from_ap = 3;
-  }
-
-  void summon( timespan_t duration = 0_ms ) override
-  {
-    hunter_pet_t::summon( duration );
-
-    if ( main_hand_attack )
-      main_hand_attack->execute();
-  }
-
-  void init_spells() override;
-};
-
 // =========================================================================
 // Fenryr
 // =========================================================================
@@ -1834,6 +1873,62 @@ struct hati_t final : public dire_critter_t
 
     if ( main_hand_attack )
       main_hand_attack->execute();
+  }
+};
+
+// ==========================================================================
+// Bear
+// ==========================================================================
+
+struct bear_td_t: public actor_target_data_t
+{
+public:
+  struct dots_t
+  {
+    dot_t* rend_flesh = nullptr;
+  } dots;
+
+  bear_td_t( player_t* target, bear_t* p );
+};
+
+struct bear_t final : public dire_critter_t
+{
+  struct actives_t
+  {
+    action_t* rend_flesh = nullptr;
+  } active;
+
+  bear_t( hunter_t* owner, util::string_view n = "bear" ) : dire_critter_t( owner, n )
+  {
+    // owner_coeff.ap_from_ap TODO
+    // auto_attack_multiplier TODO
+    main_hand_weapon.swing_time = 1.5_s;
+  }
+
+  void summon( timespan_t duration = 0_ms ) override
+  {
+    // Don't run the base summon function as we don't want to trigger the dire beast buff or energize
+    hunter_pet_t::summon( duration );
+
+    if ( main_hand_attack )
+      main_hand_attack->execute();
+  }
+
+  void init_spells() override;
+
+  target_specific_t<bear_td_t> target_data;
+
+  const bear_td_t* find_target_data( const player_t* target ) const override
+  {
+    return target_data[ target ];
+  }
+
+  bear_td_t* get_target_data( player_t* target ) const override
+  {
+    bear_td_t*& td = target_data[target];
+    if ( !td )
+      td = new bear_td_t( target, const_cast<bear_t*>( this ) );
+    return td;
   }
 };
 
@@ -1946,6 +2041,7 @@ struct hunter_main_pet_base_t : public stable_pet_t
   struct {
     spell_data_ptr_t kill_command;
     spell_data_ptr_t bloodshed;
+    spell_data_ptr_t flanking_strike;
     spell_data_ptr_t spearhead_debuff;
   } spells;
 
@@ -2652,14 +2748,6 @@ struct kill_command_sv_t : public hunter_main_pet_attack_t
     base_multiplier *= 1 + o()->talents.alpha_predator->effectN( 2 ).percent();
   }
 
-  void execute() override
-  {
-    hunter_main_pet_attack_t::execute();
-
-    if ( o()->buffs.exposed_flank->check() && execute_state && execute_state->chain_target>0 )
-      o()->buffs.tip_of_the_spear->trigger();
-  }
-
   void impact( action_state_t* s ) override
   {
     hunter_main_pet_attack_t::impact( s );
@@ -2677,18 +2765,6 @@ struct kill_command_sv_t : public hunter_main_pet_attack_t
 
     if ( o()->talents.sentinel.ok() )
       o()->trigger_sentinel( s->target, false, o()->procs.sentinel_stacks );
-
-    o()->buffs.exposed_flank->expire();
-  }
-
-  double action_multiplier() const override
-  {
-    double am = hunter_main_pet_attack_t::action_multiplier();
-
-    if ( o()->buffs.exposed_flank->check() )
-      am *= 1 + o()->buffs.exposed_flank->data().effectN( 3 ).percent();
-
-    return am;
   }
   
   void trigger_dot( action_state_t* s ) override
@@ -2698,28 +2774,11 @@ struct kill_command_sv_t : public hunter_main_pet_attack_t
     o() -> trigger_bloodseeker_update();
   }
 
-  //2024-10-25: Kill Command bleed ticks expire Exposed Flank
-  void tick( dot_t* d ) override
-  {
-    hunter_main_pet_attack_t::tick( d );
-
-    if ( o()->bugs )
-      o()->buffs.exposed_flank->decrement();
-  }
-
   void last_tick( dot_t* d ) override
   {
     hunter_main_pet_attack_t::last_tick( d );
 
     o() -> trigger_bloodseeker_update();
-  }
-
-  int n_targets() const override
-  {
-    if ( o()->buffs.exposed_flank->up() )
-      return as<int>( o()->buffs.exposed_flank->check_value() );
-
-    return hunter_main_pet_attack_t::n_targets();
   }
 };
 
@@ -3008,15 +3067,9 @@ struct brutal_companion_ba_t : public basic_attack_base_t
 
 struct flanking_strike_t: public hunter_main_pet_attack_t
 {
-  flanking_strike_t( hunter_main_pet_t* p ) : hunter_main_pet_attack_t( "flanking_strike", p, p->find_spell( 259516 ) )
+  flanking_strike_t( hunter_main_pet_t* p ) : hunter_main_pet_attack_t( "flanking_strike", p, p->spells.flanking_strike )
   {
     background = true;
-    
-    if ( o()->talents.exposed_flank.ok() )
-    {
-      aoe = as<int>( o()->talents.exposed_flank->effectN( 3 ).base_value() );
-      base_aoe_multiplier = o()->talents.exposed_flank->effectN( 1 ).percent();
-    }
   }
 
   double bonus_da( const action_state_t* s ) const override
@@ -3132,7 +3185,23 @@ struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, attack_t>
   }
 };
 
+// Rend Flesh (Bear) ========================================================
+
+struct rend_flesh_t : public hunter_pet_action_t<bear_t, attack_t>
+{
+  rend_flesh_t( bear_t* p ) : hunter_pet_action_t( "rend_flesh", p, p -> find_spell( 471999 ) )
+  {
+    background = dual = true;
+    aoe = as<int>( data().effectN( 2 ).base_value() );
+  }
+};
+
 } // end namespace pets::actions
+
+bear_td_t::bear_td_t( player_t* target, bear_t* p ) : actor_target_data_t( target, p )
+{
+  dots.rend_flesh = target->get_dot( "rend_flesh", p );
+}
 
 hunter_main_pet_td_t::hunter_main_pet_td_t( player_t* target, hunter_main_pet_t* p ) : actor_target_data_t( target, p )
 {
@@ -3191,13 +3260,13 @@ void hunter_main_pet_base_t::init_spells()
 
     active.kill_command = new actions::kill_command_bm_t( this );
     active.bestial_wrath = new actions::bestial_wrath_t( this );
-  }  
+    
+    if ( o() -> talents.kill_cleave.ok() )
+      active.kill_cleave = new actions::kill_cleave_t( this );
 
-  if ( o() -> talents.kill_cleave.ok() )
-    active.kill_cleave = new actions::kill_cleave_t( this );
-
-  if ( o() -> talents.stomp.ok() || o() -> talents.bloody_frenzy.ok() )
-    active.stomp = new actions::stomp_t( this );
+    if ( o() -> talents.stomp.ok() || o() -> talents.bloody_frenzy.ok() )
+      active.stomp = new actions::stomp_t( this );
+  }
 
   if ( o() -> talents.frenzied_tear.ok() )
     active.frenzied_tear = new actions::frenzied_tear_t( this );
@@ -3211,17 +3280,21 @@ void hunter_main_pet_t::init_spells()
   {
     spells.kill_command = find_spell( 259277 );
     spells.spearhead_debuff = find_spell( 1221386 );
-    active.kill_command = new actions::kill_command_sv_t( this );
-  }
 
-  if ( o()->talents.flanking_strike.ok() )
-    active.flanking_strike = new actions::flanking_strike_t( this );
+    active.kill_command = new actions::kill_command_sv_t( this );
+
+    if ( o()->talents.flanking_strike.ok() )
+    {
+      spells.flanking_strike = find_spell( 259516 );
+      active.flanking_strike = new actions::flanking_strike_t( this );
+    }
+
+    if ( o()->talents.coordinated_assault.ok() )
+      active.coordinated_assault = new actions::coordinated_assault_t( this );
+  }
 
   if ( o()->talents.bloodshed.ok() )
     active.bloodshed = new actions::bloodshed_t( this );
-
-  if ( o()->talents.coordinated_assault.ok() )
-    active.coordinated_assault = new actions::coordinated_assault_t( this );
 
   if ( o()->talents.brutal_companion.ok() )
     active.brutal_companion_ba = new actions::brutal_companion_ba_t( this, "Claw" );
@@ -3247,6 +3320,13 @@ void fenryr_t::init_spells()
   hunter_pet_t::init_spells();
 
   active.ravenous_leap = new actions::ravenous_leap_t( this );
+}
+
+void bear_t::init_spells()
+{
+  hunter_pet_t::init_spells();
+
+  active.rend_flesh = new actions::rend_flesh_t( this );
 }
 
 void hunter_main_pet_base_t::init_special_effects()
@@ -3401,6 +3481,9 @@ int hunter_t::ticking_dots( hunter_td_t* td )
   dots += pet_dots.ravenous_leap->is_ticking();
   dots += pet_dots.bloodseeker->is_ticking();
 
+  if ( pets.bear )
+    dots += pets.bear->get_target_data( td->target )->dots.rend_flesh->is_ticking();
+
   return dots;
 }
 
@@ -3440,8 +3523,8 @@ void hunter_t::trigger_outland_venom_update()
   {
     if ( t->is_enemy() )
     {
-      auto td        = get_target_data( t );
-      int current    = td->debuffs.outland_venom->check();
+      auto td = get_target_data( t );
+      int current = td->debuffs.outland_venom->check();
       int new_stacks = ticking_dots( td );
 
       new_stacks = std::min( new_stacks, td->debuffs.outland_venom->max_stack() );
@@ -3645,6 +3728,52 @@ void hunter_t::trigger_lunar_storm( player_t* target )
           }
         },
         as<int>( talents.lunar_storm_periodic_trigger->duration() / talents.lunar_storm_periodic_trigger->effectN( 2 ).period() ) );
+  }
+}
+
+void hunter_t::consume_howl_of_the_pack_leader( player_t* target )
+{
+  if ( buffs.howl_of_the_pack_leader_wyvern_ready->check() )
+  {
+    actions.wyverns_cry->execute();
+    buffs.howl_of_the_pack_leader_wyvern_ready->expire();
+  }
+
+  if ( buffs.howl_of_the_pack_leader_boar_ready->check() )
+  {
+    make_event<ground_aoe_event_t>( *sim, this, 
+      ground_aoe_params_t()
+        .target( target )
+        .duration( talents.howl_of_the_pack_leader_boar_charge_trigger->duration() )
+        .pulse_time( talents.howl_of_the_pack_leader_boar_charge_trigger->effectN( 2 ).period() )
+        .action( actions.boar_charge ),
+      true );
+    buffs.howl_of_the_pack_leader_boar_ready->expire();
+  }
+
+  if ( buffs.howl_of_the_pack_leader_bear_ready->check() )
+  {
+    actions.bear_summon->execute_on_target( target );
+    buffs.howl_of_the_pack_leader_bear_ready->expire();
+  }
+}
+
+void hunter_t::trigger_howl_of_the_pack_leader_ready()
+{
+  if ( state.howl_of_the_pack_leader_next_beast == WYVERN )
+  {
+    state.howl_of_the_pack_leader_next_beast = BOAR;
+    buffs.howl_of_the_pack_leader_wyvern_ready->trigger();
+  }
+  else if ( state.howl_of_the_pack_leader_next_beast == BOAR )
+  {
+    state.howl_of_the_pack_leader_next_beast = BEAR;
+    buffs.howl_of_the_pack_leader_boar_ready->trigger();
+  }
+  else if ( state.howl_of_the_pack_leader_next_beast == BEAR )
+  {
+    state.howl_of_the_pack_leader_next_beast = WYVERN;
+    buffs.howl_of_the_pack_leader_bear_ready->trigger();
   }
 }
 
@@ -4596,6 +4725,45 @@ struct phantom_pain_t final : hunter_ranged_attack_t
   {
     background = dual = true;
     base_dd_min = base_dd_max = 1.0;
+  }
+};
+
+// Howl of the Pack Leader (Pack Leader)
+
+struct boar_charge_t final : hunter_ranged_attack_t
+{
+  struct cleave_t : hunter_ranged_attack_t
+  {
+    cleave_t( hunter_t* p ) : hunter_spell_t( "boar_charge_cleave", p, p->talents.howl_of_the_pack_leader_boar_charge_cleave )
+    {
+      background = dual = true;
+      aoe = as<int>( data().effectN( 2 ).base_value() );
+    }
+
+    size_t available_targets( std::vector< player_t* >& tl ) const override
+    {
+      hunter_ranged_attack_t::available_targets( tl );
+
+      // Cannot hit the original target.
+      range::erase_remove( tl, target );
+
+      return tl.size();
+    }
+  };
+
+  cleave_t* cleave;
+
+  boar_charge_t( hunter_t* p ) : hunter_spell_t( "boar_charge", p, p->talents.howl_of_the_pack_leader_boar_charge_impact ),
+      cleave( new cleave_t( p ) )
+  {
+    background = dual = true;
+  }
+
+  void execute() override
+  {
+    hunter_spell_t::execute();
+
+    cleave->execute_on_target( target );
   }
 };
 
@@ -5564,7 +5732,7 @@ struct rapid_fire_t: public hunter_spell_t
   };
 
   rapid_fire_tick_t* damage;
-  rapid_fire_tick_aspect_of_the_hydra_t* aspect_of_the_hydra;
+  rapid_fire_tick_aspect_of_the_hydra_t* aspect_of_the_hydra = nullptr;
   int base_num_ticks;
 
   struct {
@@ -6005,12 +6173,6 @@ struct flanking_strike_t: hunter_melee_attack_t
       // Decrement after player and pet damage.
       decrements_tip_of_the_spear = false;
 
-      if ( p->talents.exposed_flank.ok() )
-      {
-        aoe = as<int>( p->talents.exposed_flank->effectN( 3 ).base_value() );
-        base_aoe_multiplier = p->talents.exposed_flank->effectN( 1 ).percent();
-      }
-
       if ( p->talents.merciless_blow.ok() )
         merciless_blow = p->get_background_action<merciless_blow_t>( "flanking_strike_merciless_blow" );
     }
@@ -6074,10 +6236,7 @@ struct flanking_strike_t: hunter_melee_attack_t
       pet -> active.flanking_strike -> execute_on_target( target );
 
     p()->buffs.tip_of_the_spear->decrement();
-
     p()->buffs.tip_of_the_spear->trigger( as<int>( p()->talents.flanking_strike->effectN( 2 ).base_value() ) );
-
-    p()->buffs.exposed_flank->trigger();
     p()->buffs.frenzy_strikes->trigger();
   }
 };
@@ -6743,6 +6902,8 @@ struct kill_command_t: public hunter_spell_t
           pet->buffs.beast_cleave->extend_duration( p(), duration );
       }
     }
+
+    p()->consume_howl_of_the_pack_leader( target );
   }
 
   bool target_ready( player_t* candidate_target ) override
@@ -6793,6 +6954,36 @@ struct kill_command_t: public hunter_spell_t
     }
 
     return hunter_spell_t::create_expression( expression_str );
+  }
+};
+
+// Howl of the Pack Leader (Pack Leader Talent)
+
+struct wyverns_cry_t final : hunter_spell_t
+{
+  wyverns_cry_t( hunter_t* p ) : hunter_spell_t( "wyverns_cry", p, p->talents.howl_of_the_pack_leader_wyvern_summon )
+  {
+  }
+
+  void execute() override
+  {
+    hunter_spell_t::execute();
+
+    p()->buffs.wyverns_cry->trigger();
+  }
+};
+
+struct bear_summon_t final : hunter_spell_t
+{
+  bear_summon_t( hunter_t* p ) : hunter_spell_t( "bear_summon", p, p->talents.howl_of_the_pack_leader_bear_summon )
+  {
+  }
+
+  void execute() override
+  {
+    hunter_spell_t::execute();
+
+    p()->pets.bear->summon( data().duration() );
   }
 };
 
@@ -7695,6 +7886,9 @@ void hunter_t::create_pets()
 
   if ( talents.animal_companion.ok() )
     pets.animal_companion = new pets::animal_companion_t( this );
+
+  if ( talents.howl_of_the_pack_leader.ok() )
+    pets.bear = new pets::bear_t( this );
 }
 
 void hunter_t::init()
@@ -7973,9 +8167,6 @@ void hunter_t::init_spells()
     talents.bombardier_buff                   = talents.bombardier.ok() ? find_spell( 459859 ) : spell_data_t::not_found();
     talents.deadly_duo                        = find_talent_spell( talent_tree::SPECIALIZATION, "Deadly Duo", HUNTER_SURVIVAL );
 
-    talents.exposed_flank                     = find_talent_spell( talent_tree::SPECIALIZATION, "Exposed Flank", HUNTER_SURVIVAL );
-
-
     specs.serpent_sting = find_spell( 259491 );
     specs.harpoon = find_spell( 190925 );
   }
@@ -8015,6 +8206,18 @@ void hunter_t::init_spells()
   if ( specialization() == HUNTER_BEAST_MASTERY || specialization() == HUNTER_SURVIVAL )
   {
     // Pack Leader
+    talents.howl_of_the_pack_leader = find_talent_spell( talent_tree::HERO, "Howl of the Pack Leader" );
+    talents.howl_of_the_pack_leader_wyvern_ready_buff = talents.howl_of_the_pack_leader.ok() ? find_spell( 471878 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_boar_ready_buff = talents.howl_of_the_pack_leader.ok() ? find_spell( 472324 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_bear_ready_buff = talents.howl_of_the_pack_leader.ok() ? find_spell( 472325 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_cooldown_buff = talents.howl_of_the_pack_leader.ok() ? find_spell( 471877 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_wyvern_summon = talents.howl_of_the_pack_leader.ok() ? find_spell( 1222271 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_wyvern_buff = talents.howl_of_the_pack_leader.ok() ? find_spell( 471881 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_boar_charge_trigger = talents.howl_of_the_pack_leader.ok() ? find_spell( 472020 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_boar_charge_impact = talents.howl_of_the_pack_leader.ok() ? find_spell( 471936 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_boar_charge_cleave = talents.howl_of_the_pack_leader.ok() ? find_spell( 471938 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_bear_summon = talents.howl_of_the_pack_leader.ok() ? find_spell( 471993 ) : spell_data_t::not_found();
+
     talents.vicious_hunt = find_talent_spell( talent_tree::HERO, "Vicious Hunt" );
 
     talents.pack_coordination = find_talent_spell( talent_tree::HERO, "Pack Coordination" );
@@ -8147,7 +8350,14 @@ void hunter_t::create_actions()
     actions.a_murder_of_crows = new spells::a_murder_of_crows_t( this );
 
   if ( talents.vicious_hunt.ok() )
-    actions.vicious_hunt = new attacks::vicious_hunt_t( this ); 
+    actions.vicious_hunt = new attacks::vicious_hunt_t( this );
+
+  if ( talents.howl_of_the_pack_leader.ok() )
+  {
+    actions.wyverns_cry = new spells::wyverns_cry_t( this );
+    actions.bear_summon = new spells::bear_summon_t( this );
+    actions.boar_charge = new attacks::boar_charge_t( this );
+  }
 
   if ( talents.sentinel.ok() )
     actions.sentinel = new attacks::sentinel_t( this );
@@ -8435,11 +8645,6 @@ void hunter_t::create_buffs()
       ->set_pct_buff_type( STAT_PCT_BUFF_HASTE )
       ->set_quiet( true );
 
-  buffs.exposed_flank = 
-    make_buff( this, "exposed_flank", find_spell( 459864 ) )
-      ->set_default_value_from_effect( 1 )
-      ->set_chance( talents.exposed_flank.ok() );
-
   buffs.bombardier = 
     make_buff( this, "bombardier", talents.bombardier_buff );
 
@@ -8482,6 +8687,43 @@ void hunter_t::create_buffs()
       ->set_default_value_from_effect( 1 );
 
   // Hero Talents
+
+  buffs.howl_of_the_pack_leader_wyvern_ready = 
+    make_buff( this, "howl_of_the_pack_leader_wyvern_ready", talents.howl_of_the_pack_leader_wyvern_ready_buff )
+      ->set_stack_change_callback(
+        [ this ]( buff_t* b, int, int cur ) {
+          if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
+            buffs.howl_of_the_pack_leader_cooldown->trigger();
+        } );
+
+  buffs.howl_of_the_pack_leader_boar_ready = 
+    make_buff( this, "howl_of_the_pack_leader_boar_ready", talents.howl_of_the_pack_leader_boar_ready_buff )
+      ->set_stack_change_callback(
+        [ this ]( buff_t* b, int, int cur ) {
+          if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
+            buffs.howl_of_the_pack_leader_cooldown->trigger();
+        } );
+
+  buffs.howl_of_the_pack_leader_bear_ready = 
+    make_buff( this, "howl_of_the_pack_leader_bear_ready", talents.howl_of_the_pack_leader_bear_ready_buff )
+      ->set_stack_change_callback(
+        [ this ]( buff_t* b, int, int cur ) {
+          if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
+            buffs.howl_of_the_pack_leader_cooldown->trigger();
+        } );
+
+  buffs.howl_of_the_pack_leader_cooldown = 
+    make_buff( this, "howl_of_the_pack_leader_cooldown", talents.howl_of_the_pack_leader_cooldown_buff )
+      ->set_stack_change_callback(
+        [ this ]( buff_t* b, int, int cur ) {
+          if ( cur == 0 )
+            trigger_howl_of_the_pack_leader_ready();
+        } );
+
+  buffs.wyverns_cry = 
+    make_buff( this, "wyverns_cry", talents.howl_of_the_pack_leader_wyvern_buff )
+      ->set_initial_stack( as<int>( talents.howl_of_the_pack_leader->effectN( 3 ).base_value() ) )
+      ->set_default_value_from_effect( 1 );
 
   buffs.vicious_hunt = 
     make_buff( this, "vicious_hunt", find_spell( 431917 ) )
@@ -8881,6 +9123,8 @@ void hunter_t::combat_begin()
 
   buffs.lunar_storm_ready->trigger();
 
+  buffs.howl_of_the_pack_leader_cooldown->trigger();
+
   player_t::combat_begin();
 }
 
@@ -9021,9 +9265,9 @@ double hunter_t::composite_player_pet_damage_multiplier( const action_state_t* s
     if ( buffs.coordinated_assault->check() )
       m *= 1 + talents.coordinated_assault->effectN( 4 ).percent();
 
-    m *= 1 + buffs.summon_hati -> check_value();
-
+    m *= 1 + buffs.summon_hati->check_value();
     m *= 1 + buffs.serpentine_blessing->check_value();
+    m *= 1 + buffs.wyverns_cry->check_stack_value();
   }
 
   return m;
