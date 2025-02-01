@@ -1646,9 +1646,7 @@ public:
   void invalidate_cache( cache_e c ) override;
   double non_stacking_movement_modifier() const override;
   double stacking_movement_modifier() const override;
-  double composite_melee_crit_chance() const override;
   double composite_melee_haste() const override;
-  double composite_spell_crit_chance() const override;
   double composite_spell_haste() const override;
   double composite_player_multiplier( school_e school ) const override;
   double composite_player_target_multiplier( player_t* target, school_e school ) const override;
@@ -14508,6 +14506,7 @@ void shaman_t::apply_player_effects()
   eff::source_eff_builder_t( buff.flurry ).set_flag( IGNORE_STACKS ).build( this );
   eff::source_eff_builder_t( spec.enhancement_shaman ).build( this );
   eff::source_eff_builder_t( spec.enhancement_shaman2 ).build( this );
+  eff::source_eff_builder_t( spec.critical_strikes ).build( this );
 
   // Elemental
   eff::source_eff_builder_t( buff.elemental_equilibrium )
@@ -15109,17 +15108,6 @@ void shaman_t::moving()
   }
 }
 
-// shaman_t::composite_spell_crit_chance ===========================================
-
-double shaman_t::composite_spell_crit_chance() const
-{
-  double m = parse_player_effects_t::composite_spell_crit_chance();
-
-  m += spec.critical_strikes->effectN( 1 ).percent();
-
-  return m;
-}
-
 // shaman_t::non_stacking_movement_modifier ========================================
 
 double shaman_t::non_stacking_movement_modifier() const
@@ -15144,17 +15132,6 @@ double shaman_t::stacking_movement_modifier() const
   }
 
   return ms;
-}
-
-// shaman_t::composite_melee_crit_chance ===========================================
-
-double shaman_t::composite_melee_crit_chance() const
-{
-  double m = parse_player_effects_t::composite_melee_crit_chance();
-
-  m += spec.critical_strikes->effectN( 1 ).percent();
-
-  return m;
 }
 
 // shaman_t::composite_melee_haste =========================================
