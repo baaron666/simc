@@ -2069,9 +2069,6 @@ public:
   bool affected_by_stormkeeper_damage;
   bool affected_by_arc_discharge;
 
-  bool affected_by_amplification_core_da;
-  bool affected_by_amplification_core_ta;
-
   bool affected_by_enhanced_imbues_da;
 
   bool affected_by_storm_frenzy;
@@ -2114,8 +2111,6 @@ public:
       affected_by_stormkeeper_cast_time( false ),
       affected_by_stormkeeper_damage( false ),
       affected_by_arc_discharge( false ),
-      affected_by_amplification_core_da( false ),
-      affected_by_amplification_core_ta( false ),
       affected_by_enhanced_imbues_da( false ), // Enhancement damage effects, Ele stuff is handled elsewhere
       affected_by_storm_frenzy( false ),
       affected_by_elemental_unity_fe_da( false ),
@@ -2167,9 +2162,6 @@ public:
     affected_by_lotfw_ta = ab::data().affected_by( player->find_spell( 384451 )->effectN( 2 ) );
 
     affected_by_arc_discharge = ab::data().affected_by( player->buff.arc_discharge->data().effectN( 1 ) );
-
-    affected_by_amplification_core_da = ab::data().affected_by( player->find_spell( 456369 )->effectN( 1 ) );
-    affected_by_amplification_core_ta = ab::data().affected_by( player->find_spell( 456369 )->effectN( 2 ) );
 
     affected_by_enhanced_imbues_da = ab::data().affected_by( player->talent.enhanced_imbues->effectN( 2 ) );
 
@@ -2300,11 +2292,6 @@ public:
       m *= 1.0 + p()->buff.arc_discharge->value();
     }
 
-    if ( affected_by_amplification_core_da && p()->buff.amplification_core->check() )
-    {
-      m *= 1.0 + p()->buff.amplification_core->value();
-    }
-
     if ( affected_by_enhanced_imbues_da )
     {
       m *= 1.0 + p()->talent.enhanced_imbues->effectN( 2 ).percent();
@@ -2356,11 +2343,6 @@ public:
     if ( affected_by_lotfw_ta && p()->buff.legacy_of_the_frost_witch->check() )
     {
       m *= 1.0 + p()->buff.legacy_of_the_frost_witch->value();
-    }
-
-    if ( affected_by_amplification_core_ta && p()->buff.amplification_core->check() )
-    {
-      m *= 1.0 + p()->buff.amplification_core->value();
     }
 
     if ( affected_by_elemental_unity_fe_ta && p()->talent.elemental_unity.ok() &&
@@ -14490,6 +14472,7 @@ void shaman_t::apply_action_effects( parse_effects_t* a )
     .add_affect_list( affect_list_t( 1 ).add_spell( 390287 ) ) // Stormblast
     .build( a );
 
+  eff::source_eff_builder_t( buff.amplification_core ).build( a );
   eff::source_eff_builder_t( buff.crackling_surge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
   eff::source_eff_builder_t( buff.molten_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
   eff::source_eff_builder_t( buff.icy_edge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
