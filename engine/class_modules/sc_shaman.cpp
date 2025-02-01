@@ -1647,7 +1647,6 @@ public:
   double non_stacking_movement_modifier() const override;
   double stacking_movement_modifier() const override;
   double composite_melee_crit_chance() const override;
-  double composite_melee_auto_attack_speed() const override;
   double composite_melee_haste() const override;
   double composite_spell_crit_chance() const override;
   double composite_spell_haste() const override;
@@ -14506,6 +14505,7 @@ void shaman_t::apply_player_effects()
   eff::source_eff_builder_t( spec.mail_specialization ).build( this );
 
   // Enhancement
+  eff::source_eff_builder_t( buff.flurry ).set_flag( IGNORE_STACKS ).build( this );
 
   // Elemental
   eff::source_eff_builder_t( buff.elemental_equilibrium )
@@ -15153,17 +15153,6 @@ double shaman_t::composite_melee_crit_chance() const
   m += spec.critical_strikes->effectN( 1 ).percent();
 
   return m;
-}
-
-// shaman_t::composite_attack_speed =========================================
-
-double shaman_t::composite_melee_auto_attack_speed() const
-{
-  double speed = parse_player_effects_t::composite_melee_auto_attack_speed();
-
-  speed *= 1.0 / ( 1.0 + buff.flurry->value() );
-
-  return speed;
 }
 
 // shaman_t::composite_melee_haste =========================================
