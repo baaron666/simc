@@ -14506,6 +14506,8 @@ void shaman_t::apply_player_effects()
 
   // Enhancement
   eff::source_eff_builder_t( buff.flurry ).set_flag( IGNORE_STACKS ).build( this );
+  eff::source_eff_builder_t( spec.enhancement_shaman ).build( this );
+  eff::source_eff_builder_t( spec.enhancement_shaman2 ).build( this );
 
   // Elemental
   eff::source_eff_builder_t( buff.elemental_equilibrium )
@@ -15231,15 +15233,11 @@ double shaman_t::composite_player_pet_damage_multiplier( const action_state_t* s
   {
     m *= 1.0 + spec.elemental_shaman->effectN( 3 ).percent();
 
-    m *= 1.0 + spec.enhancement_shaman->effectN( 3 ).percent();
-
     m *= 1.0 + mastery.elemental_overload->effectN( 5 ).mastery_value() * cache.mastery();
   }
   else
   {
     m *= 1.0 + spec.elemental_shaman->effectN( 4 ).percent();
-
-    m *= 1.0 + spec.enhancement_shaman->effectN( 4 ).percent();
 
     m *= 1.0 + mastery.elemental_overload->effectN( 6 ).mastery_value() * cache.mastery();
   }
