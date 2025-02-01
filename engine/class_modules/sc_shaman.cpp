@@ -14509,6 +14509,7 @@ void shaman_t::apply_player_effects()
   eff::source_eff_builder_t( spec.critical_strikes ).build( this );
 
   // Elemental
+  eff::source_eff_builder_t( spec.elemental_shaman ).build( this );
   eff::source_eff_builder_t( buff.elemental_equilibrium )
     .add_affecting_spell( talent.elemental_equilibrium )
     .set_effect_mask( effect_mask_t( true ).disable( 2 ) )
@@ -15208,14 +15209,10 @@ double shaman_t::composite_player_pet_damage_multiplier( const action_state_t* s
 
   if ( !guardian )
   {
-    m *= 1.0 + spec.elemental_shaman->effectN( 3 ).percent();
-
     m *= 1.0 + mastery.elemental_overload->effectN( 5 ).mastery_value() * cache.mastery();
   }
   else
   {
-    m *= 1.0 + spec.elemental_shaman->effectN( 4 ).percent();
-
     m *= 1.0 + mastery.elemental_overload->effectN( 6 ).mastery_value() * cache.mastery();
   }
 
