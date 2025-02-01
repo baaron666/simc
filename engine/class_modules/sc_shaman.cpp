@@ -2062,8 +2062,6 @@ public:
   bool affected_by_ns_cast_time;
   bool affected_by_ans_cost;
   bool affected_by_ans_cast_time;
-  bool affected_by_enh_mastery_da;
-  bool affected_by_enh_mastery_ta;
   bool affected_by_lotfw_da;
   bool affected_by_lotfw_ta;
 
@@ -2082,9 +2080,6 @@ public:
   bool affected_by_elemental_unity_fe_ta;
   bool affected_by_elemental_unity_se_da;
   bool affected_by_elemental_unity_se_ta;
-
-  bool affected_by_ele_mastery_da;
-  bool affected_by_ele_mastery_ta;
 
   bool affected_by_lightning_elemental_da;
   bool affected_by_lightning_elemental_ta;
@@ -2114,8 +2109,6 @@ public:
       affected_by_ns_cast_time( false ),
       affected_by_ans_cost( false ),
       affected_by_ans_cast_time( false ),
-      affected_by_enh_mastery_da( false ),
-      affected_by_enh_mastery_ta( false ),
       affected_by_lotfw_da( false ),
       affected_by_lotfw_ta( false ),
       affected_by_stormkeeper_cast_time( false ),
@@ -2129,8 +2122,6 @@ public:
       affected_by_elemental_unity_fe_ta( false ),
       affected_by_elemental_unity_se_da( false ),
       affected_by_elemental_unity_se_ta( false ),
-      affected_by_ele_mastery_da( false ),
-      affected_by_ele_mastery_ta( false ),
       affected_by_lightning_elemental_da( false ),
       affected_by_lightning_elemental_ta( false ),
       affected_by_ele_tww1_4pc_cc( false ),
@@ -2172,8 +2163,6 @@ public:
     affected_by_ns_cast_time = ab::data().affected_by( player->talent.natures_swiftness->effectN( 2 ) );
     affected_by_ans_cast_time = ab::data().affected_by( player->buff.ancestral_swiftness->data().effectN( 2 ) );
 
-    affected_by_enh_mastery_da = ab::data().affected_by( player->mastery.enhanced_elements->effectN( 1 ) );
-    affected_by_enh_mastery_ta = ab::data().affected_by( player->mastery.enhanced_elements->effectN( 5 ) );
     affected_by_lotfw_da = ab::data().affected_by( player->find_spell( 384451 )->effectN( 1 ) );
     affected_by_lotfw_ta = ab::data().affected_by( player->find_spell( 384451 )->effectN( 2 ) );
 
@@ -2301,11 +2290,6 @@ public:
   {
     double m = ab::action_da_multiplier();
 
-    if ( affected_by_enh_mastery_da )
-    {
-      m *= 1.0 + p()->cache.mastery_value();
-    }
-
     if ( affected_by_lotfw_da && p()->buff.legacy_of_the_frost_witch->check() )
     {
       m *= 1.0 + p()->buff.legacy_of_the_frost_witch->value();
@@ -2368,11 +2352,6 @@ public:
   double action_ta_multiplier() const override
   {
     double m = ab::action_ta_multiplier();
-
-    if ( affected_by_enh_mastery_ta )
-    {
-      m *= 1.0 + p()->cache.mastery_value();
-    }
 
     if ( affected_by_lotfw_ta && p()->buff.legacy_of_the_frost_witch->check() )
     {
@@ -4471,7 +4450,6 @@ struct stormblast_t : public shaman_attack_t
     background = may_crit = callbacks = false;
 
     // Not handled by spell data
-    affected_by_enh_mastery_da = true;
     affected_by_elemental_weapons_da = true;
   }
 
@@ -14508,6 +14486,10 @@ void shaman_t::apply_action_effects( parse_effects_t* a )
   // Shared
 
   // Enhancement
+  eff::source_eff_builder_t( mastery.enhanced_elements )
+    .add_affect_list( affect_list_t( 1 ).add_spell( 390287 ) ) // Stormblast
+    .build( a );
+
   eff::source_eff_builder_t( buff.crackling_surge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
   eff::source_eff_builder_t( buff.molten_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
   eff::source_eff_builder_t( buff.icy_edge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
