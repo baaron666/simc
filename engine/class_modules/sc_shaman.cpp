@@ -1650,7 +1650,6 @@ public:
   double composite_spell_haste() const override;
   double composite_player_multiplier( school_e school ) const override;
   double composite_player_target_multiplier( player_t* target, school_e school ) const override;
-  double composite_player_pet_damage_multiplier( const action_state_t* state, bool guardian ) const override;
   double composite_maelstrom_gain_coefficient( const action_state_t* /* state */ = nullptr ) const
   { return 1.0; }
   action_t* create_action( util::string_view name, util::string_view options ) override;
@@ -2196,9 +2195,6 @@ public:
     affected_by_elemental_unity_se_ta = ab::data().affected_by( player->buff.storm_elemental->data().effectN( 5 ) ) ||
                                         ab::data().affected_by( player->buff.lesser_storm_elemental->data().effectN( 5 ) );
 
-    affected_by_ele_mastery_da = ab::data().affected_by( player->mastery.elemental_overload->effectN( 3 ) );
-    affected_by_ele_mastery_ta = ab::data().affected_by( player->mastery.elemental_overload->effectN( 4 ) );
-
     affected_by_lightning_elemental_da = ab::data().affected_by( player->buff.fury_of_the_storms->data().effectN( 2 ) );
     affected_by_lightning_elemental_ta = ab::data().affected_by( player->buff.fury_of_the_storms->data().effectN( 3 ) );
 
@@ -2310,11 +2306,6 @@ public:
       m *= 1.0 + p()->cache.mastery_value();
     }
 
-    if ( affected_by_ele_mastery_da )
-    {
-      m *= 1.0 + p()->mastery.elemental_overload->effectN( 3 ).mastery_value() * p()->cache.mastery();
-    }
-
     if ( affected_by_lotfw_da && p()->buff.legacy_of_the_frost_witch->check() )
     {
       m *= 1.0 + p()->buff.legacy_of_the_frost_witch->value();
@@ -2381,11 +2372,6 @@ public:
     if ( affected_by_enh_mastery_ta )
     {
       m *= 1.0 + p()->cache.mastery_value();
-    }
-
-    if ( affected_by_ele_mastery_ta )
-    {
-      m *= 1.0 + p()->mastery.elemental_overload->effectN( 4 ).mastery_value() * p()->cache.mastery();
     }
 
     if ( affected_by_lotfw_ta && p()->buff.legacy_of_the_frost_witch->check() )
@@ -14510,6 +14496,7 @@ void shaman_t::apply_player_effects()
 
   // Elemental
   eff::source_eff_builder_t( spec.elemental_shaman ).build( this );
+  eff::source_eff_builder_t( mastery.elemental_overload ).build( this );
   eff::source_eff_builder_t( buff.elemental_equilibrium )
     .add_affecting_spell( talent.elemental_equilibrium )
     .set_effect_mask( effect_mask_t( true ).disable( 2 ) )
@@ -14518,6 +14505,8 @@ void shaman_t::apply_player_effects()
 
 void shaman_t::apply_action_effects( parse_effects_t* a )
 {
+  // Shared
+
   // Enhancement
   eff::source_eff_builder_t( buff.crackling_surge ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
   eff::source_eff_builder_t( buff.molten_weapon ).set_flag( USE_CURRENT, IGNORE_STACKS ).build( a );
@@ -14526,6 +14515,9 @@ void shaman_t::apply_action_effects( parse_effects_t* a )
 
   eff::source_eff_builder_t( buff.tww2_enh_2pc ).build( a );
   eff::source_eff_builder_t( buff.tww2_enh_4pc_damage ).build( a );
+
+  // Elemental
+  eff::source_eff_builder_t( mastery.elemental_overload ).build( a );
 }
 
 // shaman_t::generate_bloodlust_options =====================================
@@ -15197,24 +15189,6 @@ double shaman_t::composite_player_multiplier( school_e school ) const
 double shaman_t::composite_player_target_multiplier( player_t* target, school_e school ) const
 {
   double m = parse_player_effects_t::composite_player_target_multiplier( target, school );
-
-  return m;
-}
-
-// shaman_t::composite_player_pet_damage_multiplier =========================
-
-double shaman_t::composite_player_pet_damage_multiplier( const action_state_t* s, bool guardian ) const
-{
-  double m = parse_player_effects_t::composite_player_pet_damage_multiplier( s, guardian );
-
-  if ( !guardian )
-  {
-    m *= 1.0 + mastery.elemental_overload->effectN( 5 ).mastery_value() * cache.mastery();
-  }
-  else
-  {
-    m *= 1.0 + mastery.elemental_overload->effectN( 6 ).mastery_value() * cache.mastery();
-  }
 
   return m;
 }
