@@ -502,6 +502,7 @@ public:
     buff_t* howl_of_the_pack_leader_bear_ready;
     buff_t* howl_of_the_pack_leader_cooldown;
     buff_t* wyverns_cry;
+    buff_t* hogstrider;
 
     buff_t* vicious_hunt;
     buff_t* howl_of_the_pack;
@@ -875,6 +876,19 @@ public:
     spell_data_ptr_t howl_of_the_pack_leader_boar_charge_cleave;
     spell_data_ptr_t howl_of_the_pack_leader_bear_summon;
 
+    spell_data_ptr_t pack_mentality;
+    spell_data_ptr_t dire_summons;
+    spell_data_ptr_t better_together;
+
+    spell_data_ptr_t ursine_fury;
+    spell_data_ptr_t ursine_fury_chance;
+    spell_data_ptr_t envenomed_fangs;
+    spell_data_ptr_t envenomed_fangs_spell;
+    spell_data_ptr_t fury_of_the_wyvern;
+    spell_data_ptr_t fury_of_the_wyvern_proc;
+    spell_data_ptr_t hogstrider;
+    spell_data_ptr_t hogstrider_buff;
+
     spell_data_ptr_t vicious_hunt;
 
     spell_data_ptr_t pack_coordination;
@@ -985,6 +999,7 @@ public:
     action_t* traveling_explosive = nullptr;
     timespan_t sentinel_watch_reduction = 0_s;
     howl_of_the_pack_leader_beast howl_of_the_pack_leader_next_beast = WYVERN;
+    timespan_t fury_of_the_wyvern_extension = 0_s;
   } state;
 
   struct options_t {
@@ -1135,7 +1150,7 @@ public:
   void consume_precise_shots();
   void trigger_spotters_mark( player_t* target, bool force = false );
   double calculate_tip_of_the_spear_value( double base_value ) const;
-  void consume_howl_of_the_pack_leader( player_t* target );
+  bool consume_howl_of_the_pack_leader( player_t* target );
   void trigger_howl_of_the_pack_leader_ready();
 };
 
@@ -1679,6 +1694,16 @@ struct hunter_pet_t: public pet_t
     return m;
   }
 
+  double composite_melee_attack_power() const
+  {
+    double ap = pet_t::composite_melee_attack_power();
+
+    // TODO
+    ap *= 1 + o()->talents.better_together->effectN( 2 ).percent();
+
+    return ap;
+  }
+
   void apply_affecting_auras( action_t& action ) override
   {
     pet_t::apply_affecting_auras(action);
@@ -1912,6 +1937,9 @@ struct bear_t final : public dire_critter_t
 
     if ( main_hand_attack )
       main_hand_attack->execute();
+
+    if ( active.rend_flesh )
+      active.rend_flesh->execute_on_target( target );
   }
 
   void init_spells() override;
@@ -2672,6 +2700,21 @@ struct kill_command_bm_t: public kill_command_base_t<hunter_main_pet_base_t>
     }
   }
 
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double da = kill_command_base_t::composite_da_multiplier( s );
+
+    if ( p() == o()->pets.main && 
+      ( o()->buffs.howl_of_the_pack_leader_wyvern_ready
+      || o()->buffs.howl_of_the_pack_leader_boar_ready
+      || o()->buffs.howl_of_the_pack_leader_bear_ready ) )
+    {
+      da = 1 + o()->talents.pack_mentality->effectN( 1 ).percent();
+    }
+
+    return da;
+  }
+
   void impact( action_state_t* s ) override
   {
     kill_command_base_t::impact( s );
@@ -2747,7 +2790,7 @@ struct kill_command_sv_t : public hunter_main_pet_attack_t
 
     base_multiplier *= 1 + o()->talents.alpha_predator->effectN( 2 ).percent();
   }
-
+  
   void impact( action_state_t* s ) override
   {
     hunter_main_pet_attack_t::impact( s );
@@ -2907,6 +2950,13 @@ struct pet_melee_t : public hunter_pet_melee_t<hunter_pet_t>
     {
       o()->buffs.harmonize->trigger();
     }
+  }
+
+  void execute() override
+  {
+    hunter_pet_melee_t::execute();
+
+    o()->buffs.wyverns_cry->increment();
   }
 };
 
@@ -3189,10 +3239,81 @@ struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, attack_t>
 
 struct rend_flesh_t : public hunter_pet_action_t<bear_t, attack_t>
 {
+  struct envenomed_fangs_t : public hunter_pet_action_t<bear_t, attack_t>
+  {
+    envenomed_fangs_t( bear_t* p ) : hunter_pet_action_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell )
+    {
+    }
+  };
+
+  struct
+  {
+    double chance = 0;
+    timespan_t reduction = 0_s;
+    cooldown_t* cooldown = nullptr;
+  } ursine_fury;
+
+  envenomed_fangs_t* envenomed_fangs = nullptr;
+
   rend_flesh_t( bear_t* p ) : hunter_pet_action_t( "rend_flesh", p, p -> find_spell( 471999 ) )
   {
     background = dual = true;
     aoe = as<int>( data().effectN( 2 ).base_value() );
+
+    if ( o()->talents.ursine_fury.ok() )
+    {
+      ursine_fury.chance = o()->talents.ursine_fury_chance->proc_chance();
+
+      if ( o()->specialization() == HUNTER_SURVIVAL )
+      {
+        if ( o()->talents.butchery.ok() )
+          ursine_fury.cooldown = o()->cooldowns.butchery;
+
+        if ( o()->talents.flanking_strike.ok() )
+          ursine_fury.cooldown = o()->cooldowns.flanking_strike;
+
+        ursine_fury.reduction = -o()->talents.ursine_fury->effectN( 3 ).time_value();
+      }
+
+      if ( o()->specialization() == HUNTER_BEAST_MASTERY )
+      {
+        ursine_fury.cooldown = o()->cooldowns.kill_command;
+        ursine_fury.reduction = -o()->talents.ursine_fury->effectN( 2 ).time_value();
+      }
+    }
+
+    if ( o()->talents.envenomed_fangs.ok() )
+      envenomed_fangs = new envenomed_fangs_t( p );
+  }
+
+  void tick( dot_t* d )
+  {
+    hunter_pet_action_t::tick( d );
+
+    if ( rng().roll( ursine_fury.chance ) )
+      ursine_fury.cooldown->adjust( ursine_fury.reduction );
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    hunter_pet_action_t::impact( s );
+
+    if ( o()->talents.envenomed_fangs.ok() )
+    {
+      dot_t* serpent_sting = o()->get_target_data( s->target )->dots.serpent_sting;
+      if ( serpent_sting->is_ticking() )
+      {
+        auto new_state = serpent_sting->current_action->get_state( serpent_sting->state );
+        new_state->result = RESULT_HIT;
+        double tick_damage = serpent_sting->current_action->calculate_tick_amount( new_state, serpent_sting->current_stack() );
+        action_state_t::release( new_state );
+
+        double ticks_left = serpent_sting->ticks_left_fractional();
+        sim->print_debug( "{} consumes {} with tick damage: {}, remaining ticks: {}", p()->name(), serpent_sting->name(), tick_damage, ticks_left );
+        envenomed_fangs->execute_on_target( s->target, ticks_left * tick_damage );
+        serpent_sting->cancel();
+      }
+    }
   }
 };
 
@@ -3731,16 +3852,20 @@ void hunter_t::trigger_lunar_storm( player_t* target )
   }
 }
 
-void hunter_t::consume_howl_of_the_pack_leader( player_t* target )
+bool hunter_t::consume_howl_of_the_pack_leader( player_t* target )
 {
+  bool up = false;
+
   if ( buffs.howl_of_the_pack_leader_wyvern_ready->check() )
   {
+    up = true;
     actions.wyverns_cry->execute();
     buffs.howl_of_the_pack_leader_wyvern_ready->expire();
   }
 
   if ( buffs.howl_of_the_pack_leader_boar_ready->check() )
   {
+    up = true;
     make_event<ground_aoe_event_t>( *sim, this, 
       ground_aoe_params_t()
         .target( target )
@@ -3749,13 +3874,26 @@ void hunter_t::consume_howl_of_the_pack_leader( player_t* target )
         .action( actions.boar_charge ),
       true );
     buffs.howl_of_the_pack_leader_boar_ready->expire();
+
+    if ( talents.hogstrider.ok() )
+      buffs.mongoose_fury->extend_duration( this, buffs.mongoose_fury->buff_duration() - buffs.mongoose_fury->remains() );
   }
 
   if ( buffs.howl_of_the_pack_leader_bear_ready->check() )
   {
+    up = true;
     actions.bear_summon->execute_on_target( target );
     buffs.howl_of_the_pack_leader_bear_ready->expire();
   }
+
+  // Only applied once even if two are summoned at once.
+  if ( up )
+  {
+    cooldowns.barbed_shot->adjust( -talents.pack_mentality->effectN( 2 ).time_value() );
+    cooldowns.wildfire_bomb->adjust( -talents.pack_mentality->effectN( 3 ).time_value() );
+  }
+
+  return up;
 }
 
 void hunter_t::trigger_howl_of_the_pack_leader_ready()
@@ -4734,7 +4872,10 @@ struct boar_charge_t final : hunter_ranged_attack_t
 {
   struct cleave_t : hunter_ranged_attack_t
   {
-    cleave_t( hunter_t* p ) : hunter_spell_t( "boar_charge_cleave", p, p->talents.howl_of_the_pack_leader_boar_charge_cleave )
+    double hogstrider_mongoose_fury_chance;
+
+    cleave_t( hunter_t* p ) : hunter_spell_t( "boar_charge_cleave", p, p->talents.howl_of_the_pack_leader_boar_charge_cleave ),
+      hogstrider_mongoose_fury_chance( p->talents.hogstrider->effectN( 1 ).percent() )
     {
       background = dual = true;
       aoe = as<int>( data().effectN( 2 ).base_value() );
@@ -4744,17 +4885,27 @@ struct boar_charge_t final : hunter_ranged_attack_t
     {
       hunter_ranged_attack_t::available_targets( tl );
 
-      // Cannot hit the original target.
-      range::erase_remove( tl, target );
+      // TODO 31/1/25: currently hits primary target
+      // range::erase_remove( tl, target );
 
       return tl.size();
+    }
+
+    void impact( action_state_t* s ) override
+    {
+      hunter_ranged_attack_t::impact( s );
+
+      if ( rng().roll( hogstrider_mongoose_fury_chance ) )
+        p()->buffs.mongoose_fury->increment();
+
+      p()->buffs.hogstrider->increment();
     }
   };
 
   cleave_t* cleave;
 
   boar_charge_t( hunter_t* p ) : hunter_spell_t( "boar_charge", p, p->talents.howl_of_the_pack_leader_boar_charge_impact ),
-      cleave( new cleave_t( p ) )
+    cleave( new cleave_t( p ) )
   {
     background = dual = true;
   }
@@ -4764,6 +4915,16 @@ struct boar_charge_t final : hunter_ranged_attack_t
     hunter_spell_t::execute();
 
     cleave->execute_on_target( target );
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    hunter_ranged_attack_t::impact( s );
+
+    if ( rng().roll( cleave->hogstrider_mongoose_fury_chance ) )
+      p()->buffs.mongoose_fury->increment();
+
+    p()->buffs.hogstrider->increment();
   }
 };
 
@@ -5006,6 +5167,15 @@ struct cobra_shot_t: public hunter_ranged_attack_t
     parse_options( options_str );
   }
 
+  int n_targets() const override
+  {
+    int n = hunter_ranged_attack_t::n_targets();
+
+    n += p()->buffs.hogstrider->check();
+
+    return n;
+  }
+
   void execute() override
   {
     hunter_ranged_attack_t::execute();
@@ -5027,9 +5197,11 @@ struct cobra_shot_t: public hunter_ranged_attack_t
     }
 
     if ( p()->talents.barbed_scales.ok() )
-    {
       p()->cooldowns.barbed_shot->adjust( -p()->talents.barbed_scales->effectN( 1 ).time_value() );
-    }
+
+    p()->buffs.howl_of_the_pack_leader_cooldown->extend_duration( p(), -p()->talents.dire_summons->effectN( 3 ).time_value() );
+
+    p()->buffs.hogstrider->expire();
   }
 
   double composite_da_multiplier( const action_state_t* s ) const override
@@ -5037,6 +5209,7 @@ struct cobra_shot_t: public hunter_ranged_attack_t
     double m = hunter_ranged_attack_t::composite_da_multiplier( s );
 
     m *= 1.0 + p()->buffs.serpentine_rhythm->check_stack_value();
+    m *= 1 + p()->buffs.hogstrider->check_stack_value();
 
     return m;
   }
@@ -5984,6 +6157,15 @@ struct melee_focus_spender_t: hunter_melee_attack_t
     wildfire_infusion_chance = p->talents.wildfire_infusion->effectN( 1 ).percent();
   }
 
+  int n_targets() const override
+  {
+    int n = hunter_melee_attack_t::n_targets();
+
+    n += p()->buffs.hogstrider->check();
+
+    return n;
+  }
+
   double cost() const override
   {
     double cost = hunter_melee_attack_t::cost();
@@ -5994,13 +6176,22 @@ struct melee_focus_spender_t: hunter_melee_attack_t
     return cost; 
   }
 
+  double action_multiplier() const override
+  {
+    double am = hunter_melee_attack_t::action_multiplier();
+
+    am *= 1 + p() -> buffs.mongoose_fury -> stack_value();
+
+    return am;
+  }
+
   double composite_da_multiplier( const action_state_t* s ) const override
   {
     double m = hunter_melee_attack_t::composite_da_multiplier( s );
 
     m *= 1 + p()->buffs.furious_assault->value();
 
-    if (p()->talents.wild_attacks.ok() )
+    if ( p()->talents.wild_attacks.ok() )
       m *= 1 + p()->talents.wild_attacks->effectN( 2 ).percent();
 
     return m;
@@ -6011,6 +6202,7 @@ struct melee_focus_spender_t: hunter_melee_attack_t
     double m = hunter_melee_attack_t::composite_target_da_multiplier( t );
 
     hunter_td_t *td = p()->get_target_data( t );
+
     if ( p()->tier_set.tww_s1_sv_4pc.ok() && td->dots.wildfire_bomb->is_ticking() )
       m *= 1 + p()->tier_set.tww_s1_sv_4pc->effectN( 1 ).percent();
 
@@ -6041,6 +6233,10 @@ struct melee_focus_spender_t: hunter_melee_attack_t
     {
       p()->buffs.furious_assault->decrement();
     }
+
+    p()->buffs.howl_of_the_pack_leader_cooldown->extend_duration( p(), -p()->talents.dire_summons->effectN( 4 ).time_value() );
+
+    p()->buffs.hogstrider->expire();
   }
 
   void impact( action_state_t* s ) override
@@ -6109,16 +6305,7 @@ struct mongoose_bite_base_t: melee_focus_spender_t
 
     stats_.at_fury[ p() -> buffs.mongoose_fury -> check() ] -> occur();
 
-    p() -> buffs.mongoose_fury -> trigger();
-  }
-
-  double action_multiplier() const override
-  {
-    double am = melee_focus_spender_t::action_multiplier();
-
-    am *= 1 + p() -> buffs.mongoose_fury -> stack_value();
-
-    return am;
+    p()->buffs.mongoose_fury->trigger();
   }
 };
 
@@ -6761,6 +6948,12 @@ struct kill_command_t: public hunter_spell_t
     double chance = 0; 
   } deathblow;
 
+  struct
+  {
+    timespan_t extension = 0_s;
+    timespan_t cap = 0_s;
+  } fury_of_the_wyvern;
+
   timespan_t wildfire_infusion_reduction = 0_s;
   timespan_t bloody_claws_extension = 0_s;
 
@@ -6794,9 +6987,18 @@ struct kill_command_t: public hunter_spell_t
           + p->talents.sic_em->effectN( 1 ).percent()
           + p->talents.born_to_kill->effectN( 1 ).percent();
     }
-    else
+    
+    if ( p->specialization() == HUNTER_BEAST_MASTERY )
+    {
       if ( p->talents.deathblow.ok() )
         deathblow.chance = p->talents.deathblow->effectN( 2 ).percent();
+      
+      if ( p->talents.fury_of_the_wyvern.ok() )
+      {
+        fury_of_the_wyvern.extension = p->talents.fury_of_the_wyvern->effectN( 2 ).time_value();
+        fury_of_the_wyvern.cap = timespan_t::from_seconds( p->talents.fury_of_the_wyvern->effectN( 4 ).base_value() );
+      }
+    }
 
     if ( p -> talents.dire_command.ok() )
     {
@@ -6819,7 +7021,15 @@ struct kill_command_t: public hunter_spell_t
     for ( auto pet : pets::active<pets::hunter_main_pet_base_t>( p() -> pets.main, p() -> pets.animal_companion ) )
       pet -> active.kill_command -> execute_on_target( target );
 
-    p()->buffs.tip_of_the_spear->trigger( 1 + ( p()->buffs.relentless_primal_ferocity->check() ? as<int>( p()->talents.relentless_primal_ferocity_buff->effectN( 4 ).base_value() ) : 0 ) );
+    int tip_stacks = 1;
+    
+    if ( p()->consume_howl_of_the_pack_leader( target ) )
+      tip_stacks++;
+
+    if ( p()->buffs.relentless_primal_ferocity->check() )
+      tip_stacks += as<int>( p()->talents.relentless_primal_ferocity_buff->effectN( 4 ).base_value() );
+
+    p()->buffs.tip_of_the_spear->trigger( tip_stacks );
 
     if ( rng().roll( quick_shot.chance ) )
     {
@@ -6903,7 +7113,13 @@ struct kill_command_t: public hunter_spell_t
       }
     }
 
-    p()->consume_howl_of_the_pack_leader( target );
+    p()->buffs.howl_of_the_pack_leader_cooldown->extend_duration( p(), -p()->talents.dire_summons->effectN( p()->specialization() == HUNTER_BEAST_MASTERY ? 1 : 2 ).time_value() );
+    
+    if ( p()->state.fury_of_the_wyvern_extension < fury_of_the_wyvern.cap )
+    {
+      p()->buffs.wyverns_cry->extend_duration( p(), fury_of_the_wyvern.extension );
+      p()->state.fury_of_the_wyvern_extension += fury_of_the_wyvern.extension;
+    }
   }
 
   bool target_ready( player_t* candidate_target ) override
@@ -7580,9 +7796,32 @@ struct wildfire_bomb_base_t: public hunter_spell_t
 
 struct wildfire_bomb_t: public wildfire_bomb_base_t
 {
+  struct
+  {
+    timespan_t extension = 0_s;
+    timespan_t cap = 0_s;
+  } fury_of_the_wyvern;
+
   wildfire_bomb_t( hunter_t* p, util::string_view options_str ) : wildfire_bomb_base_t( p, p->talents.wildfire_bomb )
   {
     parse_options( options_str );
+
+    if ( p->talents.fury_of_the_wyvern.ok() )
+    {
+      fury_of_the_wyvern.extension = p->talents.fury_of_the_wyvern->effectN( 3 ).time_value();
+      fury_of_the_wyvern.cap = timespan_t::from_seconds( p->talents.fury_of_the_wyvern->effectN( 4 ).base_value() );
+    }
+  }
+
+  void execute() override
+  {
+    wildfire_bomb_base_t::execute();
+
+    if ( p()->state.fury_of_the_wyvern_extension < fury_of_the_wyvern.cap )
+    {
+      p()->buffs.wyverns_cry->extend_duration( p(), fury_of_the_wyvern.extension );
+      p()->state.fury_of_the_wyvern_extension += fury_of_the_wyvern.extension;
+    }
   }
 };
 
@@ -8218,6 +8457,19 @@ void hunter_t::init_spells()
     talents.howl_of_the_pack_leader_boar_charge_cleave = talents.howl_of_the_pack_leader.ok() ? find_spell( 471938 ) : spell_data_t::not_found();
     talents.howl_of_the_pack_leader_bear_summon = talents.howl_of_the_pack_leader.ok() ? find_spell( 471993 ) : spell_data_t::not_found();
 
+    talents.pack_mentality = find_talent_spell( talent_tree::HERO, "Pack Mentality" );
+    talents.dire_summons = find_talent_spell( talent_tree::HERO, "Dire Summons" );
+    talents.better_together = find_talent_spell( talent_tree::HERO, "Better Together" );
+
+    talents.ursine_fury = find_talent_spell( talent_tree::HERO, "Ursine Fury" );
+    talents.ursine_fury_chance = talents.ursine_fury.ok() ? find_spell( 472478 ) : spell_data_t::not_found();
+    talents.envenomed_fangs = find_talent_spell( talent_tree::HERO, "Envenomed Fangs" );
+    talents.envenomed_fangs_spell = talents.envenomed_fangs.ok() ? find_spell( 472525 ) : spell_data_t::not_found();
+    talents.fury_of_the_wyvern = find_talent_spell( talent_tree::HERO, "Fury of the Wyvern" );
+    talents.fury_of_the_wyvern_proc = talents.fury_of_the_wyvern.ok() ? find_spell( 472552 ) : spell_data_t::not_found();
+    talents.hogstrider = find_talent_spell( talent_tree::HERO, "Hogstrider" );
+    talents.hogstrider_buff = talents.hogstrider.ok() ? find_spell( 472640 ) : spell_data_t::not_found();
+
     talents.vicious_hunt = find_talent_spell( talent_tree::HERO, "Vicious Hunt" );
 
     talents.pack_coordination = find_talent_spell( talent_tree::HERO, "Pack Coordination" );
@@ -8714,6 +8966,7 @@ void hunter_t::create_buffs()
 
   buffs.howl_of_the_pack_leader_cooldown = 
     make_buff( this, "howl_of_the_pack_leader_cooldown", talents.howl_of_the_pack_leader_cooldown_buff )
+      ->apply_affecting_aura( talents.better_together )
       ->set_stack_change_callback(
         [ this ]( buff_t* b, int, int cur ) {
           if ( cur == 0 )
@@ -8723,6 +8976,16 @@ void hunter_t::create_buffs()
   buffs.wyverns_cry = 
     make_buff( this, "wyverns_cry", talents.howl_of_the_pack_leader_wyvern_buff )
       ->set_initial_stack( as<int>( talents.howl_of_the_pack_leader->effectN( 3 ).base_value() ) )
+      ->set_default_value_from_effect( 1 )
+      ->set_refresh_behavior( buff_refresh_behavior::DISABLED )
+      ->set_stack_change_callback(
+        [ this ]( buff_t* b, int, int cur ) {
+          if ( cur == 0 )
+            state.fury_of_the_wyvern_extension = 0_s;
+        } );
+
+  buffs.hogstrider =
+    make_buff( this, "hogstrider", talents.hogstrider_buff )
       ->set_default_value_from_effect( 1 );
 
   buffs.vicious_hunt = 
