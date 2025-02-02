@@ -3724,10 +3724,7 @@ struct spirit_bomb_t : public pet_melee_attack_t<T>
 
     m *= 1.0 + this->o()->buff.legacy_of_the_frost_witch->value();
 
-    for ( int x = 1; x <= this->o()->buff.earthen_weapon->check(); x++ )
-    {
-      m *= 1.0 + this->o()->buff.earthen_weapon->value();
-    }
+    m *= 1.0 + this->o()->buff.earthen_weapon->value();
 
     return m;
   }
