@@ -503,6 +503,7 @@ public:
     buff_t* howl_of_the_pack_leader_cooldown;
     buff_t* wyverns_cry;
     buff_t* hogstrider;
+    buff_t* lead_from_the_front;
 
     buff_t* vicious_hunt;
     buff_t* howl_of_the_pack;
@@ -546,6 +547,8 @@ public:
     cooldown_t* fury_of_the_eagle;
     cooldown_t* ruthless_marauder;
     cooldown_t* coordinated_assault;
+
+    cooldown_t* no_mercy;
 
     cooldown_t* black_arrow;
     cooldown_t* bleak_powder;
@@ -889,6 +892,11 @@ public:
     spell_data_ptr_t hogstrider;
     spell_data_ptr_t hogstrider_buff;
 
+    spell_data_ptr_t no_mercy;
+    
+    spell_data_ptr_t lead_from_the_front;
+    spell_data_ptr_t lead_from_the_front_buff;
+
     spell_data_ptr_t vicious_hunt;
 
     spell_data_ptr_t pack_coordination;
@@ -1037,6 +1045,8 @@ public:
     cooldowns.fury_of_the_eagle   = get_cooldown( "fury_of_the_eagle" );
     cooldowns.ruthless_marauder   = get_cooldown( "ruthless_marauder" );
     cooldowns.coordinated_assault = get_cooldown( "coordinated_assault" );
+
+    cooldowns.no_mercy = get_cooldown( "no_mercy" );
 
     cooldowns.black_arrow = get_cooldown( "black_arrow" );
     cooldowns.bleak_powder = get_cooldown( "bleak_powder_icd" );
@@ -1193,6 +1203,7 @@ public:
 
     // Pack Leader
     damage_affected_by wyverns_cry;
+    damage_affected_by lead_from_the_front;    
 
     // Tier Set
     damage_affected_by tww_s2_mm_2pc;
@@ -1235,6 +1246,7 @@ public:
     affected_by.deadly_duo = check_affected_by( this, p->talents.spearhead_bleed->effectN( 3 ) );
 
     affected_by.wyverns_cry = parse_damage_affecting_aura( this, p->talents.howl_of_the_pack_leader_wyvern_buff );
+    affected_by.lead_from_the_front = parse_damage_affecting_aura( this, p->talents.lead_from_the_front_buff );
 
     affected_by.tww_s2_mm_2pc = parse_damage_affecting_aura( this, p -> tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() );
 
@@ -1377,6 +1389,9 @@ public:
     if ( affected_by.wyverns_cry.direct )
       am *= 1 + p()->buffs.wyverns_cry->check_stack_value();
 
+    if ( affected_by.lead_from_the_front.direct && p()->buffs.lead_from_the_front->check() )
+      am *= 1 + p()->talents.lead_from_the_front_buff->effectN( affected_by.lead_from_the_front.direct ).percent();
+
     return am;
   }
 
@@ -1407,6 +1422,9 @@ public:
 
     if ( affected_by.wyverns_cry.tick )
       am *= 1 + p()->buffs.wyverns_cry->check_stack_value();
+
+    if ( affected_by.lead_from_the_front.tick && p()->buffs.lead_from_the_front->check() )
+      am *= 1 + p()->talents.lead_from_the_front_buff->effectN( affected_by.lead_from_the_front.tick ).percent();
 
     return am;
   }
@@ -2205,6 +2223,11 @@ public:
 
 struct hunter_main_pet_t final : public hunter_main_pet_base_t
 {
+  struct actives_t
+  {
+    action_t* no_mercy = nullptr;
+  } actives;
+
   hunter_main_pet_t( hunter_t* owner, util::string_view pet_name, pet_e pt ):
     hunter_main_pet_base_t( owner, pet_name, pt )
   {
@@ -3086,6 +3109,16 @@ struct basic_attack_main_t final : public basic_attack_base_t
   }
 };
 
+struct no_mercy_ba_t : public basic_attack_base_t
+{
+  no_mercy_ba_t( hunter_main_pet_t* p, util::string_view n ) : basic_attack_base_t( p, n, "_no_mercy" )
+  {
+    background = true;
+  }
+
+  double cost() const override { return 0; }
+};
+
 struct pack_coordination_ba_t : public basic_attack_base_t
 {
   pack_coordination_ba_t( hunter_main_pet_t* p, util::string_view n ) : basic_attack_base_t( p, n, "_pack_coordination" )
@@ -3237,6 +3270,9 @@ struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, attack_t>
 
 // Rend Flesh (Bear) ========================================================
 
+// The tick damage shows up as Bear damage in the combat log but the dot shows as applied by the player 
+// and the Lead From the Front bonus applies to the dot damage.
+// TODO maybe move this to a player action after more testing
 struct rend_flesh_t : public hunter_pet_action_t<bear_t, attack_t>
 {
   struct envenomed_fangs_t : public hunter_pet_action_t<bear_t, attack_t>
@@ -3314,6 +3350,16 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, attack_t>
         serpent_sting->cancel();
       }
     }
+  }
+
+  double composite_ta_multiplier( const action_state_t* s ) const override
+  {
+    double m = hunter_pet_action_t::composite_ta_multiplier( s );
+
+    if ( o()->buffs.lead_from_the_front->check() )
+      m *= 1 + o()->talents.lead_from_the_front_buff->effectN( 2 ).percent();
+    
+    return m;
   }
 };
 
@@ -3422,6 +3468,9 @@ void hunter_main_pet_t::init_spells()
 
   if ( o()->talents.pack_coordination.ok())
     active.pack_coordination_ba = new actions::pack_coordination_ba_t( this, "Claw" );
+
+  if ( o()->talents.no_mercy.ok() )
+    actives.no_mercy = new actions::no_mercy_ba_t( this, "Claw" );
 }
 
 void dire_critter_t::init_spells()
@@ -4648,6 +4697,18 @@ struct kill_shot_t : public kill_shot_base_t
       m *= 1 + p()->talents.born_to_kill->effectN( 3 ).percent();
 
     return m;
+  }
+
+  void impact( action_state_t* s ) override
+  {
+    kill_shot_base_t::impact( s );
+
+    // TODO leap
+    if ( p()->talents.no_mercy.ok() && p()->cooldowns.no_mercy->up() )
+    {
+      p()->pets.main->actives.no_mercy->execute_on_target( s->target );
+      p()->cooldowns.no_mercy->start();
+    }
   }
 };
 
@@ -6681,6 +6742,9 @@ struct coordinated_assault_t: public hunter_melee_attack_t
       p()->buffs.vicious_hunt->trigger();
 
     p()->buffs.wildfire_arsenal->trigger( p()->buffs.wildfire_arsenal->max_stack() );
+
+    if ( p()->talents.lead_from_the_front->ok() )
+      p()->trigger_howl_of_the_pack_leader_ready();
   }
 };
 
@@ -7350,6 +7414,9 @@ struct bestial_wrath_t: public hunter_spell_t
         p()->buffs.withering_fire_build_up->expire();
       }
     }
+
+    if ( p()->talents.lead_from_the_front->ok() )
+      p()->trigger_howl_of_the_pack_leader_ready();
   }
 
   bool ready() override
@@ -8470,6 +8537,11 @@ void hunter_t::init_spells()
     talents.hogstrider = find_talent_spell( talent_tree::HERO, "Hogstrider" );
     talents.hogstrider_buff = talents.hogstrider.ok() ? find_spell( 472640 ) : spell_data_t::not_found();
 
+    talents.no_mercy = find_talent_spell( talent_tree::HERO, "No Mercy" );
+
+    talents.lead_from_the_front = find_talent_spell( talent_tree::HERO, "Lead From the Front" );
+    talents.lead_from_the_front_buff = talents.lead_from_the_front.ok() ? find_spell( 472743 ) : spell_data_t::not_found();
+
     talents.vicious_hunt = find_talent_spell( talent_tree::HERO, "Vicious Hunt" );
 
     talents.pack_coordination = find_talent_spell( talent_tree::HERO, "Pack Coordination" );
@@ -8555,8 +8627,11 @@ void hunter_t::init_spells()
   cooldowns.salvo->duration = talents.volley->cooldown();
 
   cooldowns.ruthless_marauder->duration = talents.ruthless_marauder->internal_cooldown();
+
   cooldowns.bleak_powder->duration = talents.bleak_powder->internal_cooldown();
   cooldowns.banshees_mark->duration = talents.banshees_mark->internal_cooldown();
+
+  cooldowns.no_mercy->duration = talents.no_mercy->internal_cooldown();
 }
 
 void hunter_t::init_base_stats()
@@ -8987,6 +9062,10 @@ void hunter_t::create_buffs()
   buffs.hogstrider =
     make_buff( this, "hogstrider", talents.hogstrider_buff )
       ->set_default_value_from_effect( 1 );
+  
+  buffs.lead_from_the_front =
+    make_buff( this, "lead_from_the_front", talents.lead_from_the_front_buff )
+      ->set_default_value_from_effect( specialization() == HUNTER_BEAST_MASTERY ? 5 : 6 );
 
   buffs.vicious_hunt = 
     make_buff( this, "vicious_hunt", find_spell( 431917 ) )
@@ -9531,6 +9610,7 @@ double hunter_t::composite_player_pet_damage_multiplier( const action_state_t* s
     m *= 1 + buffs.summon_hati->check_value();
     m *= 1 + buffs.serpentine_blessing->check_value();
     m *= 1 + buffs.wyverns_cry->check_stack_value();
+    m *= 1 + buffs.lead_from_the_front->check_value();
   }
 
   return m;
