@@ -3621,13 +3621,13 @@ struct pet_action_t : public T_ACTION
 // ==========================================================================
 
 template <typename T_PET>
-struct pet_melee_attack_t : public pet_action_t<T_PET, melee_attack_t>
+struct pet_melee_attack_t : public pet_action_t<T_PET, parse_action_effects_t<melee_attack_t>>
 {
   using super = pet_melee_attack_t<T_PET>;
 
   pet_melee_attack_t( T_PET* pet, util::string_view name, const spell_data_t* spell = spell_data_t::nil(),
                       util::string_view options = {} )
-    : pet_action_t<T_PET, melee_attack_t>( pet, name, spell, options )
+    : pet_action_t<T_PET, parse_action_effects_t<melee_attack_t>>( pet, name, spell, options )
   {
     if ( this->school == SCHOOL_NONE )
       this->school = SCHOOL_PHYSICAL;
@@ -3636,11 +3636,16 @@ struct pet_melee_attack_t : public pet_action_t<T_PET, melee_attack_t>
     {
       this->spell_power_mod.direct = 1.0;
     }
+
+    if ( this->data().ok() )
+    {
+      this->o()->apply_action_effects( this );
+    }
   }
 
   void init() override
   {
-    pet_action_t<T_PET, melee_attack_t>::init();
+    pet_action_t<T_PET, parse_action_effects_t<melee_attack_t>>::init();
 
     if ( !this->special )
     {
@@ -3655,7 +3660,7 @@ struct pet_melee_attack_t : public pet_action_t<T_PET, melee_attack_t>
     if ( this->time_to_execute > timespan_t::zero() && this->player->executing )
       this->schedule_execute();
     else
-      pet_action_t<T_PET, melee_attack_t>::execute();
+      pet_action_t<T_PET, parse_action_effects_t<melee_attack_t>>::execute();
   }
 };
 
@@ -3689,15 +3694,20 @@ struct auto_attack_t : public melee_attack_t
 // ==========================================================================
 
 template <typename T_PET>
-struct pet_spell_t : public pet_action_t<T_PET, spell_t>
+struct pet_spell_t : public pet_action_t<T_PET, parse_action_effects_t<spell_t>>
 {
   using super = pet_spell_t<T_PET>;
 
   pet_spell_t( T_PET* pet, util::string_view name, const spell_data_t* spell = spell_data_t::nil(),
                util::string_view options = {} )
-    : pet_action_t<T_PET, spell_t>( pet, name, spell, options )
+    : pet_action_t<T_PET, parse_action_effects_t<spell_t>>( pet, name, spell, options )
   {
     this->parse_options( options );
+
+    if ( this->data().ok() )
+    {
+      this->o()->apply_action_effects( this );
+    }
   }
 };
 
@@ -3706,13 +3716,13 @@ struct pet_spell_t : public pet_action_t<T_PET, spell_t>
 // ==========================================================================
 
 template <typename T>
-struct spirit_bomb_t : public pet_melee_attack_t<T>
+struct alpha_wolf_t : public pet_melee_attack_t<T>
 {
-  spirit_bomb_t( T* player ) :
-    pet_melee_attack_t<T>( player, "alpha_wolf", player -> find_spell( 198455 ) )
+  alpha_wolf_t( T* player ) :
+    pet_melee_attack_t<T>( player, "alpha_wolf", player->find_spell( 198455 ) )
   {
-    this -> background = true;
-    this -> aoe = -1;
+    this->background = true;
+    this->aoe = -1;
   }
 
   double composite_target_armor( player_t* ) const override
@@ -3724,11 +3734,8 @@ struct spirit_bomb_t : public pet_melee_attack_t<T>
 
     m *= 1.0 + this->o()->buff.legacy_of_the_frost_witch->value();
 
-    m *= 1.0 + this->o()->buff.earthen_weapon->value();
-
     return m;
   }
-
 };
 
 action_t* shaman_pet_t::create_action( util::string_view name, util::string_view options_str )
@@ -3775,7 +3782,7 @@ struct base_wolf_t : public shaman_pet_t
 
     if ( o()->talent.alpha_wolf.ok() )
     {
-      alpha_wolf = new spirit_bomb_t<base_wolf_t>( this );
+      alpha_wolf = new alpha_wolf_t<base_wolf_t>( this );
     }
   }
 
