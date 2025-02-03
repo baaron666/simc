@@ -3796,6 +3796,8 @@ struct immolation_aura_t : public demon_hunter_spell_t
       aoe                 = -1;
       reduced_aoe_targets = p->spell.immolation_aura->effectN( 2 ).base_value();
 
+      apply_affecting_aura( p->talent.havoc.a_fire_inside );
+
       // Rename gain for periodic energizes. Initial hit action doesn't energize.
       // Gains are encoded in the 258922 spell data differently for Havoc vs. Vengeance
       gain = p->get_gain( "immolation_aura_tick" );
