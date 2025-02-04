@@ -7764,7 +7764,7 @@ void monk_t::create_buffs()
   buff.storm_earth_and_fire =
       make_buff_fallback( talent.windwalker.storm_earth_and_fire->ok(), this, "storm_earth_and_fire",
                           talent.windwalker.storm_earth_and_fire )
-          ->set_stack_change_callback( [ & ]( buff_t *, int new_, int old_ ) {
+          ->set_stack_change_callback( [ & ]( buff_t *b, int old_, int new_ ) {
             if ( is_ptr() )
             {
               if ( new_ )
