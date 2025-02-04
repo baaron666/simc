@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58945 PTR
 bonus_id={ 1 }, desc={ Heroic }, stats={ 100% Sta [1.5789] }
 bonus_id={ 2 }, desc={ Crafting Material }, quality={ epic }
 bonus_id={ 3 }, suffix={ of Power }, socket={ 2 }, stats={ 100% StrAgiInt [0.5263] }
@@ -4133,7 +4133,7 @@ bonus_id={ 7176 }, base_ilevel={ 65 }
 bonus_id={ 7177 }, base_ilevel={ 94 }
 bonus_id={ 7178 }, base_ilevel={ 127 }
 bonus_id={ 7179 }, base_ilevel={ 163 }
-bonus_id={ 7180 }, ilevel={ 117 @plvl 0 - 117 @plvl 0 }
+bonus_id={ 7180 }, base_ilevel={ 55 }
 bonus_id={ 7181 }, ilevel={ 129 @plvl 0 - 129 @plvl 0 }
 bonus_id={ 7182 }, ilevel={ 151 @plvl 0 - 151 @plvl 0 }
 bonus_id={ 7183 }, ilevel={ 200 @plvl 0 - 200 @plvl 0 }

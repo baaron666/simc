@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58945 PTR
 Name             : Power Word: Shield (id=17) [Spell Family (6)] 
 Class            : Priest
 School           : Holy
@@ -15400,7 +15400,7 @@ Effects          :
                    Base Value: 5 | Scaled Value: 5 | Target: Self (1)
 #2 (id=1198112)  : Dummy (3)
                    Base Value: 4 | Scaled Value: 4
-Description      : $s1% of healing done with Heal, Flash Heal, and Power Word: Life is replicated to $s2 injured allies within $234946A2 yards.
+Description      : $s1% of healing done with Heal, Flash Heal, and Power Word: Life is replicated to $s2 injured allies within $1215266A2 yards.
 
 Name             : Dispersing Light (id=1215266) [Spell Family (6)] 
 Class            : Priest
@@ -15475,10 +15475,10 @@ Proc Flags       : White Melee Taken, Yellow Melee Taken, White Ranged Taken, Ye
 Affecting Spells : Renew (139 effect#2), Holy Priest (137031 effects: #1, #2, #25, #26), Discipline Priest (137032 effects: #1, #2), Apotheosis (200183 effects: #3, #4), Dejahna's Inspiration (281456 effects: #1, #2), Kam Xi'raff (281457 effect#1), Lunar Purity (282786 effects: #2, #3), Twist of Fate (390978 effects: #1, #2), Benevolence (415416 effects: #1, #2), Initial Priest (417191 effects: #3, #4), Premonition of Piety (428930 effects: #1, #2), Resonant Energy (453846 effect#1), Bankroll (1216601 effects: #1, #2)
 Triggered By     : Priest Holy 11.1 Class Set 2pc (1215319)
 Family Flags     : 126
-Attributes       : Can Proc From Procs (122)
+Attributes       : Can Proc From Procs (122), Spell Haste Affects Periodic (173), Periodic Can Crit (265)
 Effects          :
 #1 (id=1198251)  : Apply Aura (6) | Periodic Heal (8): every 3 seconds
-                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 3.656 | PvP Coefficient: 0.5 | Target: Friendly (21)
+                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 2.9248 | PvP Coefficient: 0.5 | Target: Friendly (21)
 #2 (id=1198257)  : Apply Aura (6) | Dummy (4)
                    Base Value: 40 | Scaled Value: 40 | Target: Friendly (21)
 Description      : $@spelldesc1215319
@@ -15518,13 +15518,13 @@ Effects          :
                    Base Value: 2 | Scaled Value: 2 | Target: Self (1)
 Description      : $@spellname421382 now houses $s2 mechasaurs that taunt enemies for ${$s1/1000} sec while within the egg.
 
-In addition to it's usual abilities, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.
+Mechasaurs will periodically stomp in addition to their usual abilities, dealing moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking moderate Fire damage.
 
 $@spellicon421382$@spellname421382
 $@spelldesc421382
 Tooltip          : $@spellname421382 now houses $w2 mechasaurs that taunt enemies for ${$w1/1000} sec while within the egg.
 
-In addition to it's usual abilities, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.
+Mechasaurs will periodically stomp in addition to their usual abilities, dealing moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking moderate Fire damage.
 
 $@spellicon421382$@spellname421382
 $@spelldesc421382
@@ -15570,13 +15570,13 @@ Effects          :
                    Base Value: 3 | Scaled Value: 3 | Target: Self (1)
 Description      : $@spellname421382 now houses $s2 mechasaurs that taunt enemies for ${$s1/1000} sec while within the egg.
 
-Once unleashed, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.
+Mechasaurs will periodically stomp in addition to their usual abilities, dealing moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking moderate Fire damage.
 
 $@spellicon421382$@spellname421382
 $@spelldesc421382
 Tooltip          : $@spellname421382 now houses $w2 mechasaurs that taunt enemies for ${$w1/1000} sec while within the egg.
 
-Once unleashed, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.
+Mechasaurs will periodically stomp in addition to their usual abilities, dealing moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking moderate Fire damage.
 
 $@spellicon421382$@spellname421382
 $@spelldesc421382
@@ -15596,13 +15596,13 @@ Effects          :
                    Base Value: 4 | Scaled Value: 4 | Target: Self (1)
 Description      : $@spellname421382 now houses $s2 mechasaurs that taunt enemies for ${$s1/1000} sec while within the egg.
 
-Once unleashed, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.
+Mechasaurs will periodically stomp in addition to their usual abilities, dealing moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking moderate Fire damage.
 
 $@spellicon421382$@spellname421382
 $@spelldesc421382
 Tooltip          : $@spellname421382 now houses $w2 mechasaurs that taunt enemies for ${$w1/1000} sec while within the egg.
 
-Once unleashed, it will periodically stomp, dealing Moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking Moderate Fire damage.
+Mechasaurs will periodically stomp in addition to their usual abilities, dealing moderate Fire damage split between nearby enemies. Affected enemies explode after $1215401d, taking moderate Fire damage.
 
 $@spellicon421382$@spellname421382
 $@spelldesc421382
@@ -15686,10 +15686,10 @@ Proc Flags       : White Melee Taken, Yellow Melee Taken, White Ranged Taken, Ye
 Affecting Spells : Renew (139 effect#2), Holy Priest (137031 effects: #1, #2, #25, #26), Discipline Priest (137032 effects: #1, #2), Apotheosis (200183 effects: #3, #4), Dejahna's Inspiration (281456 effects: #1, #2), Kam Xi'raff (281457 effect#1), Lunar Purity (282786 effects: #2, #3), Twist of Fate (390978 effects: #1, #2), Benevolence (415416 effects: #1, #2), Initial Priest (417191 effects: #3, #4), Premonition of Piety (428930 effects: #1, #2), Resonant Energy (453846 effect#1), Bankroll (1216601 effects: #1, #2)
 Triggered By     : Priest Discipline 11.1 Class Set 2pc (1215500)
 Family Flags     : 126
-Attributes       : Can Proc From Procs (122)
+Attributes       : Can Proc From Procs (122), Spell Haste Affects Periodic (173), Periodic Can Crit (265)
 Effects          :
 #1 (id=1198496)  : Apply Aura (6) | Periodic Heal (8): every 3 seconds
-                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.875 | PvP Coefficient: 0.5 | Target: Friendly (21)
+                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.5 | PvP Coefficient: 0.5 | Target: Friendly (21)
 #2 (id=1198497)  : Apply Aura (6) | Dummy (4)
                    Base Value: 40 | Scaled Value: 40 | Target: Friendly (21)
 Description      : $@spelldesc1215500

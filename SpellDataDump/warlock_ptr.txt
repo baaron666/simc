@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58945 PTR
 Name             : Eye of Kilrogg (id=126) [Spell Family (5)] 
 Class            : Warlock
 School           : Shadow
@@ -7482,7 +7482,7 @@ If dispelled, deals ${$m2*$s1/100} damage to the dispeller and silences them for
 |cFFFFFFFFGenerates $231791m1 Soul $LShard:Shards; if the target dies while afflicted.|r][]
 Tooltip          : Suffering $w2 Shadow damage every $t2 sec. If dispelled, will cause ${$w2*$s1/100} damage to the dispeller and silence them for $196364d.
 
-Name             : Xavian Teachings (id=317031) [Spell Family (5), Passive] 
+Name             : Xavian Teachings (id=317031) [Spell Family (5), Passive, Hidden] 
 Class            : Affliction Warlock
 School           : Shadow
 Spell Type       : Magic
@@ -7490,7 +7490,7 @@ Range            : 40 yards
 Labels           : 16: Class Spells
                  : 19: Warlock Spells
                  : 292
-Attributes       : Passive (6), Do Not Display Range (126), Aura Never Bounces (148)
+Attributes       : Passive (6), Do Not Display (Spellbook, Aura Icon, Combat Log) (7), Do Not Display Range (126), Aura Never Bounces (148), Do Not Log on Learn (355)
 Effects          :
 #1 (id=801926)   : Apply Aura (6) | Add Percent Modifier (108): Spell Cast Time (10)
                    Base Value: -100 | Scaled Value: -100 | Misc Value: 10 | Target: Self (1)
@@ -10102,7 +10102,7 @@ Range            : 100 yards
 Labels           : 16: Class Spells
                  : 19: Warlock Spells
                  : 292
-Attributes       : Is Ability (4), Passive (6), Do Not Log (8), Do Not Display Range (126), Not In Spellbook (143), Allow Class Ability Procs (416)
+Attributes       : Is Ability (4), Passive (6), Do Not Log (8), Do Not Display Range (126), Not In Spellbook (143), Do Not Log on Learn (355), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=1021228)  : Apply Aura (6) | Dummy (4)
                    Base Value: 5 | Scaled Value: 5 | Target: Self (1)
@@ -10141,7 +10141,7 @@ Range            : 100 yards
 Labels           : 16: Class Spells
                  : 19: Warlock Spells
                  : 292
-Attributes       : Is Ability (4), Passive (6), Do Not Log (8), Do Not Display Range (126), Not In Spellbook (143), Allow Class Ability Procs (416)
+Attributes       : Is Ability (4), Passive (6), Do Not Log (8), Do Not Display Range (126), Not In Spellbook (143), Do Not Log on Learn (355), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=1021243)  : Apply Aura (6) | Modify Pet Damage Done% (429)
                    Base Value: 5 | Scaled Value: 5 | Target: Self (1)

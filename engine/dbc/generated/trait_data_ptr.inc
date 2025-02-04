@@ -1,4 +1,4 @@
-// Player trait definitions, wow build 11.1.0.58819
+// Player trait definitions, wow build 11.1.0.58945
 static const std::array<trait_data_t, 3198> __ptr_trait_data_data { {
   { 1,  1, 112112,  90261, 1,  0, 117117,  386164,      0,      0,  1,  1,  -1,                          "Battle Stance", {   73,    0,    0,    0 }, {   73,    0,    0,    0 },  0, 0 },
   { 1,  1, 112179,  90322, 2, 20, 117184,  382896,      0,      0,  8,  1,  -1,       "Two-Handed Weapon Specialization", {   71,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
@@ -2400,7 +2400,7 @@ static const std::array<trait_data_t, 3198> __ptr_trait_data_data { {
   { 2, 12, 112951,  91028, 1,  0, 117956,  320413,      0,      0,  2,  1,  -1,                         "Critical Chaos", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
   { 2, 12, 112953,  91030, 1,  0, 117958,  343206,      0,      0,  3,  2,  -1,                  "Improved Chaos Strike", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
   { 2, 12, 112954,  91031, 1, 20, 117959,  388116,      0,      0, 10,  3,  -1,                      "Shattered Destiny", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
-  { 2, 12, 112955,  91032, 2, 20, 117960,  258887,      0,      0,  9,  2,  -1,                        "Cycle of Hatred", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
+  { 2, 12, 112955,  91032, 1, 20, 117960,  258887,      0,      0,  9,  2,  -1,                        "Cycle of Hatred", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
   { 2, 12, 112956,  91033, 1, 20, 117961,  258860,      0,      0, 10,  2,  -1,                          "Essence Break", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
   { 2, 12, 112957,  91034, 2, 20, 117962,  388118,      0,      0,  9,  1,  -1,                        "Know Your Enemy", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 0 },
   { 2, 12, 112958,  91035, 1, 20, 117963,  389687,      0,      0,  8,  2, 100,                           "Chaos Theory", {  577,    0,    0,    0 }, {    0,    0,    0,    0 },  0, 2 },
@@ -3200,7 +3200,7 @@ static const std::array<trait_data_t, 3198> __ptr_trait_data_data { {
   { 4, 13, 123336,  99827, 1,  0,      0,       0,      0,      0,  1,  1,  -1,                                      "0", {    0, 1467,    0,    0 }, {    0,    0,    0,    0 }, 37, 3 },
 } };
 
-// Player trait definition effect entries, wow build 11.1.0.58819
+// Player trait definition effect entries, wow build 11.1.0.58945
 static const std::array<trait_definition_effect_entry_t, 380> __ptr_trait_definition_effect_data { {
   { 85156, 0, 0, 60989 },
   { 85156, 1, 0, 60988 },
@@ -3471,8 +3471,6 @@ static const std::array<trait_definition_effect_entry_t, 380> __ptr_trait_defini
   { 117954, 0, 0, 71014 },
   { 117954, 1, 0, 71013 },
   { 117954, 2, 0, 71012 },
-  { 117960, 0, 0, 61294 },
-  { 117960, 1, 0, 80962 },
   { 117962, 1, 0, 61295 },
   { 120028, 1, 0, 76117 },
   { 120041, 0, 1, 64686 },
@@ -3556,6 +3554,8 @@ static const std::array<trait_definition_effect_entry_t, 380> __ptr_trait_defini
   { 129850, 0, 0, 76153 },
   { 129850, 1, 0, 76152 },
   { 129858, 0, 0, 76154 },
+  { 131167, 0, 1, 83056 },
+  { 131167, 1, 1, 83055 },
   { 131167, 2, 1, 77773 },
   { 131168, 0, 1, 77716 },
   { 131175, 0, 1, 77772 },
@@ -3987,7 +3987,7 @@ static const std::array<uint16_t, 3198> __ptr_trait_spell_id_index { {
    2525,  2333,  1837,  1163,  1825,  1796,
 } };
 
-// Hero trees, wow build 11.1.0.58819
+// Hero trees, wow build 11.1.0.58945
 static const std::array<std::pair<unsigned, std::string>, 39> __ptr_trait_sub_tree_data { {
   { 18, "Voidweaver" },
   { 19, "Archon" },

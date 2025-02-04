@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58945 PTR
 Name             : Block (desc=Passive) (id=107) [Passive] 
 Class            : Warrior, Paladin, Shaman
 School           : Physical
@@ -1053,8 +1053,6 @@ Effects          :
                    Base Value: 1 | Scaled Value: 1 | Trigger Spell: 403460
 #3 (id=1073752)  : Trigger Spell w/ Value (142): Lightforged Blessing
                    Base Value: 1 | Scaled Value: 1 | Trigger Spell: 407467
-#4 (id=1202785)  : Server Side Script (77)
-                   Base Value: 0 | Scaled Value: 0 | Target: Self (1)
 Description      : Slams enemies in front of you with your shield, causing $s1 Holy damage, and increasing your Armor by $?c1[${$132403s1*$INT/100}][${$132403s1*$STR/100}] for $132403d.$?a386568[
 
 $@spelldesc386568][]$?a280373[
@@ -19291,10 +19289,10 @@ Proc Flags       : White Melee Taken, Yellow Melee Taken, White Ranged Taken, Ye
 Affecting Spells : Avenging Wrath (31884 effects: #1, #2), Holy Paladin (137029 effects: #1, #2), Beacon of Faith (156910 effect#3), Blessing of Dawn (337747 effects: #1, #2), Sentinel (389539 effects: #1, #2, #3), Luminous Force (394550 effect#1), Initial Paladin (417383 effects: #3, #4), Avenging Wrath (454351 effects: #2, #11), Heightened Wrath (456759 effects: #1, #2), Luck of the Draw! (1218114 effects: #1, #2)
 Triggered By     : Paladin Holy 11.1 Class Set 2pc (1215533)
 Family Flags     : 46
-Attributes       : Can Proc From Procs (122)
+Attributes       : Can Proc From Procs (122), Spell Haste Affects Periodic (173), Periodic Can Crit (265)
 Effects          :
 #1 (id=1198549)  : Apply Aura (6) | Periodic Heal (8): every 3 seconds
-                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.594 | PvP Coefficient: 0.5 | Target: Friendly (21)
+                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.2752 | PvP Coefficient: 0.5 | Target: Friendly (21)
 #2 (id=1198550)  : Apply Aura (6) | Dummy (4)
                    Base Value: 40 | Scaled Value: 40 | Target: Friendly (21)
 Description      : $@spelldesc1215533

@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58945 PTR
 Name             : Invisibility (id=66) [Spell Family (3)] 
 Class            : Mage
 School           : Arcane
@@ -12609,6 +12609,7 @@ Duration         : 30 seconds
 Labels           : 16: Class Spells
                  : 17: Mage Spells
                  : 292
+Internal Cooldown: 0.5 seconds
 Stacks           : 1 initial, 2 maximum
 Proc Chance      : 100%
 Proc Flags       : Magic Hostile Spell
@@ -13900,7 +13901,7 @@ School           : Fire
 Spell Type       : Magic
 Spell Level      : 10
 Range            : 40 yards
-Velocity         : 10 yards/sec
+Velocity         : 40 yards/sec
 Labels           : 16: Class Spells
                  : 17: Mage Spells
                  : 118

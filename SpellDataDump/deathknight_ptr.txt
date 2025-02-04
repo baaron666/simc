@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58945 PTR
 Name             : Dual Wield (desc=Passive) (id=674) [Passive] 
 Class            : Frost Death Knight, Warrior, Hunter, Rogue, Monk, Demon Hunter
 School           : Physical
@@ -46,7 +46,7 @@ Category         : 19 (Type 0x0)
 Labels           : 16: Class Spells
                  : 23: Hunter Spells
                  : 292
-Affecting Spells : Hunter Pet (34902 effects: #2, #3), Aspect of the Beast (191384 effects: #1, #2), Mastery: Spirit Bond (263135 effects: #1, #2), Spearhead (1221386 effect#3)
+Affecting Spells : Hunter Pet (34902 effects: #2, #3), Aspect of the Beast (191384 effects: #1, #2), Mastery: Spirit Bond (263135 effect#2)
 Family Flags     : 19
 Attributes       : Is Ability (4), Not Shapeshifted (16), Do Not Sheath (18), Initiates Combat (Enables Auto-Attack) (41), Discount Power On Miss (59), Can Cause Silence (236), Allow Class Ability Procs (416)
 Effects          :
@@ -497,7 +497,6 @@ Attributes       : Do Not Sheath (18), Initiates Combat (Enables Auto-Attack) (4
 Effects          :
 #1 (id=39872)    : School Damage (2): shadow
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 0.740232 | PvP Coefficient: 1.49 | Chain Multiplier: 1 | Chain Targets: 1 | Target: Enemy (6)
-Hotfixed         : AP Coefficient (0.64368 -> 0.740232)
 Description      : Fire a blast of unholy energy, causing Shadow damage to an enemy target or healing a friendly Undead target.
 
 Name             : Death Coil (id=47633) [Spell Family (15)] 
@@ -1209,7 +1208,7 @@ Effects          :
 #4 (id=739365)   : Apply Aura (6) | Dummy (4)
                    Base Value: 5 | Scaled Value: 5 | Misc Value: 12 | Target: Self (1)
 #5 (id=1203568)  : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
-                   Base Value: 1000 | Scaled Value: 1000 | Target: Self (1)
+                   Base Value: 750 | Scaled Value: 750 | Target: Self (1)
                    Affected Spells: Remorseless Winter (196771), Remorseless Winter (211793)
                    Family Flags: 126
 #6 (id=1203569)  : Apply Aura (6) | Add Percent Modifier (108): Spell Radius (6)
@@ -1468,7 +1467,6 @@ Effects          :
                    Base Value: 0 | Scaled Value: 0 | Target: Enemy (6)
 #2 (id=48019)    : School Damage (2): physical | Attributes: Area Effects Use Target Radius (17)
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 0.738052 | PvP Coefficient: 1.3 | Radius: 0 - 8 yards | Target: At Enemy (53) -> At Enemy in Area (16)
-Hotfixed         : AP Coefficient (0.641784 -> 0.738052)
 #3 (id=48020)    : Trigger Spell (64): Scourge Strike
                    Base Value: 25 | Scaled Value: 25 | Trigger Spell: 70890 | Target: Enemy (6)
 #4 (id=840915)   : Dummy (3)
@@ -1675,7 +1673,6 @@ Effects          :
                    Base Value: 275 | Scaled Value: 275 | Target: Self (1)
                    Affected Spells: Howling Blast (49184), Howling Blast (237680)
                    Family Flags: 33
-Hotfixed         : Base Value (225 -> 275)
 #3 (id=292146)   : Apply Aura (6) | Add Percent Modifier (108): Spell Resource Cost 2 (34)
                    Base Value: -100 | Scaled Value: -100 | Misc Value: 34 | Target: Self (1)
                    Affected Spells: Howling Blast (49184), Howling Blast (237680)
@@ -2018,7 +2015,6 @@ Attributes       : Is Ability (4), Do Not Sheath (18), No Active Defense (21), D
 Effects          :
 #1 (id=60368)    : School Damage (2): frost
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 0.897313 | PvP Coefficient: 2.07446 | Target: Enemy (6)
-Hotfixed         : AP Coefficient (0.780272 -> 0.897313)
 Description      : $@spelldesc49143
 
 Name             : Obliterate Off-Hand (id=66198) [Spell Family (15)] 
@@ -2038,7 +2034,6 @@ Attributes       : Is Ability (4), Do Not Sheath (18), No Active Defense (21), D
 Effects          :
 #1 (id=60372)    : School Damage (2): physical
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 1.05891 | PvP Coefficient: 1.13192 | Chain Multiplier: 1 | Chain Targets: 1 | Target: Enemy (6)
-Hotfixed         : AP Coefficient (0.882426 -> 1.05891)
 Description      : $@spelldesc49020
 
 Name             : Viciousness (desc=Racial Passive) (id=68975) [Passive] 
@@ -2102,7 +2097,6 @@ Effects          :
                    Base Value: 0 | Scaled Value: 0 | Target: Enemy (6)
 #2 (id=214692)   : School Damage (2): shadow | Attributes: Area Effects Use Target Radius (17)
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 0.406571 | PvP Coefficient: 1.3 | Radius: 0 - 8 yards | Target: At Enemy (53) -> At Enemy in Area (16)
-Hotfixed         : AP Coefficient (0.35354 -> 0.406571)
 Description      : $@spelldesc55090
 
 Name             : Mastery: Master of Beasts (id=76657) [Spell Family (9), Passive] 
@@ -3120,7 +3114,6 @@ Effects          :
                    Base Value: 55 | Scaled Value: 55 | Target: Self (1)
                    Affected Spells: Soul Reaper (343294), Soul Reaper (343295), Soul Reaper (448229)
                    Family Flags: 90, 92
-Hotfixed         : Base Value (15 -> 55)
 #6 (id=1084153)  : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
                    Base Value: 0 | Scaled Value: 0 | PvP Coefficient: 0 | Target: Self (1)
                    Affected Spells: Death Coil (47632), Howling Blast (49184), Death Strike (49998), Razorice (50401), Blood Boil (50842), Death and Decay (52212), Blood Plague (55078), Scourge Strike (55090), Frost Fever (55095), Death Strike Off-Hand (66188), Frost Strike Off-Hand (66196), Obliterate Off-Hand (66198), Scourge Strike (70890), Outbreak (77575), Festering Strike (85948), Unholy Blight (115989), Unholy Blight (115994), Breath of Sindragosa (155166), Defile (156000), Virulent Plague (191587), Virulent Eruption (191685), Festering Wound (194311), Marrowrend (195182), Death's Caress (195292), Frozen Pulse (195750), Glacial Advance (195975), Bonestorm (196528), Remorseless Winter (196771), Chill Streak (204167), Heart Strike (206930), Blooddrinker (206931), Avalanche (207150), Frostscythe (207230), Bursting Sores (207267), Unholy Assault (207289), Clawing Shadows (207311), Epidemic (212739), Epidemic (215969), Obliterate (222024), Frost Strike (222026), Heart Strike (228645), Howling Blast (237680), Inexorable Assault (253597), Bone Spike Graveyard (273089), Horrid Experimentation (273096), Glacial Contagion (274074), Consumption (274156), Apocalypse (275699), Echoing Howl (275918), Harrowing Decay (275931), Frostwyrm's Fury (279303), Cold Heart (281209), Cold Heart (281210), Helchains (286836), Helchains (286954), Helchains (286978), Helchains (286979), Helchains (287142), Frostwhelp's Indignation (287320), Helchains (290813), Helchains (290814), Swarming Mist (311730), Shackle the Unworthy (312202), Rune Strike (316239), Unholy Pact (319236), Unholy Pact (319238), Unholy Pact (319240), Unholy Pact (319243), Unholy Pact (319245), Unholy Pact (319248), Unholy Pact (319249), Abomination Limb (323710), Abomination Limb (323798), Obliterate (325461), Frost Strike (325464), Sacrificial Pact (327611), Death's Due (341340), Soul Reaper (343294), Soul Reaper (343295), Dark Transformation (344955), Cold Heart (358109), Blood Draw (374606), Frostwhelp's Aid (377245), Shattering Bone (377642), Abomination Limb (383312), Abomination Limb (383313), Glacial Advance (394500), Frostwyrm's Fury (410790), Vampiric Strike (433895), Wave of Souls (435802), Reaper's Mark (436304), Reaper's Mark (439594), Reaper's Mark (439843), Blood Fever (440005), Exterminate (441424), Exterminate (441426), Chains of Ice (444826), Trollbane's Icy Fury (444834), Soul Reaper (448229), Festering Scythe (458128), Unholy Blight (460448), Heart Strike (460501)
@@ -3398,7 +3391,6 @@ Effects          :
                    Base Value: 10 | Scaled Value: 10 | Radius: 12 yards | Target: Cone to Enemy (104)
 #2 (id=215545)   : School Damage (2): frost
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 1.1649 | PvP Coefficient: 0.666667 | Radius: 12 yards | Target: Cone to Enemy (104)
-Hotfixed         : AP Coefficient (1.059 -> 1.1649)
 Description      : $@spelldesc152279
 
 Name             : Breath of Sindragosa (id=155168) [Spell Family (15)] 
@@ -5338,7 +5330,6 @@ Effects          :
                    Base Value: 0 | Scaled Value: 0 | Target: Enemy (6)
 #2 (id=324719)   : School Damage (2): shadow | Attributes: Area Effects Use Target Radius (17)
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 1.35355 | PvP Coefficient: 1.3 | Radius: 0 - 8 yards | Target: At Enemy (53) -> At Enemy in Area (16)
-Hotfixed         : AP Coefficient (1.177 -> 1.35355)
 Description      : Deals $s2 Shadow damage and causes 1 Festering Wound to burst.
 
 Name             : Sludge Belcher (id=207313) [Spell Family (15), Passive] 
@@ -5989,7 +5980,6 @@ Attributes       : Is Ability (4), Do Not Sheath (18), No Active Defense (21), D
 Effects          :
 #1 (id=331344)   : School Damage (2): physical
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 1.05891 | PvP Coefficient: 1.13192 | Chain Multiplier: 1 | Chain Targets: 1 | Target: Enemy (6)
-Hotfixed         : AP Coefficient (0.882426 -> 1.05891)
 Description      : $@spelldesc49020
 
 
@@ -6010,7 +6000,6 @@ Attributes       : Is Ability (4), Do Not Sheath (18), No Active Defense (21), D
 Effects          :
 #1 (id=331347)   : School Damage (2): frost
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 0.897313 | PvP Coefficient: 2.07446 | Target: Enemy (6)
-Hotfixed         : AP Coefficient (0.780272 -> 0.897313)
 Description      : $@spelldesc49143
 
 Name             : Wraith Walk (id=223804) [Spell Family (15), Hidden] 
@@ -8619,7 +8608,6 @@ Attributes       : Is Ability (4), Do Not Sheath (18), No Active Defense (21), D
 Effects          :
 #1 (id=815754)   : School Damage (2): physical
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 1.56757 | PvP Coefficient: 1.13192 | Chain Multiplier: 1 | Chain Targets: 1 | Target: Enemy (6)
-Hotfixed         : AP Coefficient (1.30631 -> 1.56757)
 Description      : $@spelldesc49020
 
 
@@ -8640,7 +8628,6 @@ Attributes       : Is Ability (4), Do Not Sheath (18), No Active Defense (21), D
 Effects          :
 #1 (id=815761)   : School Damage (2): frost
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 1.27593 | PvP Coefficient: 2.07446 | Target: Enemy (6)
-Hotfixed         : AP Coefficient (1.1095 -> 1.27593)
 Description      : $@spelldesc49143
 
 Name             : Dark Transformation (desc=Rank 2) (id=325554) [Spell Family (15), Passive] 
@@ -17868,6 +17855,6 @@ Effects          :
 #1 (id=1210171)  : Apply Aura (6) | Modify Mastery% (318)
                    Base Value: 6 | Scaled Value: 6 | PvP Coefficient: 0.5 | Target: Self (1)
 Description      : $@spelldesc1215727
-Tooltip          : Your Haste is increased by $w1%.
+Tooltip          : Your Mastery is increased by $w1%.
 
 

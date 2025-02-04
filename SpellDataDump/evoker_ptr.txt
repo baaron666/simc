@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.58819 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.0.58945 PTR
 Name             : Command (desc=Racial Passive) (id=21563) [Spell Family (9), Passive] 
 Class            : Warrior, Paladin, Hunter, Rogue, Priest, Death Knight, Shaman, Mage, Warlock, Monk, Druid, Demon Hunter, Evoker
 Race             : Orc (0x2)
@@ -635,7 +635,7 @@ Effects          :
                    Affected Spells: Fire Breath (357209), Full Belly (377087), Fire Breath (444249)
                    Family Flags: 35
 #12 (id=1046956) : Apply Aura (6) | Add Percent Modifier (108): Spell Periodic Amount (22)
-                   Base Value: 10 | Scaled Value: 10 | PvP Coefficient: 3 | Misc Value: 22 | Target: Self (1)
+                   Base Value: 27 | Scaled Value: 27 | PvP Coefficient: 1.1 | Misc Value: 22 | Target: Self (1)
                    Affected Spells: Fire Breath (357209), Full Belly (377087), Fire Breath (444249)
                    Family Flags: 35
 #13 (id=1046957) : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
@@ -751,7 +751,7 @@ Effects          :
                    Base Value: 50 | Scaled Value: 50 | Misc Value: 23 | Misc Value 2: 2973 (Label) | Target: Self (1)
                    Affected Spells (Label): Attuned to the Dream (376930)
 #23 (id=1191263) : Apply Aura (6) | Apply Flat Modifier w/ Label (219): Spell Effect 3 (23)
-                   Base Value: -450 | Scaled Value: -450 | Misc Value: 23 | Misc Value 2: 4185 (Label) | Target: Self (1)
+                   Base Value: -600 | Scaled Value: -600 | Misc Value: 23 | Misc Value 2: 4185 (Label) | Target: Self (1)
                    Affected Spells (Label): Consume Flame (444088)
 
 Name             : Initial Evoker (id=356816) [Spell Family (224), Passive, Hidden] 
@@ -11953,7 +11953,7 @@ Effects          :
 #2 (id=1141764)  : None (0)
                    Base Value: 5 | Scaled Value: 5
 #3 (id=1141810)  : Apply Aura (6) | Dummy (4)
-                   Base Value: 750 | Scaled Value: 750 | Target: Self (1)
+                   Base Value: 900 | Scaled Value: 900 | Target: Self (1)
 Description      : Engulf consumes $s1 sec of $?c1[Fire Breath][Dream Breath] from the target, detonating it and $?c1[damaging][healing] all nearby targets equal to $s3% of the amount consumed, reduced beyond $s2 targets.
 
 Name             : Consume Flame (desc=Red) (id=444089) [Spell Family (224)] 
@@ -11968,8 +11968,8 @@ Labels           : 16: Class Spells
                  : 3022
 Attributes       : Ignore Damage Taken Modifiers (136), Ignore Caster Damage Modifiers (221)
 Effects          :
-#1 (id=1140381)  : School Damage (2): fire
-                   Base Value: 0 | Scaled Value: 0 | PvP Coefficient: 0.7 | Radius: 0 - 8 yards | Target: Unknown(87) -> At Enemy in Area (16)
+#1 (id=1140381)  : School Damage (2): fire | Attributes: Add Target (Dest) Combat Reach to AOE (11)
+                   Base Value: 0 | Scaled Value: 0 | PvP Coefficient: 0.6 | Radius: 0 - 8 yards | Target: Unknown(87) -> At Enemy in Area (16)
 Description      : $@spelldesc444088
 
 Name             : Flame Siphon (desc=Red) (id=444140) [Spell Family (224), Passive, Hidden] 
@@ -12704,10 +12704,10 @@ Proc Flags       : White Melee Taken, Yellow Melee Taken, White Ranged Taken, Ye
 Affecting Spells : Devastation Evoker (356809 effects: #4, #5), Preservation Evoker (356810 effects: #1, #2), Initial Evoker (356816 effects: #5, #6), Attuned to the Dream (376930 effects: #1, #2), Boon of the Covenants (387169 effects: #1, #2), Spark of Savagery (387201 effect#1), Augmentation Evoker (396186 effects: #4, #5), Arcane Reach (454983 effect#1)
 Triggered By     : Evoker Preservation 11.1 Class Set 2pc (1215549)
 Family Flags     : 1
-Attributes       : Can Proc From Procs (122)
+Attributes       : Can Proc From Procs (122), Spell Haste Affects Periodic (173), Periodic Can Crit (265)
 Effects          :
 #1 (id=1198574)  : Apply Aura (6) | Periodic Heal (8): every 3 seconds
-                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.26 | PvP Coefficient: 0.5 | Target: Friendly (21)
+                   Base Value: 0 | Scaled Value: 0 | SP Coefficient: 1.008 | PvP Coefficient: 0.5 | Target: Friendly (21)
 #2 (id=1198575)  : Apply Aura (6) | Dummy (4)
                    Base Value: 40 | Scaled Value: 40 | Target: Friendly (21)
 Description      : $@spelldesc1215549
