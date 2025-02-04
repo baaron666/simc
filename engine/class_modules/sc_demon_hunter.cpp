@@ -748,6 +748,7 @@ public:
     const spell_data_t* demonic_presence;
     const spell_data_t* any_means_necessary;
     const spell_data_t* any_means_necessary_tuning;
+    const spell_data_t* a_fire_inside;
     // Vengeance
     const spell_data_t* fel_blood;
     const spell_data_t* fel_blood_rank_2;
@@ -1571,6 +1572,7 @@ public:
     affect_flags any_means_necessary;
     affect_flags any_means_necessary_full;
     affect_flags demonic_presence;
+    affect_flags a_fire_inside;
     bool chaos_theory = false;
   } affected_by;
 
@@ -1662,6 +1664,7 @@ public:
       // Affect Flags
       parse_affect_flags( p->mastery.demonic_presence, affected_by.demonic_presence );
       parse_affect_flags( p->mastery.any_means_necessary, affected_by.any_means_necessary );
+      parse_affect_flags( p->mastery.a_fire_inside, affected_by.a_fire_inside );
 
       if ( p->talent.havoc.chaos_theory->ok() )
       {
@@ -1842,6 +1845,11 @@ public:
       m *= 1.0 + p()->cache.mastery_value();
     }
 
+    if ( affected_by.a_fire_inside.direct )
+    {
+      m *= 1.0 + p()->cache.mastery_value();
+    }
+
     return m;
   }
 
@@ -1861,6 +1869,11 @@ public:
 
     // 2024-08-30 -- Some spells have full 100% mastery value from AMN.
     if ( affected_by.any_means_necessary_full.periodic )
+    {
+      m *= 1.0 + p()->cache.mastery_value();
+    }
+
+    if ( affected_by.a_fire_inside.periodic )
     {
       m *= 1.0 + p()->cache.mastery_value();
     }
@@ -8579,6 +8592,7 @@ void demon_hunter_t::init_spells()
   mastery.any_means_necessary = talent.havoc.any_means_necessary;
   mastery.any_means_necessary_tuning =
       talent.havoc.any_means_necessary->ok() ? find_spell( 394486 ) : spell_data_t::not_found();
+  mastery.a_fire_inside = talent.havoc.a_fire_inside->effectN( 6 ).trigger();
 
   spec.burning_wound_debuff = talent.havoc.burning_wound->effectN( 1 ).trigger();
   spec.chaos_theory_buff    = talent.havoc.chaos_theory->ok() ? find_spell( 390195 ) : spell_data_t::not_found();
