@@ -119,7 +119,7 @@ level=80
 race=troll
 role=attack
 position=back
-talents=CwPAAAAAAAAAAAAAAAAAAAAAAAAzMjZMDDzYmZmphZmZGzYAAAAAAAAAMzMzwYMmBAMbmhZbGzMzMMDwiZxwQGY2YoxCAMDA
+talents=CwPAAAAAAAAAAAAAAAAAAAAAAAAzMjZMDDzYmZmphZmZGzYAAAAAAAAAMzMzwYwMAgZzMMbzYmZmxMDwiZxwQGY2YoxCAMDA
 
 head=cauldron_champions_crown,id=229253,bonus_id=11996/10356/11960/6652/12176/1579/10255/10878,gem_id=213743
 neck=strapped_rescuekeg,id=221060,bonus_id=10879,ilevel=678,gem_id=213482/213482
@@ -146,7 +146,7 @@ level=80
 race=troll
 role=attack
 position=back
-talents=CwPAAAAAAAAAAAAAAAAAAAAAAAAzMjZMDDzYmZmphZmZGzYAAAAAAAAAgZGzYMmBAMbmhZZGzMzMmZGDMwMGNW2AsNxGAMDA
+talents=CwPAAAAAAAAAAAAAAAAAAAAAAAAzMjZMDDzYmZmphZmZGzYAAAAAAAAAMzMzwYMmBAMbmhZxYmZmxMDDMwMGNW2AsNxGAMDA
 
 head=cauldron_champions_crown,id=229253,bonus_id=11996/10356/11960/6652/12176/1579/10255/10878,gem_id=213743
 neck=strapped_rescuekeg,id=221060,bonus_id=10879,ilevel=678,gem_id=213482/213482
