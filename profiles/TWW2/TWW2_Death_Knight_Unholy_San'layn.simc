@@ -1,11 +1,11 @@
-deathknight="TWW2_Death_Knight_Unholy_Rider"
+deathknight="TWW2_Death_Knight_Unholy_San'layn"
 source=default
 spec=unholy
 level=80
 race=troll
 role=attack
 position=back
-talents=CwPAAAAAAAAAAAAAAAAAAAAAAAAzMjZMDDzYmZmphZmZGzYAAAAAAAAAMzMzwYMmBAMbmhZbGzMzMMDwiZxwQGY2YoxCAMDA
+talents=CwPAAAAAAAAAAAAAAAAAAAAAAAAzMjZMDDzYmZmphZmZGzYAAAAAAAAAgZGzYMmBAMbmhZZGzMzMmZGDMwMGNW2AsNxGAMDA
 
 # Default consumables
 potion=tempered_potion_3
