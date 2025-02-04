@@ -3997,7 +3997,7 @@ struct magus_pet_t : public death_knight_pet_t
     owner_coeff.ap_from_ap = army_ghoul_ap_mod;
     owner_coeff.ap_from_ap *= 0.85;
     if (dk()->is_ptr())
-      owner_coeff.ap_from_ap *= 1.15;
+      owner_coeff.ap_from_ap *= 1.5525;
   }
 
   void init_action_list() override
@@ -4221,6 +4221,8 @@ struct horseman_pet_t : public death_knight_pet_t
   {
     main_hand_weapon.type  = WEAPON_BEAST_2H;
     owner_coeff.ap_from_ap = 0.85;
+    if ( owner->is_ptr() )
+      owner_coeff.ap_from_ap *= 1.1;
     resource_regeneration  = regen_type::DISABLED;
     auto_attack_multiplier = 1.25;
   }
@@ -15625,51 +15627,37 @@ struct death_knight_module_t : public module_t
     unique_gear::register_special_effect( 326864, runeforge::spellwarding );
     unique_gear::register_special_effect( 326982, runeforge::unending_thirst );
   }
-  /*
+  
   void register_hotfixes() const override
   {
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Rotten Touch Debuff incrased to 60%", 1026981,
-                             hotfix::HOTFIX_FLAG_LIVE )
-        .field( "base_value" )
-        .operation( hotfix::HOTFIX_SET )
-        .modifier( 60 )
-        .verification_value( 50 );
-
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Death Coil buffed by 8%", 39872,
-                             hotfix::HOTFIX_FLAG_LIVE )
+    hotfix::register_effect( "Death Knight", "2024-12-13", "Death Coil nerfed by 13%", 39872,
+                             hotfix::HOTFIX_FLAG_PTR )
         .field( "ap_coefficient" )
         .operation( hotfix::HOTFIX_SET )
-        .modifier( 0.64368 )
-        .verification_value( 0.596 );
+        .modifier( 0.64400184 )
+        .verification_value( 0.740232 );
 
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Scourge Strike Physical buffed by 10%", 48019,
-                             hotfix::HOTFIX_FLAG_LIVE )
+    hotfix::register_effect( "Death Knight", "2024-12-13", "Doomed Bidding Duration reduced to 6s", 1158770,
+                             hotfix::HOTFIX_FLAG_PTR )
+      .field( "base_value" )
+      .operation( hotfix::HOTFIX_SET )
+      .modifier( 6000 )
+      .verification_value( 8000 );
+
+    hotfix::register_effect( "Death Knight", "2024-12-13", "Commander of the Dead buffed by 10%", 1026956,
+                             hotfix::HOTFIX_FLAG_PTR )
+      .field( "base_value" )
+      .operation( hotfix::HOTFIX_SET )
+      .modifier( 45 )
+      .verification_value( 35 );
+
+    hotfix::register_effect( "Death Knight", "2024-12-13", "Gargoyle Strike buffed by 50%", 44400,
+                             hotfix::HOTFIX_FLAG_PTR )
       .field( "ap_coefficient" )
       .operation( hotfix::HOTFIX_SET )
-      .modifier( 0.641784 )
-      .verification_value( 0.58344 );
-
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Scourge Strike Shadow buffed by 10%", 214692,
-                             hotfix::HOTFIX_FLAG_LIVE )
-      .field( "ap_coefficient" )
-      .operation( hotfix::HOTFIX_SET )
-      .modifier( 0.35354 )
-      .verification_value( 0.3214 );
-
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Clawing Shadows buffed by 10%", 324719,
-                             hotfix::HOTFIX_FLAG_LIVE )
-      .field( "ap_coefficient" )
-      .operation( hotfix::HOTFIX_SET )
-      .modifier( 1.177 )
-      .verification_value( 1.07 );
-
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Vampiric Strike buffed by 10%", 1123513,
-                             hotfix::HOTFIX_FLAG_LIVE )
-      .field( "ap_coefficient" )
-      .operation( hotfix::HOTFIX_SET )
-      .modifier( 1.144 )
-      .verification_value( 1.04 );
-  }*/
+      .modifier( 0.34776 )
+      .verification_value( 0.23184 );
+  }
 
   void init( player_t* ) const override
   {
