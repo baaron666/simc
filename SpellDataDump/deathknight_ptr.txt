@@ -496,7 +496,7 @@ Family Flags     : 13, 43, 64, 78
 Attributes       : Do Not Sheath (18), Initiates Combat (Enables Auto-Attack) (41), Active Threat (94), Not a Proc (105), Always Hit (114), Not In Spellbook (143), Do Not Consume Resources (197), Do Not Chain To Crowd-Controlled Targets (200), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=39872)    : School Damage (2): shadow
-                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 0.740232 | PvP Coefficient: 1.49 | Chain Multiplier: 1 | Chain Targets: 1 | Target: Enemy (6)
+                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | AP Coefficient: 0.6440018 | PvP Coefficient: 1.49 | Chain Multiplier: 1 | Chain Targets: 1 | Target: Enemy (6)
 Description      : Fire a blast of unholy energy, causing Shadow damage to an enemy target or healing a friendly Undead target.
 
 Name             : Death Coil (id=47633) [Spell Family (15)] 
@@ -1301,7 +1301,7 @@ Family Flags     : 99
 Attributes       : AI Primary Ranged Attack (206), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=44400)    : School Damage (2): shadowstorm
-                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | Value Multiplier: 1 | AP Coefficient: 0.23184 | Target: Enemy (6)
+                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | Value Multiplier: 1 | AP Coefficient: 0.34776 | Target: Enemy (6)
 Description      : Inflicts $s1 Plague damage to an enemy.
 
 Name             : On a Pale Horse (id=51986) [Spell Family (15), Passive] 
@@ -12393,7 +12393,7 @@ Labels           : 16: Class Spells
 Attributes       : Include In Advanced Combat Log (72), Allow Aura While Dead (116), Do Not Display Range (126), Do Not Display Duration (170)
 Effects          :
 #1 (id=1026956)  : Apply Aura (6) | Modify Damage Done% (79)
-                   Base Value: 35 | Scaled Value: 35 | Misc Value: 0x7f | Radius: 100 yards | Target: Unknown(120)
+                   Base Value: 45 | Scaled Value: 45 | Misc Value: 0x7f | Radius: 100 yards | Target: Unknown(120)
                    Affected School(s): All
 #2 (id=1026957)  : Apply Aura (6) | Scale% (Stacking) (61)
                    Base Value: 15 | Scaled Value: 15 | Radius: 25 yards | Target: Unknown(120)
@@ -16688,7 +16688,7 @@ Labels           : 16: Class Spells
 Attributes       : Passive (6), Do Not Display (Spellbook, Aura Icon, Combat Log) (7), Allow Aura While Dead (116), Allow Entering Arena (149), Disable Aura While Dead (226)
 Effects          :
 #1 (id=1158770)  : Apply Aura (6) | Dummy (4)
-                   Base Value: 8000 | Scaled Value: 8000 | Target: Self (1)
+                   Base Value: 6000 | Scaled Value: 6000 | Target: Self (1)
 Description      : Consuming Sudden Doom calls upon a Magus of the Dead to assist you for ${$s1/1000} sec.
 
 
