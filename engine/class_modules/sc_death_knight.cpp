@@ -15355,6 +15355,7 @@ void death_knight_t::parse_player_effects()
     parse_effects( buffs.unbreakable_tww1_2pc, [ & ] { return buffs.bone_shield->check(); } );
     parse_effects( buffs.unbroken_tww1_2pc );
     parse_effects( buffs.piledriver_tww1_4pc, buffs.piledriver_tww1_4pc->data().effectN( 1 ).percent() * 0.1 );
+    parse_effects( buffs.luck_of_the_draw );
   }
 
   // Frost
@@ -15628,6 +15629,7 @@ struct death_knight_module_t : public module_t
     unique_gear::register_special_effect( 326982, runeforge::unending_thirst );
   }
   
+  /*
   void register_hotfixes() const override
   {
     hotfix::register_effect( "Death Knight", "2024-12-13", "Death Coil nerfed by 13%", 39872,
@@ -15657,7 +15659,7 @@ struct death_knight_module_t : public module_t
       .operation( hotfix::HOTFIX_SET )
       .modifier( 0.34776 )
       .verification_value( 0.23184 );
-  }
+  }*/
 
   void init( player_t* ) const override
   {
