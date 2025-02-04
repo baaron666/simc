@@ -5266,6 +5266,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       for ( int i = 0; i < count; i++ )
         legacy_of_the_windrunners.wind_arrow->execute_on_target( target );
     }
+
+    p()->buffs.moving_target->expire();
   }
 
   int n_targets() const override
