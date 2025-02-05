@@ -5588,6 +5588,7 @@ struct upheaval_t : public empowered_charge_spell_t
         base_dd_multiplier *= p->sets->set( EVOKER_AUGMENTATION, TWW2, B2 )->effectN( 1 ).percent();
         sands           = nullptr;
         threads_of_fate = nullptr;
+        extend_ebon     = 0_s;
       }
 
       if ( is_tierset && !is_rumbling_earth )
