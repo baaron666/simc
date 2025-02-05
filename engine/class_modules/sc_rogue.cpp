@@ -6638,6 +6638,14 @@ struct thistle_tea_t : public rogue_spell_t
 
     harmful = false;
     energize_type = action_energize::ON_CAST;
+
+    // If Thistle Tea is not actually in the APL, use the thistle_tea_auto data instead
+    if ( !util::str_compare_ci( name, "thistle_tea" ) && !p->find_action( "thistle_tea" ) )
+    {
+      p->cooldowns.thistle_tea->duration = cooldown->duration;
+      p->cooldowns.thistle_tea->charges = cooldown->charges;
+    }
+
     cooldown = p->cooldowns.thistle_tea;
     set_target( p );
   }
