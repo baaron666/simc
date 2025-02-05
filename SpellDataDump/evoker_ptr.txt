@@ -1270,7 +1270,7 @@ Effects          :
 #1 (id=894882)   : Dummy (3)
                    Base Value: 0 | Scaled Value: 0 | Target: Enemy (6)
 #2 (id=894883)   : School Damage (2): spellfrost
-                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | SP Coefficient: 6.82 | Chain Multiplier: 1 | Chain Targets: 6 | Target: Enemy (6)
+                   Base Value: 0 | Scaled Value: 0 (delta=0.05) | SP Coefficient: 8.184 | Chain Multiplier: 1 | Chain Targets: 6 | Target: Enemy (6)
 Description      : $@spelldesc359073
 
 Name             : [DNT] Activate GCD (id=359115) [Spell Family (224), Hidden] 
@@ -3238,7 +3238,7 @@ Proc Flags       : Periodic
 Attributes       : Passive (6), Not In Spellbook (143), Do Not Log on Learn (355), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=982356)   : Apply Aura (6) | Dummy (4)
-                   Base Value: 50 | Scaled Value: 50 | Target: Self (1)
+                   Base Value: 40 | Scaled Value: 40 | Target: Self (1)
 #2 (id=1033150)  : Apply Aura (6) | Dummy (4)
                    Base Value: 15 | Scaled Value: 15 | Target: Self (1)
 Description      : Disintegrate has a $s2% chance each time it deals damage to launch a level 1 Eternity Surge at $s1% power.
