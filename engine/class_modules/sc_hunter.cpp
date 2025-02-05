@@ -653,6 +653,7 @@ public:
     
     spell_data_ptr_t penetrating_shots;
     spell_data_ptr_t improved_spotters_mark;
+    spell_data_ptr_t unbreakable_bond;
     spell_data_ptr_t lock_and_load;
     
     spell_data_ptr_t in_the_rhythm;
@@ -960,6 +961,7 @@ public:
     spell_data_ptr_t steady_shot_energize;
     spell_data_ptr_t flare;
     spell_data_ptr_t serpent_sting;
+    spell_data_ptr_t call_pet;
 
     // SV
     spell_data_ptr_t harpoon;
@@ -2979,7 +2981,7 @@ struct pet_melee_t : public hunter_pet_melee_t<hunter_pet_t>
   {
     hunter_pet_melee_t::execute();
 
-    o()->buffs.wyverns_cry->increment();
+    o()->buffs.wyverns_cry->trigger();
   }
 };
 
@@ -3722,16 +3724,16 @@ void hunter_t::consume_precise_shots()
     if ( talents.moving_target.ok() )
     {
       buffs.moving_target->trigger();
-      buffs.streamline->trigger();
+      buffs.streamline->trigger( buffs.precise_shots->check() );
     }
 
-    cooldowns.explosive_shot->adjust( -talents.magnetic_gunpowder->effectN( 1 ).time_value() );
+    cooldowns.explosive_shot->adjust( -talents.magnetic_gunpowder->effectN( 1 ).time_value() * buffs.precise_shots->check() );
 
-    cooldowns.aimed_shot->adjust( -talents.focused_aim->effectN( 1 ).time_value() );
+    cooldowns.aimed_shot->adjust( -talents.focused_aim->effectN( 1 ).time_value() * buffs.precise_shots->check() );
 
     if ( talents.tensile_bowstring.ok() && buffs.trueshot->up() && state.tensile_bowstring_extension < talents.tensile_bowstring->effectN( 3 ).time_value() )
     {
-      timespan_t extension = talents.tensile_bowstring->effectN( 1 ).time_value();
+      timespan_t extension = talents.tensile_bowstring->effectN( 1 ).time_value() * buffs.precise_shots->check();
       buffs.trueshot->extend_duration( this, extension );
       buffs.withering_fire->extend_duration( this, extension );
       state.tensile_bowstring_extension += extension;
@@ -4253,12 +4255,9 @@ struct arcane_shot_t : public arcane_shot_base_t
   {
     arcane_shot_base_t::execute();
 
-    // TODO 23/1/25: secondary cast is using primary target if no secondary target is near
-    if ( aspect_of_the_hydra )
-    {
-      auto tl = target_list();
-      aspect_of_the_hydra->execute_on_target( tl[ tl.size() > 1 ? 1 : 0 ] );
-    }
+    auto tl = target_list();
+    if ( aspect_of_the_hydra && tl.size() > 1 )
+      aspect_of_the_hydra->execute_on_target( tl[ 1 ] );
   }
 };
 
@@ -5877,12 +5876,9 @@ struct aimed_shot_t : public aimed_shot_base_t
     if ( rng().roll( deathblow.chance ) )
       p()->trigger_deathblow();
 
-    // TODO 23/1/25: secondary cast is using primary target if no secondary target is near
-    if ( aspect_of_the_hydra )
-    {
-      auto tl = target_list();
-      aspect_of_the_hydra->execute_on_target( tl[ tl.size() > 1 ? 1 : 0 ] );
-    }
+    auto tl = target_list();
+    if ( aspect_of_the_hydra && tl.size() > 1 )
+      aspect_of_the_hydra->execute_on_target( tl[ 1 ] );
 
     if ( double_tap && p()->buffs.double_tap->up() )
     {
@@ -6028,12 +6024,9 @@ struct rapid_fire_t: public hunter_spell_t
 
     damage -> execute_on_target( d->target );
 
-    // TODO 23/1/25: secondary cast is using primary target if no secondary target is near
-    if ( aspect_of_the_hydra )
-    {
-      auto tl = target_list();
-      aspect_of_the_hydra->execute_on_target( tl[ tl.size() > 1 ? 1 : 0 ] );
-    }
+    auto tl = target_list();
+    if ( aspect_of_the_hydra && tl.size() > 1 )
+      aspect_of_the_hydra->execute_on_target( tl[ 1 ] );
   }
 
   void last_tick( dot_t* d ) override
@@ -6792,10 +6785,9 @@ struct summon_pet_t: public hunter_spell_t
   pet_t* pet;
 
   summon_pet_t( hunter_t* p, util::string_view options_str ):
-    hunter_spell_t( "summon_pet", p, p -> find_spell( 883 ) ),
+    hunter_spell_t( "summon_pet", p, p->specs.call_pet ),
     opt_disabled( false ), pet( nullptr )
   {
-    add_option( opt_obsoleted( "name" ) );
     parse_options( options_str );
 
     harmful = false;
@@ -6812,7 +6804,7 @@ struct summon_pet_t: public hunter_spell_t
     if ( !pet && !opt_disabled )
       pet = player -> find_pet( p() -> options.summon_pet_str );
 
-    if ( !pet && p() -> specialization() != HUNTER_MARKSMANSHIP )
+    if ( !pet && ( p() -> specialization() != HUNTER_MARKSMANSHIP || p()->talents.unbreakable_bond.ok() ) )
     {
       throw std::invalid_argument(fmt::format("Unable to find pet '{}' for summons.", p() -> options.summon_pet_str));
     }
@@ -6831,7 +6823,7 @@ struct summon_pet_t: public hunter_spell_t
 
   bool ready() override
   {
-    if ( opt_disabled || p() -> pets.main == pet )
+    if ( opt_disabled || p() -> pets.main == pet || p()->specialization() == HUNTER_MARKSMANSHIP && !p()->talents.unbreakable_bond.ok() )
       return false;
 
     return hunter_spell_t::ready();
@@ -7249,7 +7241,7 @@ struct wyverns_cry_t final : hunter_spell_t
   {
     hunter_spell_t::execute();
 
-    p()->buffs.wyverns_cry->trigger();
+    p()->buffs.wyverns_cry->trigger( as<int>( p()->talents.howl_of_the_pack_leader->effectN( 3 ).base_value() ) );
   }
 };
 
@@ -8275,6 +8267,7 @@ void hunter_t::init_spells()
 
     talents.penetrating_shots                 = find_talent_spell( talent_tree::SPECIALIZATION, "Penetrating Shots", HUNTER_MARKSMANSHIP );
     talents.improved_spotters_mark            = find_talent_spell( talent_tree::SPECIALIZATION, "Improved Spotter's Mark", HUNTER_MARKSMANSHIP );
+    talents.unbreakable_bond                  = find_talent_spell( talent_tree::SPECIALIZATION, "Unbreakable Bond", HUNTER_MARKSMANSHIP );
     talents.lock_and_load                     = find_talent_spell( talent_tree::SPECIALIZATION, "Lock and Load", HUNTER_MARKSMANSHIP );
     
     talents.in_the_rhythm                     = find_talent_spell( talent_tree::SPECIALIZATION, "In the Rhythm", HUNTER_MARKSMANSHIP );
@@ -8610,6 +8603,7 @@ void hunter_t::init_spells()
   specs.steady_shot          = find_class_spell( "Steady Shot" );
   specs.steady_shot_energize = find_spell( 77443 );
   specs.flare                = find_class_spell( "Flare" );
+  specs.call_pet             = find_spell( 883 );
 
   // Tier Sets
   tier_set.tww_s1_bm_2pc = sets -> set( HUNTER_BEAST_MASTERY, TWW1, B2 );
@@ -9050,7 +9044,6 @@ void hunter_t::create_buffs()
 
   buffs.wyverns_cry = 
     make_buff( this, "wyverns_cry", talents.howl_of_the_pack_leader_wyvern_buff )
-      ->set_initial_stack( as<int>( talents.howl_of_the_pack_leader->effectN( 3 ).base_value() ) )
       ->set_default_value_from_effect( 1 )
       ->set_refresh_behavior( buff_refresh_behavior::DISABLED )
       ->set_stack_change_callback(

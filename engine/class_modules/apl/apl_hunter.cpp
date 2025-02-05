@@ -285,6 +285,7 @@ void marksmanship_ptr( player_t* p )
   precombat->add_action( "snapshot_stats" );
   precombat->add_action( "variable,name=trinket_1_stronger,value=!trinket.2.has_cooldown|trinket.1.has_use_buff&(!trinket.2.has_use_buff|!trinket.1.is.mirror_of_fractured_tomorrows&(trinket.2.is.mirror_of_fractured_tomorrows|trinket.2.cooldown.duration<trinket.1.cooldown.duration|trinket.2.cast_time<trinket.1.cast_time|trinket.2.cast_time=trinket.1.cast_time&trinket.2.cooldown.duration=trinket.1.cooldown.duration))|!trinket.1.has_use_buff&(!trinket.2.has_use_buff&(trinket.2.cooldown.duration<trinket.1.cooldown.duration|trinket.2.cast_time<trinket.1.cast_time|trinket.2.cast_time=trinket.1.cast_time&trinket.2.cooldown.duration=trinket.1.cooldown.duration))", "Determine the stronger trinket to sync with cooldowns. In descending priority: buff effects > damage effects, longer > shorter cooldowns, longer > shorter cast times." );
   precombat->add_action( "variable,name=trinket_2_stronger,value=!variable.trinket_1_stronger" );
+  precombat->add_action( "summon_pet,if=talent.unbreakable_bond" );
   precombat->add_action( "aimed_shot,if=active_enemies=1|active_enemies=2&!talent.volley", "Precast Aimed Shot on one target or two if we can't cleave it with Volley, otherwise precast Steady Shot." );
   precombat->add_action( "steady_shot" );
 
