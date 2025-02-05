@@ -4257,7 +4257,7 @@ struct disintegrate_t : public essence_spell_t
     : essence_spell_t( "disintegrate", p,
                        p->talent.eruption.ok() ? spell_data_t::not_found() : p->find_class_spell( "Disintegrate" ),
                        options_str ),
-      num_ticks( as<int>( dot_duration / base_tick_time ) + 1 + p->talent.azure_celerity->effectN( 3 ).base_value() ),
+      num_ticks( as<int>( dot_duration / base_tick_time + 1 + p->talent.azure_celerity->effectN( 3 ).base_value() ) ),
       mass_disint_mult( p->talent.scalecommander.mass_disintegrate->effectN( 2 ).percent() ),
       current_dots()
   {
@@ -9714,6 +9714,18 @@ struct evoker_module_t : public module_t
         .operation( hotfix::HOTFIX_SET )
         .modifier( 5 )
         .verification_value( 6.5 );
+
+    hotfix::register_effect( "Evoker", "2025-02-05", "Scintillation Reduced to 40%", 982356, hotfix::HOTFIX_FLAG_PTR )
+        .field( "base_value" )
+        .operation( hotfix::HOTFIX_SET )
+        .modifier( 40 )
+        .verification_value( 50 );
+
+    hotfix::register_effect( "Evoker", "2025-02-05", "Eternity Surge buffed by 20%", 894883, hotfix::HOTFIX_FLAG_PTR )
+        .field( "sp_coefficient" )
+        .operation( hotfix::HOTFIX_SET )
+        .modifier( 8.184 )
+        .verification_value( 6.82 );
   }
 
   void combat_begin( sim_t* ) const override
