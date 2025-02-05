@@ -1315,12 +1315,16 @@ struct void_bolt_proc_t final : public void_bolt_base_t
   void_bolt_proc_t( priest_t& p, util::string_view name, double effectiveness )
     : void_bolt_base_t( p, name, "" ),
       tww2_pi_proc_duration( p.is_ptr() ? p.sets->set( PRIEST_SHADOW, TWW2, B4 )->effectN( 1 ).time_value() : 0_s ),
-      pi_value( player->buffs.power_infusion->default_value + p.talents.archon.concentrated_infusion->effectN( 1 ).percent() )
+      pi_value( player->buffs.power_infusion->default_value +
+                p.talents.archon.concentrated_infusion->effectN( 1 ).percent() )
   {
     cooldown->duration = 0_s;
     track_cd_waste     = false;
 
     base_multiplier *= effectiveness;
+
+    if ( !p.options.shadow_tww2_4pc_insanity )
+      energize_amount = 0;
   }
 
   void_bolt_proc_t( priest_t& p, util::string_view name )

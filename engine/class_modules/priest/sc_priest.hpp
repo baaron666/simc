@@ -866,6 +866,8 @@ public:
 
     // Controls whether Discipline is "in a raid" or not.
     bool discipline_in_raid = false;
+
+    bool shadow_tww2_4pc_insanity = true;
   } options;
 
   priest_t( sim_t* sim, util::string_view name, race_e r );
