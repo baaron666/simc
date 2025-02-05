@@ -784,7 +784,8 @@ public:
     cooldown_t* fel_rush;
     cooldown_t* netherwalk;
     cooldown_t* relentless_onslaught_icd;
-    cooldown_t* movement_shared;
+    cooldown_t* fel_rush_vengeful_retreat_movement_shared;
+    cooldown_t* felblade_vengeful_retreat_movement_shared;
 
     // Vengeance
     cooldown_t* demon_spikes;
@@ -5871,6 +5872,15 @@ struct felblade_t : public inertia_trigger_t<demon_hunter_attack_t>
     if ( p()->is_ptr() )
       p()->buff.unbound_chaos->expire();
   }
+
+  bool ready() override
+  {
+    // Felblade has a 1s cooldown triggered by Vengeful Retreat
+    if ( p()->cooldown.felblade_vengeful_retreat_movement_shared->down() )
+      return false;
+
+    return base_t::ready();
+  }
 };
 
 // Fel Rush =================================================================
@@ -5934,7 +5944,7 @@ struct fel_rush_t : public inertia_trigger_t<momentum_trigger_t<demon_hunter_att
     p()->buff.unbound_chaos->expire();
 
     // Fel Rush and VR shared a 1 second GCD when one or the other is triggered
-    p()->cooldown.movement_shared->start( timespan_t::from_seconds( 1.0 ) );
+    p()->cooldown.fel_rush_vengeful_retreat_movement_shared->start( timespan_t::from_seconds( 1.0 ) );
 
     p()->consume_nearby_soul_fragments( soul_fragment::LESSER );
 
@@ -5965,7 +5975,7 @@ struct fel_rush_t : public inertia_trigger_t<momentum_trigger_t<demon_hunter_att
   bool ready() override
   {
     // Fel Rush and VR shared a 1 second GCD when one or the other is triggered
-    if ( p()->cooldown.movement_shared->down() )
+    if ( p()->cooldown.fel_rush_vengeful_retreat_movement_shared->down() )
       return false;
 
     // Not usable during the root effect of Stormeater's Boon
@@ -6606,8 +6616,13 @@ struct vengeful_retreat_t : public unbound_chaos_trigger_t<
   {
     base_t::execute();
 
-    // Fel Rush and VR shared a 1 second GCD when one or the other is triggered
-    p()->cooldown.movement_shared->start( timespan_t::from_seconds( 1.0 ) );
+    // Fel Rush and VR share a 1 second GCD when one or the other is triggered
+    p()->cooldown.fel_rush_vengeful_retreat_movement_shared->start( 1_s );
+    // Fel Rush triggers a 1 second GCD for Felblade
+    if ( p()->is_ptr() )
+    {
+      p()->cooldown.felblade_vengeful_retreat_movement_shared->start( 1_s );
+    }
     p()->buff.vengeful_retreat_move->trigger();
 
     if ( p()->specialization() != DEMON_HUNTER_VENGEANCE )
@@ -6625,7 +6640,7 @@ struct vengeful_retreat_t : public unbound_chaos_trigger_t<
   bool ready() override
   {
     // Fel Rush and VR shared a 1 second GCD when one or the other is triggered
-    if ( p()->cooldown.movement_shared->down() )
+    if ( p()->cooldown.fel_rush_vengeful_retreat_movement_shared->down() )
       return false;
 
     // Not usable during the root effect of Stormeater's Boon
@@ -9025,16 +9040,17 @@ void demon_hunter_t::create_cooldowns()
   cooldown.metamorphosis    = get_cooldown( "metamorphosis" );
 
   // Havoc
-  cooldown.blade_dance              = get_cooldown( "blade_dance" );
-  cooldown.blur                     = get_cooldown( "blur" );
-  cooldown.chaos_strike_refund_icd  = get_cooldown( "chaos_strike_refund_icd" );
-  cooldown.essence_break            = get_cooldown( "essence_break" );
-  cooldown.eye_beam                 = get_cooldown( "eye_beam" );
-  cooldown.fel_barrage              = get_cooldown( "fel_barrage" );
-  cooldown.fel_rush                 = get_cooldown( "fel_rush" );
-  cooldown.netherwalk               = get_cooldown( "netherwalk" );
-  cooldown.relentless_onslaught_icd = get_cooldown( "relentless_onslaught_icd" );
-  cooldown.movement_shared          = get_cooldown( "movement_shared" );
+  cooldown.blade_dance                               = get_cooldown( "blade_dance" );
+  cooldown.blur                                      = get_cooldown( "blur" );
+  cooldown.chaos_strike_refund_icd                   = get_cooldown( "chaos_strike_refund_icd" );
+  cooldown.essence_break                             = get_cooldown( "essence_break" );
+  cooldown.eye_beam                                  = get_cooldown( "eye_beam" );
+  cooldown.fel_barrage                               = get_cooldown( "fel_barrage" );
+  cooldown.fel_rush                                  = get_cooldown( "fel_rush" );
+  cooldown.netherwalk                                = get_cooldown( "netherwalk" );
+  cooldown.relentless_onslaught_icd                  = get_cooldown( "relentless_onslaught_icd" );
+  cooldown.fel_rush_vengeful_retreat_movement_shared = get_cooldown( "fel_rush_vengeful_retreat_movement_shared" );
+  cooldown.felblade_vengeful_retreat_movement_shared = get_cooldown( "felblade_vengeful_retreat_movement_shared" );
 
   // Vengeance
   cooldown.demon_spikes            = get_cooldown( "demon_spikes" );
