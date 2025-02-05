@@ -6326,7 +6326,10 @@ struct shiv_t : public rogue_attack_t
     rogue_attack_t::execute();
 
     p()->buffs.symbolic_victory->trigger();
-    trigger_supercharger();
+    if ( p()->specialization() == ROGUE_ASSASSINATION )
+    {
+      trigger_supercharger();
+    }
   }
 
   void impact( action_state_t* s ) override
