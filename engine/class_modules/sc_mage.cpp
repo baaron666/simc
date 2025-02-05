@@ -439,6 +439,7 @@ public:
     cooldown_t* comet_storm;
     cooldown_t* cone_of_cold;
     cooldown_t* dragons_breath;
+    cooldown_t* excess_fire;
     cooldown_t* excess_frost;
     cooldown_t* fire_blast;
     cooldown_t* flurry;
@@ -5397,8 +5398,6 @@ struct glacial_spike_t final : public frost_mage_spell_t
 
     if ( consumed_wc )
       p()->trigger_splinter( s->target, as<int>( p()->talents.signature_spell->effectN( 2 ).base_value() ) );
-
-    p()->buffs.wintertide->expire();
   }
 };
 
@@ -5589,11 +5588,12 @@ struct ice_lance_t final : public custom_state_spell_t<frost_mage_spell_t, ice_l
     if ( !primary )
       record_shatter_source( s, cleave_source );
 
-    if ( p()->buffs.excess_fire->check() )
+    if ( p()->buffs.excess_fire->check() && p()->cooldowns.excess_fire->up() )
     {
       p()->action.frostfire_burst->execute_on_target( s->target );
       p()->buffs.excess_fire->decrement();
       p()->buffs.excess_frost->trigger();
+      p()->cooldowns.excess_fire->start( p()->buffs.excess_fire->data().internal_cooldown() );
     }
 
     if ( frozen & FF_FINGERS_OF_FROST && frigid_pulse )
@@ -5778,11 +5778,12 @@ struct fire_blast_t final : public fire_mage_spell_t
     // As of 11.1, only triggers from Fire Blasts cast by Fire Mages.
     if ( result_is_hit( s->result ) && s->chain_target == 0 && p()->specialization() == MAGE_FIRE )
     {
-      if ( p()->buffs.excess_fire->check() )
+      if ( p()->buffs.excess_fire->check() && p()->cooldowns.excess_fire->up() )
       {
         p()->action.frostfire_burst->execute_on_target( s->target );
         p()->buffs.excess_fire->decrement();
         p()->buffs.excess_frost->trigger();
+        p()->cooldowns.excess_fire->start( p()->buffs.excess_fire->data().internal_cooldown() );
       }
 
       trigger_glorious_incandescence( s->target );
@@ -7619,22 +7620,23 @@ mage_t::mage_t( sim_t* sim, std::string_view name, race_e r ) :
   talents()
 {
   // Cooldowns
-  cooldowns.arcane_echo        = get_cooldown( "arcane_echo_icd"    );
-  cooldowns.blast_wave         = get_cooldown( "blast_wave"         );
-  cooldowns.combustion         = get_cooldown( "combustion"         );
-  cooldowns.comet_storm        = get_cooldown( "comet_storm"        );
-  cooldowns.cone_of_cold       = get_cooldown( "cone_of_cold"       );
-  cooldowns.excess_frost       = get_cooldown( "excess_frost_icd"   );
-  cooldowns.dragons_breath     = get_cooldown( "dragons_breath"     );
-  cooldowns.fire_blast         = get_cooldown( "fire_blast"         );
-  cooldowns.flurry             = get_cooldown( "flurry"             );
-  cooldowns.from_the_ashes     = get_cooldown( "from_the_ashes"     );
-  cooldowns.frost_nova         = get_cooldown( "frost_nova"         );
-  cooldowns.frozen_orb         = get_cooldown( "frozen_orb"         );
-  cooldowns.meteor             = get_cooldown( "meteor"             );
-  cooldowns.phoenix_flames     = get_cooldown( "phoenix_flames"     );
-  cooldowns.presence_of_mind   = get_cooldown( "presence_of_mind"   );
-  cooldowns.pyromaniac         = get_cooldown( "pyromaniac"         );
+  cooldowns.arcane_echo        = get_cooldown( "arcane_echo_icd"  );
+  cooldowns.blast_wave         = get_cooldown( "blast_wave"       );
+  cooldowns.combustion         = get_cooldown( "combustion"       );
+  cooldowns.comet_storm        = get_cooldown( "comet_storm"      );
+  cooldowns.cone_of_cold       = get_cooldown( "cone_of_cold"     );
+  cooldowns.excess_fire        = get_cooldown( "excess_fire_icd"  );
+  cooldowns.excess_frost       = get_cooldown( "excess_frost_icd" );
+  cooldowns.dragons_breath     = get_cooldown( "dragons_breath"   );
+  cooldowns.fire_blast         = get_cooldown( "fire_blast"       );
+  cooldowns.flurry             = get_cooldown( "flurry"           );
+  cooldowns.from_the_ashes     = get_cooldown( "from_the_ashes"   );
+  cooldowns.frost_nova         = get_cooldown( "frost_nova"       );
+  cooldowns.frozen_orb         = get_cooldown( "frozen_orb"       );
+  cooldowns.meteor             = get_cooldown( "meteor"           );
+  cooldowns.phoenix_flames     = get_cooldown( "phoenix_flames"   );
+  cooldowns.presence_of_mind   = get_cooldown( "presence_of_mind" );
+  cooldowns.pyromaniac         = get_cooldown( "pyromaniac"       );
 
   // Options
   resource_regeneration = regen_type::DYNAMIC;
@@ -8517,12 +8519,13 @@ void mage_t::create_buffs()
                                ->set_chance( talents.slick_ice.ok() );
   buffs.wintertide         = make_buff( this, "wintertide", find_spell( 1222865 ) )
                                ->set_default_value_from_effect( 1 )
-                               ->modify_max_stack( as<int>( talents.wintertide->effectN( 1 ).base_value() ) )
+                               ->modify_default_value( talents.wintertide->effectN( 1 ).percent() )
                                ->set_chance( talents.wintertide.ok() );
 
 
   // Frostfire
   buffs.excess_fire           = make_buff( this, "excess_fire", find_spell( 438624 ) )
+                                  ->set_cooldown( 0_ms )
                                   ->set_chance( talents.excess_fire.ok() );
   buffs.excess_frost          = make_buff( this, "excess_frost", find_spell( 438611 ) )
                                   ->set_cooldown( 0_ms )
@@ -8738,10 +8741,9 @@ void mage_t::init_rng()
   // Accumulated RNG is also not present in the game data.
   accumulated_rng.pyromaniac = get_accumulated_rng( "pyromaniac", talents.pyromaniac.ok() ? 0.00605 : 0.0 );
 
-  // Reconstructed from the patch notes to give 2.5% and 2% avg proc chance.
   // TODO: get some actual data and confirm that they're still using accumulated RNG
   // and these values are accurate
-  double sft_step = specialization() == MAGE_FROST ? 9.6574e-4 : 6.2009e-4;
+  double sft_step = 6.2009e-4; // averages to 2% proc chance
   accumulated_rng.spellfrost_teachings = get_accumulated_rng( "spellfrost_teachings", talents.spellfrost_teachings.ok() ? sft_step : 0.0 );
 }
 
