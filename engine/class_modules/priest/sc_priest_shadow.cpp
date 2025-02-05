@@ -1240,10 +1240,8 @@ struct void_bolt_base_t : public priest_spell_t
     add_option( opt_bool( "only_cwc", only_cwc ) );
     parse_options( options );
 
-    if ( !p.bugs || !p.is_ptr() )
-      only_cwc = false;
-
-    usable_while_casting = use_while_casting = only_cwc;
+    if ( p.bugs && p.is_ptr() && only_cwc )
+      usable_while_casting = use_while_casting = only_cwc;
 
     energize_type              = action_energize::ON_CAST;
     cooldown->hasted           = true;
@@ -1262,6 +1260,9 @@ struct void_bolt_base_t : public priest_spell_t
     {
       return false;
     }
+
+    if ( only_cwc && ( !p().bugs || !p().is_ptr() ) )
+      return false;
 
     if ( p().is_ptr() && only_cwc )
     {
