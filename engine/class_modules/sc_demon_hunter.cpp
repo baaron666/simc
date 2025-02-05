@@ -8590,18 +8590,16 @@ void demon_hunter_t::init_spells()
   talent.felscarred.demonic_intensity = find_talent_spell( talent_tree::HERO, "Demonic Intensity" );
 
   // Class Background Spells
-  spell.felblade_damage      = talent.demon_hunter.felblade->ok() ? find_spell( 213243 ) : spell_data_t::not_found();
-  spell.felblade_reset_havoc = talent.demon_hunter.felblade->ok() ? find_spell( 236167 ) : spell_data_t::not_found();
+  spell.felblade_damage      = conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 213243 );
+  spell.felblade_reset_havoc = conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 236167 );
   spell.felblade_reset_vengeance =
-      talent.demon_hunter.felblade->ok() ? find_spell( 203557 ) : spell_data_t::not_found();
-  spell.infernal_armor_damage =
-      talent.demon_hunter.infernal_armor->ok() ? find_spell( 320334 ) : spell_data_t::not_found();
-  spell.immolation_aura_damage = spell.immolation_aura_2->ok() ? find_spell( 258921 ) : spell_data_t::not_found();
+      conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 203557 );
+  spell.infernal_armor_damage = conditional_spell_lookup( talent.demon_hunter.infernal_armor->ok(), 320334 );
+  spell.immolation_aura_damage = conditional_spell_lookup( spell.immolation_aura_2->ok(), 258921 );
   spell.sigil_of_flame_damage  = find_spell( 204598 );
   spell.sigil_of_flame_fury    = find_spell( 389787 );
   spell.the_hunt               = talent.demon_hunter.the_hunt;
-  spec.sigil_of_misery_debuff =
-      talent.demon_hunter.sigil_of_misery->ok() ? find_spell( 207685 ) : spell_data_t::not_found();
+  spec.sigil_of_misery_debuff = conditional_spell_lookup( talent.demon_hunter.sigil_of_misery->ok(), 207685 );
 
   // Spec Background Spells
   mastery.any_means_necessary = talent.havoc.any_means_necessary;
