@@ -1180,7 +1180,21 @@ struct power_infusion_t final : public priest_spell_t
     // Trigger PI on the actor only if casting on itself
     if ( priest().options.self_power_infusion || priest().talents.twins_of_the_sun_priestess.enabled() )
     {
-      player->buffs.power_infusion->trigger( 1, power_infusion_magnitude );
+      bool tww2_4pc      = priest().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B4 );
+      bool twins_4pc_bug = player->bugs && tww2_4pc && priest().talents.twins_of_the_sun_priestess.enabled();
+      if ( tww2_4pc && player->buffs.power_infusion->check() )
+      {
+        timespan_t extend_amount = std::min( ( twins_4pc_bug ? 2 : 1 ) * player->buffs.power_infusion->buff_duration(),
+                                             30_s - player->buffs.power_infusion->remains() );
+        if ( extend_amount > 0_s )
+          player->buffs.power_infusion->extend_duration( player, extend_amount );
+      }
+      else
+      {
+        player->buffs.power_infusion->trigger(
+            1, power_infusion_magnitude, -1,
+            ( twins_4pc_bug ? 2 : 1 ) * player->buffs.power_infusion->buff_duration() );
+      }
     }
   }
 };
