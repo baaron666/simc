@@ -3805,6 +3805,10 @@ struct fire_breath_t : public empowered_charge_spell_t
 
       dot_duration = 20_s;  // base * 10? or hardcoded to 20s?
       dot_duration += timespan_t::from_seconds( p->talent.blast_furnace->effectN( 1 ).base_value() );
+      
+      apply_affecting_aura( p->talent.flameshaper.fulminous_roar );
+
+      dot_dur_per_emp *= 1 + p->talent.flameshaper.fulminous_roar->effectN( 2 ).percent();
 
       if ( p->talent.chronowarden.afterimage.enabled() )
       {
@@ -9129,7 +9133,6 @@ void evoker_t::apply_affecting_auras_late( action_t& action )
   // Flameshaper
   action.apply_affecting_aura( talent.flameshaper.red_hot );
   action.apply_affecting_aura( talent.flameshaper.expanded_lungs );
-  action.apply_affecting_aura( talent.flameshaper.fulminous_roar );
 
   // Scalecommander
   action.apply_affecting_aura( talent.scalecommander.might_of_the_black_dragonflight );
