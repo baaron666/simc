@@ -7718,7 +7718,7 @@ void demon_hunter_t::create_buffs()
                               } );
 
   buff.unbound_chaos = make_buff( this, "unbound_chaos", spec.unbound_chaos_buff )
-                           ->set_default_value( is_ptr() ? spec.unbound_chaos_buff->effectN( 1 ).percent()
+                           ->set_default_value( !is_ptr() ? spec.unbound_chaos_buff->effectN( 1 ).percent()
                                                          : talent.havoc.unbound_chaos->effectN( 2 ).percent() );
 
   buff.cycle_of_hatred = make_buff( this, "cycle_of_hatred", spec.cycle_of_hatred_buff )
