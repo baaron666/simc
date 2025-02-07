@@ -7806,6 +7806,13 @@ struct wildfire_bomb_base_t: public hunter_spell_t
 
     void execute() override
     {
+      if ( p()->buffs.winning_streak->check() && rng().roll( p()->tier_set.tww_s2_sv_2pc->proc_chance() ) )
+      {
+        p()->buffs.winning_streak->expire();  // Consume 2pc buff
+        if ( p()->tier_set.tww_s2_sv_4pc.ok() )
+          p()->buffs.strike_it_rich->trigger(); // Apply 4pc buff
+      }
+
       hunter_spell_t::execute();
 
       if ( num_targets_hit > 0 )
@@ -7864,13 +7871,6 @@ struct wildfire_bomb_base_t: public hunter_spell_t
     if ( p()->talents.covering_fire.ok() )
     {
       p()->cooldowns.butchery->adjust( -timespan_t::from_seconds( p()->talents.covering_fire->effectN( 2 ).base_value() ) );
-    }
-
-    if ( p()->buffs.winning_streak->check() && rng().roll( p()->tier_set.tww_s2_sv_2pc->proc_chance() ) )
-    {
-      p()->buffs.winning_streak->expire();  // Consume 2pc buff
-      if ( p()->tier_set.tww_s2_sv_4pc.ok() )
-        p()->buffs.strike_it_rich->trigger(); // Apply 4pc buff
     }
   }
 };
