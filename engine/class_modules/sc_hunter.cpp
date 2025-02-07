@@ -1182,7 +1182,13 @@ public:
   maybe_bool decrements_tip_of_the_spear;
 
   struct {
-    damage_affected_by unnatural_causes; // 10% direct from 459527 effect 4, 10% tick from 459527 effect 5
+    // TODO 7/2/25: seems to work off a target debuff 459529 applied after hitting a target for the 
+    // first time; occasionally you can notice a lack of bonus damage from abilities that are modified
+    // by his on its first occurance on a new target
+    // it seems this debuff is modified once a target falls into execute range to implement the 50% bonus, 
+    // which means residual bleeds such as master marksman and razor fragments do not get effected since
+    // they are flagged to ignore target modifiers
+    // the fact there are two separate effects leads to some abilities being affected 3 times
     bool unnatural_causes_debuff; // 10-15% dmg taken from caster spells from 459529 effect 1
     bool unnatural_causes_debuff_label; // 10-15% dmg taken from caster spells (label) from 459529 effect 2
 
@@ -1231,7 +1237,6 @@ public:
 
     if ( p->talents.unnatural_causes.ok() )
     {
-      affected_by.unnatural_causes = parse_damage_affecting_aura( this, p->talents.unnatural_causes );
       affected_by.unnatural_causes_debuff = check_affected_by( this, p->talents.unnatural_causes_debuff->effectN( 1 ) );
       affected_by.unnatural_causes_debuff_label = check_affected_by( this, p->talents.unnatural_causes_debuff->effectN( 2 ) );
     }
@@ -1262,6 +1267,7 @@ public:
     ab::apply_affecting_aura( p -> talents.born_to_be_wild );
     ab::apply_affecting_aura( p -> talents.blackrock_munitions );
     ab::apply_affecting_aura( p -> talents.lone_survivor );
+    ab::apply_affecting_aura( p -> talents.unnatural_causes );
 
     // Marksmanship Tree passives
     ab::apply_affecting_aura( p -> talents.streamline );
@@ -1383,9 +1389,6 @@ public:
     if ( affected_by.coordinated_assault.direct && p()->buffs.coordinated_assault->check() )
       am *= 1 + p()->talents.coordinated_assault->effectN( affected_by.coordinated_assault.direct ).percent();
 
-    if ( affected_by.unnatural_causes.direct )
-      am *= 1 + p()->talents.unnatural_causes->effectN( affected_by.unnatural_causes.direct ).percent();
-
     if ( affected_by.tip_of_the_spear.direct && p()->buffs.tip_of_the_spear->check() )
       am *= 1 + p()->calculate_tip_of_the_spear_value( p()->talents.tip_of_the_spear->effectN( affected_by.tip_of_the_spear.direct ).percent() );
 
@@ -1419,9 +1422,6 @@ public:
       
       am *= 1 + bonus;
     }
-
-    if ( affected_by.unnatural_causes.tick )
-      am *= 1 + p()->talents.unnatural_causes->effectN( affected_by.unnatural_causes.tick ).percent();
 
     if ( affected_by.coordinated_assault.tick && p()->buffs.coordinated_assault->check() )
       am *= 1 + p()->talents.coordinated_assault->effectN( affected_by.coordinated_assault.tick ).percent();
@@ -1485,6 +1485,7 @@ public:
   {
     double da = ab::composite_target_da_multiplier( target );
 
+    // just assumed the debuff will always be applied
     if ( affected_by.unnatural_causes_debuff || affected_by.unnatural_causes_debuff_label )
     {
       double execute_mod = 0.0;
@@ -1508,6 +1509,7 @@ public:
     if ( affected_by.cull_the_herd )
       ta *= 1 + p()->get_target_data( target )->debuffs.cull_the_herd->check_value();
 
+    // just assumed the debuff will always be applied
     if ( affected_by.unnatural_causes_debuff || affected_by.unnatural_causes_debuff_label )
     {
       double execute_mod = 0.0;
