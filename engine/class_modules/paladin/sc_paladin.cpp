@@ -5441,6 +5441,9 @@ std::unique_ptr<expr_t> paladin_t::create_expression( util::string_view name_str
     cooldown_t* wake_cd;
     cooldown_t* hs_cd;
     cooldown_t* at_cd;
+    cooldown_t* hotr_cd;
+    cooldown_t* bh_cd;
+    cooldown_t* dt_cd;
 
     time_to_hpg_expr_t( util::string_view n, paladin_t& p )
       : paladin_expr_t( n, p ),
@@ -5450,25 +5453,32 @@ std::unique_ptr<expr_t> paladin_t::create_expression( util::string_view name_str
         how_cd( p.get_cooldown( "hammer_of_wrath" ) ),
         wake_cd( p.get_cooldown( "wake_of_ashes" ) ),
         hs_cd( p.get_cooldown( "holy_shock" ) ),
-        at_cd( p.get_cooldown( "arcane_torrent" ) )
+        at_cd( p.get_cooldown( "arcane_torrent" ) ),
+        bh_cd( p.get_cooldown( "blessed_hammer" ) ),
+        hotr_cd( p.get_cooldown( "hammer_of_the_righteous" ) ),
+        dt_cd( p.get_cooldown( "divine_toll" ) )
     {
     }
 
     // todo: account for divine resonance, crusading strikes, divine auxiliary
     double evaluate() override
     {
-      if ( paladin.specialization() == PALADIN_PROTECTION )
-      {
-        paladin.sim->errorf( "\"time_to_hpg\" not supported for Protection" );
-        return 0;
-      }
       timespan_t gcd_ready = paladin.gcd_ready - paladin.sim->current_time();
       gcd_ready            = std::max( gcd_ready, 0_ms );
 
       timespan_t shortest_hpg_time = cs_cd->remains();
 
+      // Protection base
+      if ( paladin.specialization() == PALADIN_PROTECTION )
+      {
+        if ( paladin.talents.hammer_of_the_righteous->ok() )
+          shortest_hpg_time = hotr_cd->remains();
+        if ( paladin.talents.blessed_hammer->ok() )
+          shortest_hpg_time = bh_cd->remains();
+      }
+
       // Blood Elf
-      if ( paladin.race == RACE_BLOOD_ELF )
+      if ( paladin.race == RACE_BLOOD_ELF && paladin.specialization() != PALADIN_PROTECTION )
       {
         if ( at_cd->remains() < shortest_hpg_time )
           shortest_hpg_time = at_cd->remains();
@@ -5482,24 +5492,18 @@ std::unique_ptr<expr_t> paladin_t::create_expression( util::string_view name_str
 
         if ( wake_cd->remains() < shortest_hpg_time )
           shortest_hpg_time = wake_cd->remains();
-
-        if ( j_cd->remains() < shortest_hpg_time )
-          shortest_hpg_time = j_cd->remains();
       }
-
-      // Holy
-      if ( paladin.specialization() == PALADIN_HOLY )
-      {
-        if ( hs_cd->remains() < shortest_hpg_time )
-          shortest_hpg_time = hs_cd->remains();
-      }
-
-      // TODO: Protection
 
       // Shared
       // TODO: check every target rather than just the paladin's main target
       if ( paladin.get_how_availability( paladin.target ) && how_cd->remains() < shortest_hpg_time )
         shortest_hpg_time = how_cd->remains();
+
+      if ( paladin.talents.divine_toll->ok() && dt_cd->remains() < shortest_hpg_time )
+        shortest_hpg_time = dt_cd->remains();
+
+      if ( j_cd->remains() < shortest_hpg_time )
+        shortest_hpg_time = j_cd->remains();
 
       if ( gcd_ready > shortest_hpg_time )
         return gcd_ready.total_seconds();
