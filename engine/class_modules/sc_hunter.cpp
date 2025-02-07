@@ -9035,7 +9035,8 @@ void hunter_t::create_buffs()
 
   buffs.winning_streak = 
     make_buff( this, "winning_streak", find_spell( 1216874 ) ) 
-    ->set_default_value_from_effect( 1 ); // Damage increase per stack to wildfire bomb
+    ->set_default_value_from_effect( 1 ) // Damage increase per stack to wildfire bomb
+    ->set_chance( 1.0 );
 
   buffs.strike_it_rich = 
     make_buff( this, "strike_it_rich", find_spell( 1216879 ) ) 
@@ -9455,14 +9456,14 @@ void hunter_t::init_special_effects()
 
   if ( tier_set.tww_s2_sv_2pc.ok() )
   {
-      auto const effect = new special_effect_t( this );
-      effect->name_str = "winning_streak";
-      effect->spell_id = tier_set.tww_s2_sv_2pc->id();
-      effect->custom_buff = buffs.winning_streak;
-      special_effects.push_back( effect );
+    auto const effect = new special_effect_t( this );
+    effect->name_str = "winning_streak";
+    effect->spell_id = tier_set.tww_s2_sv_2pc->id();
+    effect->custom_buff = buffs.winning_streak;
+    special_effects.push_back( effect );
 
-      auto cb = new dbc_proc_callback_t( this, *effect );
-      cb->initialize();
+    auto cb = new dbc_proc_callback_t( this, *effect );
+    cb->initialize();
   }
 }
 
