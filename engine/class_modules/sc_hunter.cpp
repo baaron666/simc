@@ -428,6 +428,8 @@ public:
 
     spell_data_ptr_t tww_s2_mm_2pc;
     spell_data_ptr_t tww_s2_mm_4pc;
+    spell_data_ptr_t tww_s2_sv_2pc;
+    spell_data_ptr_t tww_s2_sv_4pc;
   } tier_set;
 
   struct buffs_t
@@ -493,6 +495,8 @@ public:
     buff_t* harmonize; // BM 4pc
     // TWW - S2
     buff_t* jackpot; // MM 2pc
+    buff_t* winning_streak;  // SV 2pc - Wildfire Bomb damage stacking buff
+    buff_t* strike_it_rich;  // SV 4pc - Mongoose Bite damage buff, consuming it reduces Wildfire Bomb cooldown
 
     // Hero Talents 
 
@@ -6235,6 +6239,9 @@ struct melee_focus_spender_t: hunter_melee_attack_t
     double am = hunter_melee_attack_t::action_multiplier();
 
     am *= 1 + p() -> buffs.mongoose_fury -> stack_value();
+        
+    if ( p()->buffs.strike_it_rich->check() )
+      am *= 1 + p() -> buffs.strike_it_rich -> value();  
 
     return am;
   }
@@ -6291,6 +6298,12 @@ struct melee_focus_spender_t: hunter_melee_attack_t
     p()->buffs.howl_of_the_pack_leader_cooldown->extend_duration( p(), -p()->talents.dire_summons->effectN( 4 ).time_value() );
 
     p()->buffs.hogstrider->expire();
+
+        if ( p()->tier_set.tww_s2_sv_4pc.ok() && p()->buffs.strike_it_rich->check() )
+    {
+        p()->buffs.strike_it_rich->expire();
+        p()->cooldowns.wildfire_bomb->adjust( -p()->buffs.strike_it_rich->data().effectN( 2 ).time_value() );
+    }
   }
 
   void impact( action_state_t* s ) override
@@ -7830,6 +7843,8 @@ struct wildfire_bomb_base_t: public hunter_spell_t
 
       am *= 1 + p()->buffs.wildfire_arsenal->stack_value();
 
+      am *= 1 + p()->buffs.winning_streak->stack_value();
+
       return am;
     }
   };
@@ -7849,6 +7864,15 @@ struct wildfire_bomb_base_t: public hunter_spell_t
     if ( p()->talents.covering_fire.ok() )
     {
       p()->cooldowns.butchery->adjust( -timespan_t::from_seconds( p()->talents.covering_fire->effectN( 2 ).base_value() ) );
+    }
+
+    if ( p()->tier_set.tww_s2_sv_2pc.ok() )
+    {
+      if ( p()->buffs.winning_streak->check() && rng().roll( p()->tier_set.tww_s2_sv_2pc->proc_chance() ) )
+      {
+          p()->buffs.winning_streak->expire();  // Consume 2pc buff
+          p()->buffs.strike_it_rich->trigger(); // Apply 4pc buff
+      }
     }
   }
 };
@@ -8615,6 +8639,8 @@ void hunter_t::init_spells()
 
   tier_set.tww_s2_mm_2pc = sets -> set( HUNTER_MARKSMANSHIP, TWW2, B2 );
   tier_set.tww_s2_mm_4pc = sets -> set( HUNTER_MARKSMANSHIP, TWW2, B4 );
+  tier_set.tww_s2_sv_2pc = sets -> set( HUNTER_SURVIVAL, TWW2, B2 );
+  tier_set.tww_s2_sv_4pc = sets -> set( HUNTER_SURVIVAL, TWW2, B4 );
 
   // Cooldowns
   cooldowns.target_acquisition->duration = talents.target_acquisition->internal_cooldown();
@@ -9007,6 +9033,14 @@ void hunter_t::create_buffs()
     = make_buff( this, "jackpot", tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() )
       ->set_default_value_from_effect( 1 );
 
+  buffs.winning_streak = 
+    make_buff( this, "winning_streak", find_spell( 1216874 ) ) 
+    ->set_default_value_from_effect( 1 ); // Damage increase per stack to wildfire bomb
+
+  buffs.strike_it_rich = 
+    make_buff( this, "strike_it_rich", find_spell( 1216879 ) ) 
+    -> set_default_value_from_effect( 1 ); // Damage increase to mongoose/raptor strike
+
   // Hero Talents
 
   buffs.howl_of_the_pack_leader_wyvern_ready = 
@@ -9192,6 +9226,7 @@ void hunter_t::init_rng()
   
   rppm.shadow_hounds = get_rppm( "Shadow Hounds", talents.shadow_hounds );
   rppm.shadow_surge = get_rppm( "Shadow Surge", talents.shadow_surge );
+
 }
 
 void hunter_t::init_scaling()
@@ -9416,6 +9451,18 @@ void hunter_t::init_special_effects()
 
     auto cb = new dbc_proc_callback_t( this, *effect );
     cb->initialize();
+  }
+
+  if ( tier_set.tww_s2_sv_2pc.ok() )
+  {
+      auto const effect = new special_effect_t( this );
+      effect->name_str = "winning_streak";
+      effect->spell_id = tier_set.tww_s2_sv_2pc->id();
+      effect->custom_buff = buffs.winning_streak;
+      special_effects.push_back( effect );
+
+      auto cb = new dbc_proc_callback_t( this, *effect );
+      cb->initialize();
   }
 }
 
