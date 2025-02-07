@@ -6299,10 +6299,10 @@ struct melee_focus_spender_t: hunter_melee_attack_t
 
     p()->buffs.hogstrider->expire();
 
-        if ( p()->tier_set.tww_s2_sv_4pc.ok() && p()->buffs.strike_it_rich->check() )
+    if ( p()->tier_set.tww_s2_sv_4pc.ok() && p()->buffs.strike_it_rich->check() )
     {
-        p()->buffs.strike_it_rich->expire();
-        p()->cooldowns.wildfire_bomb->adjust( -p()->buffs.strike_it_rich->data().effectN( 2 ).time_value() );
+      p()->buffs.strike_it_rich->expire();
+      p()->cooldowns.wildfire_bomb->adjust( -p()->buffs.strike_it_rich->data().effectN( 2 ).time_value() );
     }
   }
 
@@ -7866,13 +7866,11 @@ struct wildfire_bomb_base_t: public hunter_spell_t
       p()->cooldowns.butchery->adjust( -timespan_t::from_seconds( p()->talents.covering_fire->effectN( 2 ).base_value() ) );
     }
 
-    if ( p()->tier_set.tww_s2_sv_2pc.ok() )
+    if ( p()->buffs.winning_streak->check() && rng().roll( p()->tier_set.tww_s2_sv_2pc->proc_chance() ) )
     {
-      if ( p()->buffs.winning_streak->check() && rng().roll( p()->tier_set.tww_s2_sv_2pc->proc_chance() ) )
-      {
-          p()->buffs.winning_streak->expire();  // Consume 2pc buff
-          p()->buffs.strike_it_rich->trigger(); // Apply 4pc buff
-      }
+      p()->buffs.winning_streak->expire();  // Consume 2pc buff
+      if ( p()->tier_set.tww_s2_sv_4pc.ok() )
+        p()->buffs.strike_it_rich->trigger(); // Apply 4pc buff
     }
   }
 };
