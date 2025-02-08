@@ -9721,18 +9721,6 @@ struct evoker_module_t : public module_t
         .operation( hotfix::HOTFIX_SET )
         .modifier( 5 )
         .verification_value( 6.5 );
-
-    hotfix::register_effect( "Evoker", "2025-02-05", "Scintillation Reduced to 40%", 982356, hotfix::HOTFIX_FLAG_PTR )
-        .field( "base_value" )
-        .operation( hotfix::HOTFIX_SET )
-        .modifier( 40 )
-        .verification_value( 50 );
-
-    hotfix::register_effect( "Evoker", "2025-02-05", "Eternity Surge buffed by 20%", 894883, hotfix::HOTFIX_FLAG_PTR )
-        .field( "sp_coefficient" )
-        .operation( hotfix::HOTFIX_SET )
-        .modifier( 8.184 )
-        .verification_value( 6.82 );
   }
 
   void combat_begin( sim_t* ) const override
