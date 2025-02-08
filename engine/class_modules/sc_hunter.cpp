@@ -4263,7 +4263,7 @@ struct serpent_sting_t: public hunter_ranged_attack_t
 
 struct explosive_shot_base_t : public hunter_ranged_attack_t
 {
-  static const snapshot_state_e STATE_EFFECTIVENESS = STATE_USER_2;
+  static const snapshot_state_e STATE_EFFECTIVENESS = STATE_USER_1;
 
   struct state_data_t
   {
@@ -4414,6 +4414,11 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
     double c = hunter_ranged_attack_t::cost_pct_multiplier();
 
     return c;
+  }
+
+  action_state_t* new_state() override
+  {
+    return new state_t( this, target );
   }
 
   int n_targets() const override
