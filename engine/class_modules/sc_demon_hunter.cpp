@@ -4104,7 +4104,6 @@ struct metamorphosis_t : public demon_hunter_spell_t
 
       // Buff is gained at the start of the leap.
       p()->buff.metamorphosis->extend_duration_or_trigger();
-      p()->buff.inner_demon->trigger();
 
       if ( p()->talent.havoc.chaotic_transformation->ok() )
       {
@@ -7109,7 +7108,30 @@ struct metamorphosis_buff_t : public demon_hunter_buff_t<buff_t>
 
     const timespan_t extend_duration = p()->talent.demon_hunter.demonic->effectN( 1 ).time_value();
     p()->buff.metamorphosis->extend_duration_or_trigger( extend_duration );
+  }
+
+  void extend_duration_or_trigger( timespan_t duration, player_t* player ) override
+  {
+    demon_hunter_buff_t<buff_t>::extend_duration_or_trigger( duration, player );
+
     p()->buff.inner_demon->trigger();
+
+    if ( p()->set_bonuses.tww2_havoc_4pc->ok() && p()->buff.winning_streak->up() )
+    {
+      // 2025-02-08 -- Necessary Sacrifice will not be triggered if the number of stacks on Winning Streak! is less than
+      //               the number of stacks on Necessary Sacrifice
+
+      int winning_streak_stacks      = p()->buff.winning_streak->stack();
+      int necessary_sacrifice_stacks = p()->buff.necessary_sacrifice->stack();
+
+      p()->buff.winning_streak->expire();
+
+      if ( winning_streak_stacks >= necessary_sacrifice_stacks )
+      {
+        p()->buff.necessary_sacrifice->expire();
+        p()->buff.necessary_sacrifice->trigger( winning_streak_stacks );
+      }
+    }
   }
 
   void start( int stacks, double value, timespan_t duration ) override
@@ -7129,23 +7151,6 @@ struct metamorphosis_buff_t : public demon_hunter_buff_t<buff_t>
     if ( p()->talent.felscarred.enduring_torment->ok() )
     {
       p()->buff.enduring_torment->expire();
-    }
-
-    if ( p()->set_bonuses.tww2_havoc_4pc->ok() && p()->buff.winning_streak->up() )
-    {
-      // 2025-02-08 -- Necessary Sacrifice will not be triggered if the number of stacks on Winning Streak! is less than
-      //               the number of stacks on Necessary Sacrifice
-
-      int winning_streak_stacks      = p()->buff.winning_streak->stack();
-      int necessary_sacrifice_stacks = p()->buff.necessary_sacrifice->stack();
-
-      p()->buff.winning_streak->expire();
-
-      if ( winning_streak_stacks >= necessary_sacrifice_stacks )
-      {
-        p()->buff.necessary_sacrifice->expire();
-        p()->buff.necessary_sacrifice->trigger( winning_streak_stacks );
-      }
     }
   }
 
