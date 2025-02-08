@@ -1283,7 +1283,7 @@ struct evoker_t : public player_t
     propagate_const<proc_t*> destroyers_scarred_wards;
     propagate_const<proc_t*> rockfall;
     propagate_const<proc_t*> tww2_4pc;
-    
+    propagate_const<proc_t*> hoarded_power;
   } proc;
 
   // RPPMs
@@ -2148,8 +2148,12 @@ struct essence_base_t : public BASE
       {
         BASE::p()->buff.momentum_shift->trigger();
       }
-      if ( !BASE::rng().roll( hoarded_pct ) )
-        BASE::p()->buff.essence_burst->decrement();
+      BASE::p()->buff.essence_burst->decrement();
+      if ( BASE::rng().roll( hoarded_pct ) )
+      {
+        BASE::p()->buff.essence_burst->trigger();
+        BASE::p()->proc.hoarded_power->occur();
+      }
     }
   }
 
@@ -8129,6 +8133,7 @@ void evoker_t::init_procs()
   proc.destroyers_scarred_wards              = get_proc( "Evoker Devastation 11.0 Class Set 4pc" );
   proc.rockfall                              = get_proc( "Rockfall" );
   proc.tww2_4pc                              = get_proc( "Essence Bursts from TWW Season 2 4pc" );
+  proc.hoarded_power                         = get_proc( "Hoarded Power" );
 }
 
 void evoker_t::init_base_stats()
