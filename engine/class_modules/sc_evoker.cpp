@@ -3036,7 +3036,7 @@ public:
   {
     ab::execute();
 
-    if ( !ab::background && !ab::dual )
+    if ( ( !ab::background || ab::not_a_proc && ab::id != 359077 ) && !ab::dual )
     {
       // These happen after any secondary spells are executed, so we schedule as events
       if ( spell_color == SPELL_BLUE )
@@ -4970,16 +4970,22 @@ struct quell_t : public evoker_spell_t
 
 struct shattering_star_t : public evoker_spell_t
 {
-  shattering_star_t( evoker_t* p, std::string_view name, bool tier_set_proc, std::string_view options_str = {} )
-    : evoker_spell_t( name, p, p->talent.shattering_star, options_str )
+  size_t tier_set_proc;
+  shattering_star_t( evoker_t* p, std::string_view name, size_t tier_set_proc, std::string_view options_str = {} )
+    : evoker_spell_t( name, p, p->talent.shattering_star, options_str ), tier_set_proc( tier_set_proc )
   {
-    aoe = as<int>( data().effectN( 1 ).base_value() * ( 1 + p->talent.eternitys_span->effectN( 2 ).percent() ) );
+    aoe = as<int>( data().effectN( 1 ).base_value() );
     if ( tier_set_proc )
     {
       aoe += as<int>( p->sets->set( EVOKER_DEVASTATION, TWW2, B2 )->effectN( 2 ).base_value() -
                       data().effectN( 1 ).base_value() );
       base_multiplier *= p->sets->set( EVOKER_DEVASTATION, TWW2, B2 )->effectN( 1 ).percent();
+      
+      not_a_proc = true;
     }
+
+    aoe = as<int>( aoe * ( 1 + p->talent.eternitys_span->effectN( 2 ).percent() ) );
+
     aoe = ( aoe == 1 ) ? 0 : aoe;
   }
 
@@ -4992,7 +4998,7 @@ struct shattering_star_t : public evoker_spell_t
   {
     evoker_spell_t::execute();
 
-    if ( p()->talent.arcane_vigor.ok() && !background )
+    if ( p()->talent.arcane_vigor.ok() && ( !background || tier_set_proc >= 2 ) )
     {
       p()->buff.essence_burst->trigger();
     }
@@ -5275,7 +5281,7 @@ struct dragonrage_t : public evoker_spell_t
     if ( p->is_ptr() && p->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B2 ) )
     {
       shattering_star = p->get_secondary_action<spells::shattering_star_t>( "shattering_star_2pc_dragonrage", "shattering_star_2pc_dragonrage",
-                                                                         true );
+                                                                         1 );
       add_child( shattering_star );
     }
   }
@@ -8504,7 +8510,6 @@ void evoker_t::init_special_effects()
     auto set_effect          = new special_effect_t( this );
     set_effect->name_str     = util::tokenize_fn( set_spell->name_cstr() );
     set_effect->type         = SPECIAL_EFFECT_EQUIP;
-    set_effect->proc_flags2_ = PF2_ALL_HIT;
     set_effect->spell_id     = set_spell->id();
     special_effects.push_back( set_effect );
 
@@ -8526,7 +8531,7 @@ void evoker_t::init_special_effects()
         activate();
 
         damage_spell =
-            p->get_secondary_action<spells::shattering_star_t>( "shattering_star_2pc", "shattering_star_2pc", true );
+            p->get_secondary_action<spells::shattering_star_t>( "shattering_star_2pc", "shattering_star_2pc", 2 );
       }
 
       void execute( action_t*, action_state_t* s ) override
@@ -8550,7 +8555,6 @@ void evoker_t::init_special_effects()
     auto set_effect          = new special_effect_t( this );
     set_effect->name_str     = util::tokenize_fn( set_spell->name_cstr() );
     set_effect->type         = SPECIAL_EFFECT_EQUIP;
-    set_effect->proc_flags2_ = PF2_ALL_HIT;
     set_effect->spell_id     = set_spell->id();
     special_effects.push_back( set_effect );
 
