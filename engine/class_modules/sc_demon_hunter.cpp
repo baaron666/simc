@@ -926,7 +926,6 @@ public:
     attack_t* art_of_the_glaive = nullptr;
     attack_t* preemptive_strike = nullptr;
     attack_t* warblades_hunger  = nullptr;
-    attack_t* wounded_quarry    = nullptr;
 
     // Fel-scarred
     action_t* burning_blades = nullptr;
@@ -4929,16 +4928,6 @@ struct auto_attack_damage_t : public burning_blades_trigger_t<demon_hunter_attac
     base_t::impact( s );
 
     trigger_demon_blades( s );
-    if ( p()->talent.aldrachi_reaver.wounded_quarry->ok() && td( s->target )->debuffs.reavers_mark->up() )
-    {
-      p()->active.wounded_quarry->execute_on_target( s->target );
-      // 2024-08-04 -- Chance seems to be 30% for Vengeance, 10% for Havoc
-      if ( rng().roll( p()->hero_spec.wounded_quarry_proc_rate ) )
-      {
-        p()->proc.soul_fragment_from_wounded_quarry->occur();
-        p()->spawn_soul_fragment( soul_fragment::LESSER );
-      }
-    }
   }
 
   void schedule_execute( action_state_t* s ) override
@@ -6815,15 +6804,6 @@ struct warblades_hunger_t : public demon_hunter_attack_t
   }
 };
 
-struct wounded_quarry_t : public demon_hunter_attack_t
-{
-  wounded_quarry_t( util::string_view name, demon_hunter_t* p )
-    : demon_hunter_attack_t( name, p, p->hero_spec.wounded_quarry_damage )
-  {
-    background = dual = true;
-  }
-};
-
 }  // end namespace attacks
 
 }  // end namespace actions
@@ -7138,12 +7118,13 @@ struct metamorphosis_buff_t : public demon_hunter_buff_t<buff_t>
       // 2025-02-08 -- Necessary Sacrifice will not be triggered if the number of stacks on Winning Streak! is less than
       //               the number of stacks on Necessary Sacrifice
 
-      int winning_streak_stacks = p()->buff.winning_streak->stack();
+      int winning_streak_stacks      = p()->buff.winning_streak->stack();
       int necessary_sacrifice_stacks = p()->buff.necessary_sacrifice->stack();
 
       p()->buff.winning_streak->expire();
 
-      if (winning_streak_stacks >= necessary_sacrifice_stacks) {
+      if ( winning_streak_stacks >= necessary_sacrifice_stacks )
+      {
         p()->buff.necessary_sacrifice->expire();
         p()->buff.necessary_sacrifice->trigger( winning_streak_stacks );
       }
@@ -7406,6 +7387,82 @@ void tww2_vengeance_2pc( const special_effect_t& e )
 
   new tww2_vengeance_2pc( e );
 }
+
+struct wounded_quarry_cb_t : public demon_hunter_proc_callback_t
+{
+  struct wounded_quarry_t : public actions::demon_hunter_attack_t
+  {
+    wounded_quarry_t( util::string_view name, demon_hunter_t* p )
+      : demon_hunter_attack_t( name, p, p->hero_spec.wounded_quarry_damage )
+    {
+    }
+  };
+
+  school_e school;
+
+  wounded_quarry_t* damage;
+  double chance;
+  double damage_percent;
+
+  wounded_quarry_cb_t( const special_effect_t& e )
+    : demon_hunter_proc_callback_t( e ), school(SCHOOL_PHYSICAL), chance( 0 )
+  {
+    chance         = p()->hero_spec.wounded_quarry_proc_rate;
+    damage_percent = p()->talent.aldrachi_reaver.wounded_quarry->effectN( 1 ).percent();
+    damage         = p()->get_background_action<wounded_quarry_t>( "wounded_quarry" );
+  }
+
+  void activate() override
+  {
+    if ( damage )
+      dbc_proc_callback_t::activate();
+  }
+
+  void trigger( action_t* a, action_state_t* state ) override
+  {
+    // WQ only procs off of pure physical damage
+    if ( state->action->school != school )
+      return;
+
+    if ( !damage )
+      return;
+
+    if ( state->action->id == damage->id )
+      return;
+
+    dbc_proc_callback_t::trigger( a, state );
+  }
+
+  void execute( action_t*, action_state_t* s ) override
+  {
+    if ( s->target->is_sleeping() )
+      return;
+
+    if ( !p()->get_target_data( s->target )->debuffs.reavers_mark->up() )
+      return;
+
+    // live is old trigger
+    if ( p()->is_ptr() )
+    {
+      double da = s->result_amount;
+      if ( da > 0 )
+      {
+        da *= damage_percent;
+        damage->execute_on_target( s->target, da );
+      }
+    }
+    else
+    {
+      damage->execute_on_target( s->target );
+
+      if ( rng().roll( chance ) )
+      {
+        p()->proc.soul_fragment_from_wounded_quarry->occur();
+        p()->spawn_soul_fragment( soul_fragment::LESSER );
+      }
+    }
+  }
+};
 
 // ==========================================================================
 // Targetdata Definitions
@@ -7729,7 +7786,7 @@ void demon_hunter_t::create_buffs()
 
   buff.unbound_chaos = make_buff( this, "unbound_chaos", spec.unbound_chaos_buff )
                            ->set_default_value( !is_ptr() ? spec.unbound_chaos_buff->effectN( 1 ).percent()
-                                                         : talent.havoc.unbound_chaos->effectN( 2 ).percent() );
+                                                          : talent.havoc.unbound_chaos->effectN( 2 ).percent() );
 
   buff.cycle_of_hatred = make_buff( this, "cycle_of_hatred", spec.cycle_of_hatred_buff )
                              ->set_default_value( talent.havoc.cycle_of_hatred->effectN( 1 ).base_value() );
@@ -8600,16 +8657,15 @@ void demon_hunter_t::init_spells()
   talent.felscarred.demonic_intensity = find_talent_spell( talent_tree::HERO, "Demonic Intensity" );
 
   // Class Background Spells
-  spell.felblade_damage      = conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 213243 );
-  spell.felblade_reset_havoc = conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 236167 );
-  spell.felblade_reset_vengeance =
-      conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 203557 );
-  spell.infernal_armor_damage = conditional_spell_lookup( talent.demon_hunter.infernal_armor->ok(), 320334 );
-  spell.immolation_aura_damage = conditional_spell_lookup( spell.immolation_aura_2->ok(), 258921 );
-  spell.sigil_of_flame_damage  = find_spell( 204598 );
-  spell.sigil_of_flame_fury    = find_spell( 389787 );
-  spell.the_hunt               = talent.demon_hunter.the_hunt;
-  spec.sigil_of_misery_debuff = conditional_spell_lookup( talent.demon_hunter.sigil_of_misery->ok(), 207685 );
+  spell.felblade_damage          = conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 213243 );
+  spell.felblade_reset_havoc     = conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 236167 );
+  spell.felblade_reset_vengeance = conditional_spell_lookup( talent.demon_hunter.felblade->ok(), 203557 );
+  spell.infernal_armor_damage    = conditional_spell_lookup( talent.demon_hunter.infernal_armor->ok(), 320334 );
+  spell.immolation_aura_damage   = conditional_spell_lookup( spell.immolation_aura_2->ok(), 258921 );
+  spell.sigil_of_flame_damage    = find_spell( 204598 );
+  spell.sigil_of_flame_fury      = find_spell( 389787 );
+  spell.the_hunt                 = talent.demon_hunter.the_hunt;
+  spec.sigil_of_misery_debuff    = conditional_spell_lookup( talent.demon_hunter.sigil_of_misery->ok(), 207685 );
 
   // Spec Background Spells
   mastery.any_means_necessary = talent.havoc.any_means_necessary;
@@ -8804,6 +8860,23 @@ void demon_hunter_t::init_spells()
 
     chaotic_disposition_cb->activate();
   }
+  if ( talent.aldrachi_reaver.wounded_quarry->ok() )
+  {
+    auto wounded_quarry_effect = new special_effect_t( this );
+    wounded_quarry_effect->name_str = "wounded_quarry";
+    wounded_quarry_effect->type = SPECIAL_EFFECT_EQUIP;
+    wounded_quarry_effect->spell_id = talent.aldrachi_reaver.wounded_quarry->id();
+    if (!is_ptr()) {
+      // on live, WQ procs off of all white hits
+      wounded_quarry_effect->proc_flags_ = PF_MELEE;
+      wounded_quarry_effect->proc_flags2_ = PF2_ALL_HIT;
+      wounded_quarry_effect->proc_chance_ = 1.0;
+    }
+    special_effects.push_back(wounded_quarry_effect);
+
+    auto wounded_quarry_cb = new wounded_quarry_cb_t( *wounded_quarry_effect );
+    wounded_quarry_cb->activate();
+  }
 
   if ( talent.demon_hunter.collective_anguish->ok() )
   {
@@ -8862,10 +8935,6 @@ void demon_hunter_t::init_spells()
   if ( talent.aldrachi_reaver.warblades_hunger->ok() )
   {
     active.warblades_hunger = get_background_action<warblades_hunger_t>( "warblades_hunger" );
-  }
-  if ( talent.aldrachi_reaver.wounded_quarry->ok() )
-  {
-    active.wounded_quarry = get_background_action<wounded_quarry_t>( "wounded_quarry" );
   }
 
   if ( talent.felscarred.burning_blades->ok() )
