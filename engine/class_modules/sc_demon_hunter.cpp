@@ -7135,8 +7135,18 @@ struct metamorphosis_buff_t : public demon_hunter_buff_t<buff_t>
 
     if ( p()->set_bonuses.tww2_havoc_4pc->ok() && p()->buff.winning_streak->up() )
     {
-      p()->buff.necessary_sacrifice->trigger( p()->buff.winning_streak->stack() );
+      // 2025-02-08 -- Necessary Sacrifice will not be triggered if the number of stacks on Winning Streak! is less than
+      //               the number of stacks on Necessary Sacrifice
+
+      int winning_streak_stacks = p()->buff.winning_streak->stack();
+      int necessary_sacrifice_stacks = p()->buff.necessary_sacrifice->stack();
+
       p()->buff.winning_streak->expire();
+
+      if (winning_streak_stacks >= necessary_sacrifice_stacks) {
+        p()->buff.necessary_sacrifice->expire();
+        p()->buff.necessary_sacrifice->trigger( winning_streak_stacks );
+      }
     }
   }
 
