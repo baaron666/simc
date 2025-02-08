@@ -2467,6 +2467,40 @@ struct unbound_chaos_trigger_t : public BASE
   }
 };
 
+template <typename BASE>
+struct winning_streak_removal_trigger_t : public BASE
+{
+  using base_t = winning_streak_removal_trigger_t<BASE>;
+
+  winning_streak_removal_trigger_t( util::string_view n, demon_hunter_t* p, const spell_data_t* s, util::string_view o )
+    : BASE( n, p, s, o )
+  {
+  }
+
+  void execute() override
+  {
+    BASE::execute();
+
+    if ( BASE::p()->set_bonuses.tww2_havoc_2pc->ok() && BASE::p()->buff.winning_streak->up() &&
+         BASE::rng().roll( BASE::p()->set_bonuses.tww2_havoc_2pc->effectN( 1 ).percent() ) )
+    {
+      // 2025-02-08 -- Winning Streak! residual keeps the highest value of stacks and won't refresh if the stacks on
+      //               the non-residual version are less than the stacks on the residual version.
+      int stacks          = BASE::p()->buff.winning_streak->stack();
+      int residual_stacks = BASE::p()->buff.winning_streak_residual->stack();
+
+      BASE::p()->buff.winning_streak->expire();
+      BASE::p()->proc.winning_streak_drop_from_tww2_havoc_2pc->occur();
+
+      if ( stacks >= residual_stacks )
+      {
+        BASE::p()->buff.winning_streak_residual->expire();
+        BASE::p()->buff.winning_streak_residual->trigger( stacks );
+      }
+    }
+  }
+};
+
 // ==========================================================================
 // Demon Hunter heals
 // ==========================================================================
@@ -5011,8 +5045,8 @@ struct auto_attack_t : public demon_hunter_attack_t
 // Blade Dance =============================================================
 
 struct blade_dance_base_t
-  : public cycle_of_hatred_trigger_t<
-        art_of_the_glaive_trigger_t<art_of_the_glaive_ability::GLAIVE_FLURRY, demon_hunter_attack_t>>
+  : public winning_streak_removal_trigger_t<cycle_of_hatred_trigger_t<
+        art_of_the_glaive_trigger_t<art_of_the_glaive_ability::GLAIVE_FLURRY, demon_hunter_attack_t>>>
 {
   struct trail_of_ruin_dot_t : public demon_hunter_spell_t
   {
@@ -5232,14 +5266,6 @@ struct blade_dance_base_t
     {
       p()->buff.tww1_havoc_4pc->expire();
     }
-
-    if ( p()->set_bonuses.tww2_havoc_2pc->ok() && p()->buff.winning_streak->up() &&
-         rng().roll( p()->set_bonuses.tww2_havoc_2pc->effectN( 1 ).percent() ) )
-    {
-      p()->buff.winning_streak_residual->trigger( p()->buff.winning_streak->stack() );
-      p()->buff.winning_streak->expire();
-      p()->proc.winning_streak_drop_from_tww2_havoc_2pc->occur();
-    }
   }
 
   bool has_amount_result() const override
@@ -5361,8 +5387,8 @@ struct death_sweep_t : public blade_dance_base_t
 // Chaos Strike =============================================================
 
 struct chaos_strike_base_t
-  : public cycle_of_hatred_trigger_t<
-        art_of_the_glaive_trigger_t<art_of_the_glaive_ability::RENDING_STRIKE, demon_hunter_attack_t>>
+  : public winning_streak_removal_trigger_t<cycle_of_hatred_trigger_t<
+        art_of_the_glaive_trigger_t<art_of_the_glaive_ability::RENDING_STRIKE, demon_hunter_attack_t>>>
 {
   struct chaos_strike_damage_t : public burning_blades_trigger_t<demon_hunter_attack_t>
   {
@@ -5547,14 +5573,6 @@ struct chaos_strike_base_t
     {
       p()->buff.tww1_havoc_4pc->trigger();
       p()->cooldown.blade_dance->reset( true );
-    }
-
-    if ( p()->set_bonuses.tww2_havoc_2pc->ok() && p()->buff.winning_streak->up() &&
-         rng().roll( p()->set_bonuses.tww2_havoc_2pc->effectN( 1 ).percent() ) )
-    {
-      p()->buff.winning_streak_residual->trigger( p()->buff.winning_streak->stack() );
-      p()->buff.winning_streak->expire();
-      p()->proc.winning_streak_drop_from_tww2_havoc_2pc->occur();
     }
   }
 
@@ -7405,7 +7423,7 @@ struct wounded_quarry_cb_t : public demon_hunter_proc_callback_t
   double damage_percent;
 
   wounded_quarry_cb_t( const special_effect_t& e )
-    : demon_hunter_proc_callback_t( e ), school(SCHOOL_PHYSICAL), chance( 0 )
+    : demon_hunter_proc_callback_t( e ), school( SCHOOL_PHYSICAL ), chance( 0 )
   {
     chance         = p()->hero_spec.wounded_quarry_proc_rate;
     damage_percent = p()->talent.aldrachi_reaver.wounded_quarry->effectN( 1 ).percent();
@@ -8862,17 +8880,18 @@ void demon_hunter_t::init_spells()
   }
   if ( talent.aldrachi_reaver.wounded_quarry->ok() )
   {
-    auto wounded_quarry_effect = new special_effect_t( this );
+    auto wounded_quarry_effect      = new special_effect_t( this );
     wounded_quarry_effect->name_str = "wounded_quarry";
-    wounded_quarry_effect->type = SPECIAL_EFFECT_EQUIP;
+    wounded_quarry_effect->type     = SPECIAL_EFFECT_EQUIP;
     wounded_quarry_effect->spell_id = talent.aldrachi_reaver.wounded_quarry->id();
-    if (!is_ptr()) {
+    if ( !is_ptr() )
+    {
       // on live, WQ procs off of all white hits
-      wounded_quarry_effect->proc_flags_ = PF_MELEE;
+      wounded_quarry_effect->proc_flags_  = PF_MELEE;
       wounded_quarry_effect->proc_flags2_ = PF2_ALL_HIT;
       wounded_quarry_effect->proc_chance_ = 1.0;
     }
-    special_effects.push_back(wounded_quarry_effect);
+    special_effects.push_back( wounded_quarry_effect );
 
     auto wounded_quarry_cb = new wounded_quarry_cb_t( *wounded_quarry_effect );
     wounded_quarry_cb->activate();
