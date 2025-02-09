@@ -362,6 +362,7 @@ struct hunter_td_t: public actor_target_data_t
     buff_t* spotters_mark;
     buff_t* shrapnel_shot;
     buff_t* kill_zone;
+    buff_t* ohnahran_winds;
 
     buff_t* sentinel;
     buff_t* crescent_steel;
@@ -700,6 +701,7 @@ public:
     spell_data_ptr_t volley_data;
     spell_data_ptr_t volley_dmg;
     spell_data_ptr_t ohnahran_winds;
+    spell_data_ptr_t ohnahran_winds_debuff;
     spell_data_ptr_t small_game_hunter;
 
     spell_data_ptr_t windrunner_quiver;
@@ -3725,16 +3727,16 @@ void hunter_t::trigger_spotters_mark( player_t* target, bool force )
   {
     get_target_data( target )->debuffs.spotters_mark->trigger();
     
-    if ( rng().roll( talents.ohnahran_winds->effectN( 2 ).percent() ) )
+    if ( talents.ohnahran_winds.ok() )
     {
       int affected = 0;
       int max = as<int>( talents.ohnahran_winds->effectN( 1 ).base_value() );
 
       for ( player_t* t : sim->target_non_sleeping_list )
       {
-        if ( t->is_enemy() && ( t != target ) )
+        if ( t->is_enemy() && t != target && rng().roll( talents.ohnahran_winds->effectN( 2 ).percent() ) )
         {
-          get_target_data( t )->debuffs.spotters_mark->trigger();
+          get_target_data( t )->debuffs.ohnahran_winds->trigger();
           affected++;
           if ( affected == max )
             break;
@@ -5512,6 +5514,7 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     double m = hunter_ranged_attack_t::composite_target_da_multiplier( t );
 
     m *= 1 + td( target )->debuffs.spotters_mark->check_value();
+    m *= 1 + td( target )->debuffs.ohnahran_winds->check_value();
 
     return m;
   }
@@ -5530,6 +5533,9 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     double c = hunter_ranged_attack_t::composite_target_crit_chance( target );
 
     if ( p()->talents.killer_mark.ok() && td( target )->debuffs.spotters_mark->check() )
+      c += p()->talents.killer_mark->effectN( 1 ).percent();
+
+    if ( p()->talents.killer_mark.ok() && td( target )->debuffs.ohnahran_winds->check() )
       c += p()->talents.killer_mark->effectN( 1 ).percent();
 
     return c;
@@ -5626,9 +5632,10 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       }
     }
 
-    if ( target_data->debuffs.spotters_mark->check() )
+    if ( target_data->debuffs.spotters_mark->check() || target_data->debuffs.ohnahran_winds->check() )
     {
       target_data->debuffs.spotters_mark->expire();
+      target_data->debuffs.ohnahran_winds->expire();
       
       p()->buffs.on_target->trigger();
       
@@ -7906,6 +7913,9 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
   debuffs.spotters_mark = make_buff( *this, "spotters_mark", p->specs.spotters_mark_debuff )
     ->set_default_value( p->specs.spotters_mark_debuff->effectN( 1 ).percent() + p->talents.improved_spotters_mark->effectN( 1 ).percent() );
 
+  debuffs.ohnahran_winds = make_buff( *this, "ohnahran_winds", p->talents.ohnahran_winds_debuff )
+    ->set_default_value( p->talents.ohnahran_winds_debuff->effectN( 1 ).percent() + p->talents.improved_spotters_mark->effectN( 1 ).percent() );
+
   debuffs.shrapnel_shot = make_buff( *this, "shrapnel_shot", p->talents.shrapnel_shot_debuff )
     ->set_default_value_from_effect( 1 );
 
@@ -8219,6 +8229,7 @@ void hunter_t::init_spells()
     talents.volley_data                       = find_spell( 260243 );
     talents.volley_dmg                        = find_spell( 260247 );
     talents.ohnahran_winds                    = find_talent_spell( talent_tree::SPECIALIZATION, "Ohn'ahran Winds", HUNTER_MARKSMANSHIP );
+    talents.ohnahran_winds_debuff             = talents.ohnahran_winds.ok() ? find_spell( 1215057 ) : spell_data_t::not_found();
     talents.small_game_hunter                 = find_talent_spell( talent_tree::SPECIALIZATION, "Small Game Hunter", HUNTER_MARKSMANSHIP );
 
     talents.windrunner_quiver                 = find_talent_spell( talent_tree::SPECIALIZATION, "Windrunner Quiver", HUNTER_MARKSMANSHIP );
