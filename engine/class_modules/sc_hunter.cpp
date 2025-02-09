@@ -54,8 +54,8 @@ static void print_affected_by( const action_t* a, const spelleffect_data_t& effe
 
 static bool check_affected_by( action_t* a, const spelleffect_data_t& effect )
 {
-  bool affected = a -> data().affected_by( effect );
-  if ( affected && a -> sim -> debug )
+  bool affected = a->data().affected_by( effect ) || a->data().affected_by_label( effect );
+  if ( affected && a->sim->debug )
     print_affected_by( a, effect );
   return affected;
 }
@@ -726,6 +726,8 @@ public:
     spell_data_ptr_t go_for_the_throat;
     spell_data_ptr_t multishot_bm;
     spell_data_ptr_t laceration;
+    spell_data_ptr_t laceration_driver;
+    spell_data_ptr_t laceration_bleed;
 
     spell_data_ptr_t barbed_scales;
     spell_data_ptr_t snakeskin_quiver;
@@ -983,6 +985,8 @@ public:
     action_t* barbed_shot = nullptr;
     action_t* snakeskin_quiver = nullptr;
     action_t* dire_command = nullptr;
+    action_t* laceration = nullptr;
+
     action_t* a_murder_of_crows = nullptr;
 
     action_t* wyverns_cry = nullptr;
@@ -1174,13 +1178,18 @@ public:
   maybe_bool decrements_tip_of_the_spear;
 
   struct {
-    // TODO 7/2/25: seems to work off a target debuff 459529 applied after hitting a target for the 
-    // first time; occasionally you can notice a lack of bonus damage from abilities that are modified
-    // by his on its first occurance on a new target
-    // it seems this debuff is modified once a target falls into execute range to implement the 50% bonus, 
-    // which means residual bleeds such as master marksman and razor fragments do not get effected since
-    // they are flagged to ignore target modifiers
-    // the fact there are two separate effects leads to some abilities being affected 3 times
+    // TODO 7/2/25:
+    // - seems to work off a target debuff 459529 applied after hitting a target for the first time; occasionally 
+    //   you can notice a lack of bonus damage from abilities that are modified by his on its first occurance on a new target
+    // - the fact there are two separate effects leads to some abilities being affected up to three times
+    // - this debuff seems to be modified once a target falls into execute range to implement the 50% bonus
+    // - residual bleeds set to ignore damage taken debuffs on the target should mean they miss that bonus, and
+    //   no double application is seen on those types of damage, but an execute bonus can actually be seen at an
+    //   amount of about 14.4% rather than an expected 15%, leading to the question of whether the non execute 10% we do
+    //   see comes from the passive talent aura (and some server scripting attempting to implement the execute bonus with the wrong %) 
+    //   or the debuff (yet still with the wrong % somehow)
+    // - for our implementation, assume the passive talent aura gives everything the baseline 10%, then apply an extra 4% execute mod for 
+    //   residual bleeds separately
     bool unnatural_causes_debuff; // 10-15% dmg taken from caster spells from 459529 effect 1
     bool unnatural_causes_debuff_label; // 10-15% dmg taken from caster spells (label) from 459529 effect 2
 
@@ -1650,7 +1659,6 @@ struct hunter_pet_t: public pet_t
   struct actives_t
   {
     action_t* beast_cleave = nullptr;
-    action_t* laceration = nullptr; 
   } active;
 
   hunter_pet_t( hunter_t* owner, util::string_view pet_name, pet_e pt = PET_HUNTER, bool guardian = false, bool dynamic = false ) :
@@ -2926,15 +2934,6 @@ struct kill_cleave_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
   }
 };
 
-// Laceration ===============================================================
-
-struct laceration_t : public residual_action::residual_periodic_action_t<hunter_pet_action_t<hunter_pet_t, attack_t>>
-{
-  laceration_t( hunter_pet_t* p ) : 
-    residual_action::residual_periodic_action_t<hunter_pet_action_t<hunter_pet_t, attack_t>>( "laceration", p, p -> find_spell( 459560 ) )
-  { }
-};
-
 // Frenzied Tear ==================================================================
 
 struct frenzied_tear_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
@@ -3215,10 +3214,10 @@ struct stomp_t : public hunter_pet_action_t<hunter_pet_t, attack_t>
     if ( !( pet == p() || animal_companion == p() ) )
       return;
 
-    if ( p() -> active.laceration && s -> result == RESULT_CRIT )
+    if ( o() -> actions.laceration && s -> result == RESULT_CRIT )
     {
-      double amount = s -> result_amount * bleed_amount; 
-      residual_action::trigger( p() -> active.laceration, s -> target, amount );
+      double amount = s -> result_amount * bleed_amount;
+      residual_action::trigger( o() -> actions.laceration, s -> target, amount );
     }
   }
 };
@@ -3406,9 +3405,6 @@ void hunter_pet_t::init_spells()
   main_hand_attack = new actions::pet_melee_t( "melee", this );
   
   active.beast_cleave = new actions::beast_cleave_attack_t( this );
-  
-  if ( o() -> talents.laceration.ok() )
-    active.laceration = new actions::laceration_t( this );
 }
 
 void stable_pet_t::init_spells()
@@ -3523,26 +3519,24 @@ void hunter_main_pet_base_t::init_special_effects()
 
       void execute( action_t*, action_state_t* s ) override
       {
-        if ( s && s -> target -> is_sleeping() )
-        {
+        if ( s && s ->target->is_sleeping() )
           return;
-        }
 
-        double amount = s -> result_amount * bleed_amount;
+        double amount = s->result_amount * bleed_amount;
         if ( amount > 0 )
-          residual_action::trigger( bleed, s -> target, amount );
+          residual_action::trigger( bleed, s->target, amount );
       }  
     };
 
     auto const effect = new special_effect_t( this );
     effect -> name_str = "laceration";
-    effect -> spell_id =  459555;
+    effect -> spell_id =  o()->talents.laceration_driver->id();
     effect -> proc_flags2_ = PF2_CRIT;
     //Pet melee, bestial wrath on demand damage and Kill Command are procs in simc implemenation
     effect -> set_can_proc_from_procs(true);
     special_effects.push_back( effect );
 
-    auto cb = new laceration_cb_t( *effect, find_spell( 459555 ) -> effectN( 1 ).percent(), hunter_pet_t::active.laceration );
+    auto cb = new laceration_cb_t( *effect, o()->talents.laceration_driver->effectN( 1 ).percent(), o()->actions.laceration );
     cb -> initialize();
   }
 }
@@ -4094,6 +4088,28 @@ struct residual_bleed_base_t : public residual_action::residual_periodic_action_
   residual_bleed_base_t( util::string_view n, hunter_t* p, const spell_data_t* s )
     : residual_periodic_action_t( n, p, s )
   {
+  }
+
+  double base_ta( const action_state_t* s ) const override
+  {
+    double amount = residual_periodic_action_t::base_ta( s );
+    
+    // just assumed the debuff will always be applied
+    if ( affected_by.unnatural_causes_debuff || affected_by.unnatural_causes_debuff_label )
+    {
+      double execute_mod = 0.0;
+      if ( s->target->health_percentage() < p()->talents.unnatural_causes->effectN( 3 ).base_value() )
+        execute_mod =  0.04; // for residual bleeds, execute damage bonus looks more like 14.4%, so we want 1.1 * 1.04 for our bonuses
+
+      // only applying the execute bonus below, we should already have the 10% applied by the passive talent aura
+      if ( affected_by.unnatural_causes_debuff )
+        amount *= 1 + execute_mod;
+
+      if ( affected_by.unnatural_causes_debuff_label )
+        amount *= 1 + execute_mod;
+    }
+
+    return amount;
   }
 };
 
@@ -5340,17 +5356,22 @@ struct barrage_t: public hunter_spell_t
   }
 };
 
+// Laceration (Beast Mastery Talent) ==============================================
+
+struct laceration_t : public residual_bleed_base_t
+{
+  laceration_t( hunter_t* p ) : residual_bleed_base_t( "laceration", p, p->talents.laceration_bleed ) {}
+};
+
 //==============================
 // Marksmanship attacks
 //==============================
 
 // Master Marksman ====================================================================
 
-struct master_marksman_t : residual_bleed_base_t
+struct master_marksman_t : public residual_bleed_base_t
 {
-  master_marksman_t( hunter_t* p ) : residual_bleed_base_t( "master_marksman", p, p->talents.master_marksman_bleed )
-  {
-  }
+  master_marksman_t( hunter_t* p ) : residual_bleed_base_t( "master_marksman", p, p->talents.master_marksman_bleed ) {}
 };
 
 // Multi-Shot =================================================================
@@ -8229,7 +8250,9 @@ void hunter_t::init_spells()
     talents.go_for_the_throat                 = find_talent_spell( talent_tree::SPECIALIZATION, "Go for the Throat", HUNTER_BEAST_MASTERY );
     talents.multishot_bm                      = find_talent_spell( talent_tree::SPECIALIZATION, "Multi-Shot", HUNTER_BEAST_MASTERY );
     talents.laceration                        = find_talent_spell( talent_tree::SPECIALIZATION, "Laceration", HUNTER_BEAST_MASTERY );
-
+    talents.laceration_driver                 = talents.laceration.ok() ? find_spell( 459555 ) : spell_data_t::not_found();
+    talents.laceration_bleed                  = talents.laceration.ok() ? find_spell( 459560 ) : spell_data_t::not_found();
+    
     talents.barbed_scales                     = find_talent_spell( talent_tree::SPECIALIZATION, "Barbed Scales", HUNTER_BEAST_MASTERY );
     talents.snakeskin_quiver                  = find_talent_spell( talent_tree::SPECIALIZATION, "Snakeskin Quiver", HUNTER_BEAST_MASTERY );
     talents.cobra_senses                      = find_talent_spell( talent_tree::SPECIALIZATION, "Cobra Senses", HUNTER_BEAST_MASTERY );
@@ -8550,6 +8573,9 @@ void hunter_t::create_actions()
 
   if ( talents.dire_command.ok() )
     actions.dire_command = new spells::dire_command_summon_t( this );
+
+  if ( talents.laceration.ok() )
+    actions.laceration = new attacks::laceration_t( this );
   
   if ( talents.a_murder_of_crows.ok() || talents.banshees_mark.ok() )
     actions.a_murder_of_crows = new spells::a_murder_of_crows_t( this );
