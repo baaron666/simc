@@ -951,6 +951,8 @@ public:
     double wounded_quarry_chance_vengeance = 0.30;
     // Proc rate for Wounded Quarry for Havoc
     double wounded_quarry_chance_havoc = 0.10;
+    // How many seconds that Vengeful Retreat locks out Felblade
+    double felblade_lockout_from_vengeful_retreat = 0.6;
   } options;
 
   demon_hunter_t( sim_t* sim, util::string_view name, race_e r );
@@ -6624,10 +6626,11 @@ struct vengeful_retreat_t : public unbound_chaos_trigger_t<
 
     // Fel Rush and VR share a 1 second GCD when one or the other is triggered
     p()->cooldown.fel_rush_vengeful_retreat_movement_shared->start( 1_s );
-    // Fel Rush triggers a 1 second GCD for Felblade
+    // Vengeful Retreat triggers a lockout for Felblade
     if ( p()->is_ptr() )
     {
-      p()->cooldown.felblade_vengeful_retreat_movement_shared->start( 1_s );
+      p()->cooldown.felblade_vengeful_retreat_movement_shared->start(
+          timespan_t::from_seconds( p()->options.felblade_lockout_from_vengeful_retreat ) );
     }
     p()->buff.vengeful_retreat_move->trigger();
 
@@ -8146,6 +8149,8 @@ void demon_hunter_t::create_options()
       opt_float( "soul_fragment_movement_consume_chance", options.soul_fragment_movement_consume_chance, 0, 1 ) );
   add_option( opt_float( "wounded_quarry_chance_vengeance", options.wounded_quarry_chance_vengeance, 0, 1 ) );
   add_option( opt_float( "wounded_quarry_chance_havoc", options.wounded_quarry_chance_havoc, 0, 1 ) );
+  add_option(
+      opt_float( "felblade_lockout_from_vengeful_retreat", options.felblade_lockout_from_vengeful_retreat, 0, 1 ) );
 }
 
 // demon_hunter_t::create_pet ===============================================
