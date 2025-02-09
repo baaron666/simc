@@ -1775,6 +1775,7 @@ class SpellDataGenerator(DataGenerator):
             ( 457236, 0 ),          # Singular Focus damage spell
             ( 459002, 0 ),          # Outlaw 11.0 Set Bonus damage spell
             ( 467059, 0 ),          # Outlaw Crackshot Dispatch clone damage spell
+            ( 1219264, 0 ),         # Assassination TWW2 4pc set bonus buff spell
         ),
 
         # Priest:
