@@ -71,7 +71,6 @@ struct mind_flay_base_t : public priest_spell_t
   }
 };
 
-
 struct mind_flay_insanity_t final : public mind_flay_base_t
 {
   mind_flay_insanity_t( priest_t& p, util::string_view options_str )
@@ -1248,7 +1247,8 @@ struct void_bolt_base_t : public priest_spell_t
     affected_by_shadow_weaving = true;
 
     auto rank2 = p.find_spell( 231688 );
-    if ( rank2->ok() )
+    // BUG: https://github.com/SimCMinMax/WoW-BugTracker/issues/1320
+    if ( rank2->ok() && ( p.talents.shadow.void_eruption->ok() || !p.bugs ) )
     {
       void_bolt_extension = new void_bolt_extension_t( p, rank2 );
     }
@@ -1283,7 +1283,7 @@ struct void_bolt_base_t : public priest_spell_t
   void impact( action_state_t* s ) override
   {
     priest_spell_t::impact( s );
-    
+
     if ( trigger_shadowy_apparitions )
       priest().trigger_shadowy_apparitions( priest().procs.shadowy_apparition_vb, s->result == RESULT_CRIT );
 
@@ -1299,7 +1299,6 @@ struct void_bolt_base_t : public priest_spell_t
     }
   }
 };
-
 
 struct void_bolt_t final : public void_bolt_base_t
 {
@@ -1358,8 +1357,7 @@ struct dark_ascension_t final : public priest_spell_t
   void_bolt_proc_t* void_bolt_damage_action;
 
   dark_ascension_t( priest_t& p, util::string_view options_str )
-    : priest_spell_t( "dark_ascension", p, p.talents.shadow.dark_ascension ),
-      void_bolt_damage_action( nullptr )
+    : priest_spell_t( "dark_ascension", p, p.talents.shadow.dark_ascension ), void_bolt_damage_action( nullptr )
   {
     parse_options( options_str );
 
@@ -1380,7 +1378,7 @@ struct dark_ascension_t final : public priest_spell_t
       }
     }
   }
-  
+
   void execute() override
   {
     priest_spell_t::execute();
@@ -1439,8 +1437,7 @@ struct void_eruption_t final : public priest_spell_t
   void_bolt_proc_t* void_bolt_damage_action;
 
   void_eruption_t( priest_t& p, util::string_view options_str )
-    : priest_spell_t( "void_eruption", p, p.talents.shadow.void_eruption ),
-      void_bolt_damage_action( nullptr )
+    : priest_spell_t( "void_eruption", p, p.talents.shadow.void_eruption ), void_bolt_damage_action( nullptr )
   {
     parse_options( options_str );
 
@@ -1452,8 +1449,8 @@ struct void_eruption_t final : public priest_spell_t
 
     if ( p.is_ptr() && p.sets->has_set_bonus( PRIEST_SHADOW, TWW2, B2 ) )
     {
-      void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>(
-          "void_bolt_tww2_2pc_void_eruption", "void_bolt_tww2_2pc_void_eruption" );
+      void_bolt_damage_action = p.get_secondary_action<void_bolt_proc_t>( "void_bolt_tww2_2pc_void_eruption",
+                                                                          "void_bolt_tww2_2pc_void_eruption" );
 
       if ( void_bolt_damage_action )
       {
@@ -1464,7 +1461,6 @@ struct void_eruption_t final : public priest_spell_t
 
   void execute() override
   {
-
     priest_spell_t::execute();
 
     priest().buffs.voidform->trigger();
@@ -2513,10 +2509,9 @@ void priest_t::init_rng_shadow()
   rppm.deathspeaker           = get_rppm( "deathspeaker", talents.shadow.deathspeaker );
   rppm.power_of_the_dark_side = get_rppm( "power_of_the_dark_side", talents.discipline.power_of_the_dark_side );
 
-
   // Shadowy Insight
   const dot_t* shadow_word_pain = get_dot( "shadow_word_pain", this );
-  double mod = sets->has_set_bonus( PRIEST_SHADOW, T30, B2 ) ? 1.25 : 1.0;
+  double mod                    = sets->has_set_bonus( PRIEST_SHADOW, T30, B2 ) ? 1.25 : 1.0;
 
   threshold_rng.shadowy_insight =
       get_threshold_rng( "shadowy_insight", talents.shadow.shadowy_insight.ok() ? 0.1558 * mod : 0.0,
