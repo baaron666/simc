@@ -6912,6 +6912,7 @@ struct frostfire_infusion_t final : public mage_spell_t
     mage_spell_t( n, p, p->find_spell( 431171 ) )
   {
     background = proc = true;
+    triggers.frostfire_infusion = false;
   }
 
   void execute() override
