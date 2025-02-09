@@ -874,10 +874,13 @@ public:
     // Fel-scarred
 
     // Set Bonuses
-    proc_t* soul_fragment_from_vengeance_twws1_2pc;
+    proc_t* soul_fragment_from_vengeance_tww1_2pc;
     proc_t* metamorphosis_from_tww2_vengeance_2pc;
     proc_t* the_hunt_reset_from_tww2_vengeance_4pc;
     proc_t* winning_streak_drop_from_tww2_havoc_2pc;
+    proc_t* winning_streak_drop_wasted_from_tww2_havoc_2pc;
+    proc_t* winning_streak_wasted_from_tww2_havoc_4pc;
+    proc_t* necessary_sacrifice_wasted_from_tww2_havoc_4pc;
   } proc;
 
   // RPPM objects
@@ -2498,6 +2501,10 @@ struct winning_streak_removal_trigger_t : public BASE
       {
         BASE::p()->buff.winning_streak_residual->expire();
         BASE::p()->buff.winning_streak_residual->trigger( stacks );
+      }
+      else
+      {
+        BASE::p()->proc.winning_streak_drop_wasted_from_tww2_havoc_2pc->occur();
       }
     }
   }
@@ -6275,7 +6282,7 @@ struct soul_cleave_base_t
       p()->spawn_soul_fragment( soul_fragment::LESSER, soul_fragments_to_spawn );
       for ( unsigned i = 0; i < soul_fragments_to_spawn; i++ )
       {
-        p()->proc.soul_fragment_from_vengeance_twws1_2pc->occur();
+        p()->proc.soul_fragment_from_vengeance_tww1_2pc->occur();
       }
     }
   }
@@ -7133,6 +7140,9 @@ struct metamorphosis_buff_t : public demon_hunter_buff_t<buff_t>
       {
         p()->buff.necessary_sacrifice->expire();
         p()->buff.necessary_sacrifice->trigger( winning_streak_stacks );
+      } else {
+        p()->proc.winning_streak_wasted_from_tww2_havoc_4pc->occur();
+        p()->proc.necessary_sacrifice_wasted_from_tww2_havoc_4pc->occur();
       }
     }
   }
@@ -8292,10 +8302,13 @@ void demon_hunter_t::init_procs()
   // Fel-scarred
 
   // Set Bonuses
-  proc.soul_fragment_from_vengeance_twws1_2pc  = get_proc( "soul_fragment_from_vengeance_twws1_2pc" );
-  proc.metamorphosis_from_tww2_vengeance_2pc   = get_proc( "metamorphosis_from_tww2_vengeance_2pc" );
-  proc.the_hunt_reset_from_tww2_vengeance_4pc  = get_proc( "the_hunt_reset_from_tww2_vengeance_4pc" );
-  proc.winning_streak_drop_from_tww2_havoc_2pc = get_proc( "winning_streak_drop_from_tww2_havoc_2pc" );
+  proc.soul_fragment_from_vengeance_tww1_2pc          = get_proc( "soul_fragment_from_vengeance_tww1_2pc" );
+  proc.metamorphosis_from_tww2_vengeance_2pc          = get_proc( "metamorphosis_from_tww2_vengeance_2pc" );
+  proc.the_hunt_reset_from_tww2_vengeance_4pc         = get_proc( "the_hunt_reset_from_tww2_vengeance_4pc" );
+  proc.winning_streak_drop_from_tww2_havoc_2pc        = get_proc( "winning_streak_drop_from_tww2_havoc_2pc" );
+  proc.winning_streak_drop_wasted_from_tww2_havoc_2pc = get_proc( "winning_streak_drop_wasted_from_tww2_havoc_2pc" );
+  proc.winning_streak_wasted_from_tww2_havoc_4pc      = get_proc( "winning_streak_wasted_from_tww2_havoc_4pc" );
+  proc.necessary_sacrifice_wasted_from_tww2_havoc_4pc = get_proc( "necessary_sacrifice_wasted_from_tww2_havoc_4pc" );
 }
 
 // demon_hunter_t::init_uptimes =============================================
