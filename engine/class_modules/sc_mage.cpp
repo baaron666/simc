@@ -3267,7 +3267,7 @@ struct icicle_t final : public frost_mage_spell_t
   {
     double am = frost_mage_spell_t::action_multiplier();
 
-    am *= p()->buffs.wintertide->check_stack_value();
+    am *= 1.0 + p()->buffs.wintertide->check_stack_value();
 
     return am;
   }
