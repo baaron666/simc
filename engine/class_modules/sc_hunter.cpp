@@ -972,7 +972,7 @@ public:
     spell_data_ptr_t multishot;
     spell_data_ptr_t eyes_in_the_sky;
     spell_data_ptr_t spotters_mark_debuff;
-    spell_data_ptr_t harriers_cry; // TODO
+    spell_data_ptr_t harriers_cry;
   } specs;
 
   struct mastery_spells_t
@@ -1210,8 +1210,8 @@ public:
     // SV
     damage_affected_by spirit_bond;
     damage_affected_by tip_of_the_spear;
-    bool cull_the_herd;
-    bool outland_venom;
+    bool cull_the_herd = false;
+    bool outland_venom = false;
     damage_affected_by coordinated_assault;
     bool spearhead = false;
     bool deadly_duo = false;
@@ -1701,17 +1701,6 @@ struct hunter_pet_t: public pet_t
   {
     double m = pet_t::composite_player_target_multiplier( target, school );
 
-    auto td = o()->get_target_data( target );
-    bool guardian = type == PLAYER_GUARDIAN;
-
-    // TODO should these go in composite_player_target_pet_damage_multiplier (non-hunter pets)
-
-    if ( td->debuffs.kill_zone->check() )
-      m *= 1 + o()->talents.kill_zone_debuff->effectN( guardian ? 4 : 3 ).percent();
-
-    if ( td->debuffs.lunar_storm->check() )
-      m *= 1 + o()->talents.lunar_storm_periodic_spell->effectN( 2 ).trigger()->effectN( guardian ? 3 : 2 ).percent();
-    
     return m;
   }
 
@@ -2456,10 +2445,10 @@ static void trigger_beast_cleave( const action_state_t* s )
     return;
 
   // Target multipliers do not replicate to secondary targets
-  // TODO check target_pet_multiplier
   const double target_da_multiplier = ( 1.0 / s->target_da_multiplier );
+  const double target_pet_multiplier = ( 1.0 / s->target_pet_multiplier );
 
-  const double amount = s->result_total * p->buffs.beast_cleave->check_value() * target_da_multiplier;
+  const double amount = s->result_total * p->buffs.beast_cleave->check_value() * target_da_multiplier * target_pet_multiplier;
   p->active.beast_cleave->execute_on_target( s->target, amount );
 }
 
@@ -2885,7 +2874,9 @@ struct beast_cleave_attack_t: public hunter_pet_action_t<hunter_pet_t, melee_att
   void init() override
   {
     hunter_pet_action_t::init();
+
     snapshot_flags |= STATE_TGT_MUL_DA;
+    snapshot_flags |= STATE_TGT_MUL_PET;
   }
 
   size_t available_targets( std::vector< player_t* >& tl ) const override
@@ -7434,6 +7425,41 @@ struct a_murder_of_crows_t : public hunter_spell_t
 // Marksmanship spells
 //==============================
 
+// Harrier's Cry ===========================================================
+
+struct harriers_cry_t: public hunter_spell_t
+{
+  harriers_cry_t( hunter_t* p, util::string_view options_str ) : hunter_spell_t( "harriers_cry", p, p->specs.harriers_cry )
+  {
+    parse_options( options_str );
+
+    harmful = false;
+    track_cd_waste = false;
+  }
+
+  void execute() override
+  {
+    hunter_spell_t::execute();
+
+    for ( auto* p : sim->player_non_sleeping_list )
+    {
+      if ( p->buffs.exhaustion->check() || p->is_pet() )
+        continue;
+
+      p->buffs.bloodlust->trigger();
+      p->buffs.exhaustion->trigger();
+    }
+  }
+
+  bool ready() override
+  {
+    if ( !sim->overrides.bloodlust )
+      return false;
+
+    return hunter_spell_t::ready();
+  }
+};
+
 // Trueshot =================================================================
 
 struct trueshot_t: public hunter_spell_t
@@ -8012,6 +8038,7 @@ action_t* hunter_t::create_action( util::string_view name, util::string_view opt
   if ( name == "freezing_trap"         ) return new          freezing_trap_t( this, options_str );
   if ( name == "fury_of_the_eagle"     ) return new      fury_of_the_eagle_t( this, options_str );
   if ( name == "harpoon"               ) return new                harpoon_t( this, options_str );
+  if ( name == "harriers_cry"          ) return new           harriers_cry_t( this, options_str );
   if ( name == "high_explosive_trap"   ) return new    high_explosive_trap_t( this, options_str );
   if ( name == "implosive_trap"        ) return new         implosive_trap_t( this, options_str );
   if ( name == "kill_command"          ) return new           kill_command_t( this, options_str );
@@ -8145,6 +8172,7 @@ void hunter_t::init_spells()
     specs.multishot                           = find_specialization_spell( "Multi-Shot" );
     specs.eyes_in_the_sky                     = find_specialization_spell( "Eyes in the Sky" );
     specs.spotters_mark_debuff                = specs.eyes_in_the_sky.ok() ? find_spell( 466872 ) : spell_data_t::not_found();
+    specs.harriers_cry                        = find_specialization_spell( "Harrier's Cry" );
 
     talents.aimed_shot                        = find_talent_spell( talent_tree::SPECIALIZATION, "Aimed Shot", HUNTER_MARKSMANSHIP );
 
@@ -9515,14 +9543,16 @@ double hunter_t::composite_player_target_pet_damage_multiplier( player_t* target
 {
   double m = player_t::composite_player_target_pet_damage_multiplier( target, guardian );
 
+  auto td = get_target_data( target );
+
+  if ( td->debuffs.kill_zone->check() )
+    m *= 1 + talents.kill_zone_debuff->effectN( guardian ? 4 : 3 ).percent();
+
+  if ( td->debuffs.lunar_storm->check() )
+    m *= 1 + talents.lunar_storm_periodic_spell->effectN( 2 ).trigger()->effectN( guardian ? 3 : 2 ).percent();
+
   if ( !guardian )
-  {
-    auto td = get_target_data( target ); 
-    auto wi_debuff = td -> debuffs.wild_instincts;
-    int stacks = wi_debuff -> stack();
-    double amp_per_stack = wi_debuff -> data().effectN( 1 ).percent();
-    m *= 1 + stacks * amp_per_stack;
-  }
+    m *= 1 + td->debuffs.wild_instincts->check_stack_value();
 
   return m;
 }
