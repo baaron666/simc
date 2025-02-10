@@ -887,6 +887,7 @@ struct player_t : public actor_t
     double estimate_skippers_group_members                = 4;
     // Mister Lock-n-Stalk mode of operation
     player_option_t<std::string> mister_locknstalk_mode = "dynamic";
+    player_option_t<std::string> jastor_diamond_ally_stat = "none";
   } thewarwithin_opts;
 
 private:

@@ -7633,15 +7633,25 @@ void sureki_zealots_insignia( special_effect_t& e )
   new dbc_proc_callback_t( e.player, e );
 }
 
-// The Jastors Diamond
+// The Jastor Diamond
 // 1214161 Value Spell
 // 1214822 Driver
+// 1215043 Cooldown spell
 // 1214823 Self Buff
 // 1214826 Ally Buff
+// TODO: NYI Bug - Randomly just breaks and stops triggering. 
+// https://cdn.discordapp.com/attachments/1240061447372017760/1333977502577721554/image.png?ex=67aaacdc&is=67a95b5c&hm=3ba419d6968805aa51d124df52b5d0312d90e669099f8540f1d8bc4691ac9e59&
+// TODO: Appears to dynamically update the stat value given if the targeted players highest stat changes. This might be an absolute headache.
 void the_jastor_diamond( special_effect_t& effect )
 {
   if ( !effect.player->is_ptr() )
     return;
+
+  auto equip_driver = effect.player->find_spell( 1214822 );
+  assert( equip_driver && "Jastor Diamond Equip Driver not found." );
+
+  auto cooldown_spell = effect.player->find_spell( 1215043 );
+  assert( cooldown_spell && "Jastor Diamond Cooldown spell not found." );
 
   struct jastor_diamond_buff_base_t : public stat_buff_t
   {
@@ -7671,6 +7681,9 @@ void the_jastor_diamond( special_effect_t& effect )
                            buff_duration() > timespan_t::zero() );
 
         buff_stat.current_value = 0;
+        // Dont clear stats if the sim has ended strictly for reporting purposes.
+        if ( !sim->event_mgr.canceled )
+          buff_stat.amount = 0;
       }
 
       // Purposely skip over stat_buff_t::expire_override() as we do the lost stat calculations manually
@@ -7755,6 +7768,9 @@ void the_jastor_diamond( special_effect_t& effect )
     double buff_value;
     std::unordered_map<player_t*, no_i_did_that_buff_t*> ally_buffs;
     vector_with_callback<player_t*> ally_list;
+    // Bug Related vars
+    player_t* linked_player;
+    stat_e rolled_stat;
 
     the_jastor_diamond_cb_t( const special_effect_t& e )
       : dbc_proc_callback_t( e.player, e ),
@@ -7763,7 +7779,9 @@ void the_jastor_diamond( special_effect_t& effect )
         ally_buff_spell( e.player->find_spell( 1214826 ) ),
         buff_value( 0 ),
         ally_buffs(),
-        ally_list()
+        ally_list(),
+        linked_player( nullptr ),
+        rolled_stat( STAT_NONE )
     {
       assert( value_spell && "The Jastor Diamond missing value spell." );
       buff_value = value_spell->effectN( 1 ).average( e );
@@ -7782,13 +7800,45 @@ void the_jastor_diamond( special_effect_t& effect )
           }
         }
       } );
+
+      // Currently bugged, and seems to get stuck on a single player, never changing.
+      // To emulate this, give players the option to chose their allied players highest stat, or randomly roll one
+      // for them every iteration.
+      if ( e.player->bugs )
+      {
+        const auto& desired_stat = e.player->thewarwithin_opts.jastor_diamond_ally_stat;
+        if ( util::str_compare_ci( desired_stat, "none" ) || desired_stat.is_default() )
+          rolled_stat = rng().range( secondary_ratings );
+
+        if ( util::str_compare_ci( desired_stat, "haste" ) )
+          rolled_stat = STAT_HASTE_RATING;
+
+        if ( util::str_compare_ci( desired_stat, "mastery" ) )
+          rolled_stat = STAT_MASTERY_RATING;
+
+        if ( util::str_compare_ci( desired_stat, "critical_strike" ) || util::str_compare_ci( desired_stat, "crit" ) )
+          rolled_stat = STAT_CRIT_RATING;
+
+        if ( util::str_compare_ci( desired_stat, "versatility" ) || util::str_compare_ci( desired_stat, "vers" ) )
+          rolled_stat = STAT_VERSATILITY_RATING;
+
+        if ( rolled_stat == STAT_NONE )
+        {
+          listener->sim->error(
+              "{} is not a valid stat for Jastors Diamond, randomly selecting stat. \n Valid options are haste, "
+              "crit, mastery, or vers.",
+              desired_stat );
+          rolled_stat = rng().range( secondary_ratings );
+        }
+      }
     }
 
     player_t* pick_random_target()
     {
       std::vector<player_t*> eligible;
       for ( auto p : ally_list )
-        if ( !p->is_sleeping() ) eligible.push_back( p );
+        if ( !p->is_sleeping() )
+          eligible.push_back( p );
       assert( !eligible.empty() );
       return rng().range( eligible );
     }
@@ -7797,7 +7847,18 @@ void the_jastor_diamond( special_effect_t& effect )
     {
       if ( ally_list.size() > 0 )
       {
-        player_t* random_target = pick_random_target();
+        player_t* random_target;
+        // Currently bugged, and gets stuck on one target. This target seems to be the same every pull.
+        if ( listener->bugs )
+        {
+          if ( linked_player == nullptr || linked_player->is_sleeping() )
+            linked_player = pick_random_target();
+
+          random_target = linked_player;
+        }
+        else
+          random_target = pick_random_target();
+
         if ( self_buff->check() && rng().roll( value_spell->effectN( 3 ).percent() ) )
         {
           no_i_did_that_buff_t* buff = ally_buffs.at( random_target );
@@ -7824,16 +7885,18 @@ void the_jastor_diamond( special_effect_t& effect )
         }
         else
         {
-          auto stat_roll = rng().range( secondary_ratings );
-          self_buff->add_ally_stat( stat_roll, buff_value );
+          if ( !listener->bugs )
+            rolled_stat = rng().range( secondary_ratings );
+
+          self_buff->add_ally_stat( rolled_stat, buff_value );
           self_buff->trigger();
         }
       }
     }
   };
 
-  effect.cooldown_ = 12.5_s; // Oddly got removed from spell data? manually overriding for now
-  effect.spell_id = 1214822;
+  effect.cooldown_ = cooldown_spell->duration();
+  effect.spell_id  = equip_driver->id();
   new the_jastor_diamond_cb_t( effect );
 }
 
