@@ -2547,7 +2547,7 @@ public:
 
 // Template for common hunter main pet action code.
 template <class Base>
-struct hunter_main_pet_action_t : public hunter_pet_action_t < hunter_main_pet_t, Base >
+struct hunter_main_pet_action_t : public hunter_pet_action_t<hunter_main_pet_t, Base>
 {
 private:
   using ab = hunter_pet_action_t<hunter_main_pet_t, Base>;
@@ -3196,31 +3196,12 @@ struct coordinated_assault_t: public hunter_main_pet_attack_t
 
 // Stomp ===================================================================
 
-struct stomp_t : public hunter_pet_action_t<hunter_pet_t, attack_t>
+struct stomp_t : public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
 {
   stomp_t( hunter_pet_t* p, double effectiveness = 1.0, util::string_view n = "stomp"  ) : hunter_pet_action_t( n, p, p -> find_spell( 201754 ) )
   {
     aoe = -1;
     base_dd_multiplier *= o() -> talents.stomp -> effectN( 1 ).base_value() * effectiveness;
-  }
-
-  double bleed_amount = o() -> find_spell( 459555 ) -> effectN( 1 ).percent(); 
-
-  void impact( action_state_t* s ) override
-  {
-    hunter_pet_action_t::impact( s );
-
-    //Only the main pet or animal companion can trigger laceration
-    auto pet = o() -> pets.main;
-    auto animal_companion = o() -> pets.animal_companion;
-    if ( !( pet == p() || animal_companion == p() ) )
-      return;
-
-    if ( o() -> actions.laceration && s -> result == RESULT_CRIT )
-    {
-      double amount = s -> result_amount * bleed_amount;
-      residual_action::trigger( o() -> actions.laceration, s -> target, amount );
-    }
   }
 };
 
@@ -3259,7 +3240,7 @@ struct bestial_wrath_t : hunter_pet_action_t<hunter_main_pet_base_t, melee_attac
 
 // Ravenous Leap (Fenryr) ===================================================
 
-struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, attack_t>
+struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, melee_attack_t>
 {
   ravenous_leap_t( fenryr_t* p ) : hunter_pet_action_t( "ravenous_leap", p, p -> find_spell( 459753 ) )
   {
@@ -3277,9 +3258,9 @@ struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, attack_t>
 // The tick damage shows up as Bear damage in the combat log but the dot shows as applied by the player 
 // and the Lead From the Front bonus applies to the dot damage.
 // TODO maybe move this to a player action after more testing
-struct rend_flesh_t : public hunter_pet_action_t<bear_t, attack_t>
+struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 {
-  struct envenomed_fangs_t : public hunter_pet_action_t<bear_t, attack_t>
+  struct envenomed_fangs_t : public hunter_pet_action_t<bear_t, melee_attack_t>
   {
     envenomed_fangs_t( bear_t* p ) : hunter_pet_action_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell )
     {
@@ -3521,21 +3502,22 @@ void hunter_main_pet_base_t::init_special_effects()
 
       void execute( action_t*, action_state_t* s ) override
       {
-        if ( s && s ->target->is_sleeping() )
+        if ( s && s->target->is_sleeping() )
           return;
 
-        double amount = s->result_amount * bleed_amount;
-        if ( amount > 0 )
-          residual_action::trigger( bleed, s->target, amount );
-      }  
+        if ( s )
+        {
+          double amount = s->result_amount * bleed_amount;
+          if ( amount > 0 )
+            residual_action::trigger( bleed, s->target, amount );
+        }
+      }
     };
 
     auto const effect = new special_effect_t( this );
     effect -> name_str = "laceration";
     effect -> spell_id =  o()->talents.laceration_driver->id();
     effect -> proc_flags2_ = PF2_CRIT;
-    //Pet melee, bestial wrath on demand damage and Kill Command are procs in simc implemenation
-    effect -> set_can_proc_from_procs(true);
     special_effects.push_back( effect );
 
     auto cb = new laceration_cb_t( *effect, o()->talents.laceration_driver->effectN( 1 ).percent(), o()->actions.laceration );
@@ -4927,7 +4909,7 @@ struct boar_charge_t final : hunter_ranged_attack_t
       hunter_ranged_attack_t::impact( s );
 
       if ( rng().roll( hogstrider_mongoose_fury_chance ) )
-        p()->buffs.mongoose_fury->increment();
+        p()->buffs.mongoose_fury->trigger();
 
       p()->buffs.hogstrider->increment();
     }
@@ -4953,7 +4935,7 @@ struct boar_charge_t final : hunter_ranged_attack_t
     hunter_ranged_attack_t::impact( s );
 
     if ( rng().roll( cleave->hogstrider_mongoose_fury_chance ) )
-      p()->buffs.mongoose_fury->increment();
+      p()->buffs.mongoose_fury->trigger();
 
     p()->buffs.hogstrider->increment();
   }
