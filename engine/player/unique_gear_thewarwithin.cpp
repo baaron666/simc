@@ -6833,13 +6833,13 @@ void mister_locknstalk( special_effect_t& effect )
       auto st_damage_spell   = e.player->find_spell( 1215690 );
       st_damage              = create_proc_action<generic_proc_t>( "precision_targeting", e, st_damage_spell );
       st_damage->base_dd_min = st_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
-      st_damage->base_multiplier                      = role_mult( e.player, st_damage_spell );
+      st_damage->base_multiplier                      = role_mult( e.player, e.player->find_spell( 467492 ) );
       proxy->add_child( st_damage );
 
       auto aoe_damage_spell   = e.player->find_spell( 1215733 );
       aoe_damage              = create_proc_action<generic_aoe_proc_t>( "mass_destruction", e, aoe_damage_spell, true );
       aoe_damage->base_dd_min = aoe_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
-      aoe_damage->base_multiplier                       = role_mult( e.player, aoe_damage_spell );
+      aoe_damage->base_multiplier                       = role_mult( e.player, e.player->find_spell( 467497 ) );
       proxy->add_child( aoe_damage );
 
       const auto& option = e.player->thewarwithin_opts.mister_locknstalk_mode;
