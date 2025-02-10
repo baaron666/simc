@@ -5,7 +5,7 @@ level=80
 race=maghar_orc
 role=spell
 position=ranged_back
-talents=CIQAAAAAAAAAAAAAAAAAAAAAAgBmZAAAAAAAAAAAAMMLmxMmtxYmZmxYmlBzGzMzMmNGYMGmFz2UzMYBzAYmNLjmNDAZMWAA
+talents=CIQAAAAAAAAAAAAAAAAAAAAAAgBmZAAAAAAAAAAAAMMLegxMzsNGzMzMGzsMY2YmZmxsxAjxwsY2mamBLYGAzsZZ0sZAIjxCAA
 
 # Default consumables
 potion=tempered_potion_3
@@ -179,7 +179,7 @@ actions.trinkets+=/use_item,name=spymasters_web,if=(buff.power_infusion.up&buff.
 actions.trinkets+=/use_items,if=(buff.voidform.up|buff.power_infusion.up|buff.dark_ascension.up|(cooldown.void_eruption.remains>10&trinket.cooldown.duration<=60))|fight_remains<20
 
 head=confessors_unshakable_halo,id=229334,ilevel=678,gem_id=213743
-neck=gobfathers_gifted_bling,id=228842,ilevel=678,gem_id=213482/213458
+neck=semicharmed_amulet,id=228841,ilevel=678,gem_id=213482/213458
 shoulders=confessors_unshakable_radiance,id=229332,ilevel=678
 back=test_pilots_gopack,id=228844,ilevel=678
 chest=confessors_unshakable_vestment,id=229337,ilevel=678,enchant=crystalline_radiance_3
@@ -188,18 +188,20 @@ hands=confessors_unshakable_mitts,id=229335,ilevel=678
 waist=refiners_conveyor_belt,id=228882,ilevel=678,gem_id=213470
 legs=pit_doctors_petticoat,id=228865,ilevel=678,enchant=sunset_spellthread_3
 feet=cemented_murlocswimmers,id=228879,ilevel=678
-finger1=footbomb_championship_ring,id=159462,ilevel=678,gem_id=213494/213494,enchant=radiant_mastery_3
-finger2=overclocking_bit_band,id=169159,ilevel=678,gem_id=213494/213494,enchant=radiant_mastery_3
-main_hand=stixs_metal_detector,id=228896,ilevel=678,enchant=authority_of_the_depths_3
+finger1=the_jastor_diamond,id=231265,ilevel=678,gem_id=213494/213494,enchant=radiant_mastery_3
+finger2=footbomb_championship_ring,id=159462,ilevel=678,gem_id=213494/213494,enchant=radiant_mastery_3
+trinket1=mugs_moxie_jug,id=230192,ilevel=678
+trinket2=eye_of_kezan,id=230198,ilevel=678
+main_hand=big_earners_bludgeon,id=228901,ilevel=678,enchant=authority_of_the_depths_3
 off_hand=vagabonds_torch,id=222566,bonus_id=11300/8793,ilevel=675
 
 # Gear Summary
-# gear_ilvl=677.57
+# gear_ilvl=677.63
 # gear_stamina=391616
-# gear_intellect=64685
-# gear_crit_rating=937
-# gear_haste_rating=21715
-# gear_mastery_rating=21748
+# gear_intellect=69873
+# gear_crit_rating=3499
+# gear_haste_rating=20390
+# gear_mastery_rating=22210
 # gear_versatility_rating=931
 # gear_armor=20744
 # set_bonus=thewarwithin_season_2_2pc=1
