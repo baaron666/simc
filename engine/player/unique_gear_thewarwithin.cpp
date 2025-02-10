@@ -7655,7 +7655,9 @@ void the_jastor_diamond( special_effect_t& effect )
 
   struct jastor_diamond_buff_base_t : public stat_buff_t
   {
-    jastor_diamond_buff_base_t( player_t* p, std::string_view n, const spell_data_t* s ) : stat_buff_t( p, n, s )
+    double current_total_value;
+    jastor_diamond_buff_base_t( player_t* p, std::string_view n, const spell_data_t* s )
+      : stat_buff_t( p, n, s ), current_total_value( 0 )
     {
       set_default_value( 0 );
       add_stat_from_effect( 1, 0 );
@@ -7666,11 +7668,34 @@ void the_jastor_diamond( special_effect_t& effect )
 
     virtual void add_ally_stat( stat_e s, double val )
     {
-      auto& buff_stat = get_stat( s );
-      buff_stat.current_value += val;
-      buff_stat.amount = buff_stat.current_value;
-      // Only handle stat gain here, stat loss will be handled in i_did_that_buff_t::expire_override()
-      player->stat_gain( buff_stat.stat, val, stat_gain, nullptr, buff_duration() > timespan_t::zero() );
+      current_total_value += val;
+      for ( auto& buff_stat : stats )
+      {
+        if ( buff_stat.stat == s )
+        {
+          buff_stat.amount = current_total_value;
+
+          double delta = current_total_value - buff_stat.current_value;
+          if ( delta > 0 )
+          {
+            player->stat_gain( buff_stat.stat, delta, stat_gain, nullptr, buff_duration() > timespan_t::zero() );
+          }
+          else if ( delta < 0 )
+          {
+            player->stat_loss( buff_stat.stat, std::fabs( delta ), stat_gain, nullptr,
+                               buff_duration() > timespan_t::zero() );
+          }
+
+          buff_stat.current_value += delta;
+        }
+        else
+        {
+          buff_stat.amount = 0;
+          player->stat_loss( buff_stat.stat, buff_stat.current_value, stat_gain, nullptr,
+                             buff_duration() > timespan_t::zero() );
+          buff_stat.current_value = 0;
+        }
+      }
     }
 
     void expire_override( int s, timespan_t d ) override
@@ -7681,13 +7706,11 @@ void the_jastor_diamond( special_effect_t& effect )
                            buff_duration() > timespan_t::zero() );
 
         buff_stat.current_value = 0;
-        // Dont clear stats if the sim has ended strictly for reporting purposes.
-        if ( !sim->event_mgr.canceled )
-          buff_stat.amount = 0;
       }
 
       // Purposely skip over stat_buff_t::expire_override() as we do the lost stat calculations manually
       buff_t::expire_override( s, d );
+      current_total_value = 0;
     }
 
     buff_stat_t& get_stat( stat_e s )
@@ -7699,6 +7722,12 @@ void the_jastor_diamond( special_effect_t& effect )
       }
       // Fallback if the above fails for any reason.
       return stats[ 0 ];
+    }
+
+    void reset() override
+    {
+      stat_buff_t::reset();
+      current_total_value = 0;
     }
 
     void bump( int stacks, double /* value */ ) override
