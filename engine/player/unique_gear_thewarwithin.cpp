@@ -6042,8 +6042,7 @@ void turbodrain_5000( special_effect_t& effect )
   auto total_damage = effect.driver()->effectN( 1 ).average( effect );
   auto ticks        = dot_spell->duration() / dot_spell->effectN( 1 ).period();
   dot->base_td      = total_damage / ticks;
-  // currently has no role mult
-  // dot->base_td_multiplier = role_mult( effect );
+  dot->base_td_multiplier = role_mult( effect );
   effect.execute_action = dot;
 
   new dbc_proc_callback_t( effect.player, effect );
@@ -6217,10 +6216,11 @@ void ratfang_toxin( special_effect_t& effect )
         debuff_increase( 0 ),
         equip_callback( equip )
     {
-      auto ticks = spell->duration() / spell->effectN( 1 ).period();
-      base_tick_damage = value_spell->effectN( 2 ).average( e ) / ticks;
-      base_td         = base_tick_damage;
-      debuff_increase = value_spell->effectN( 3 ).average( e ) / ticks;
+      auto ticks         = spell->duration() / spell->effectN( 1 ).period();
+      base_tick_damage   = value_spell->effectN( 2 ).average( e ) / ticks;
+      base_td            = base_tick_damage;
+      debuff_increase    = value_spell->effectN( 3 ).average( e ) / ticks;
+      base_td_multiplier = role_mult( e );
     }
 
     void execute() override
@@ -6293,10 +6293,6 @@ void garbagemancers_last_resort( special_effect_t& effect )
   auto use = create_proc_action<garbagemancers_last_resort_t>( "garbagemancers_last_resort", effect,
                                                                "garbagemancers_last_resort", effect.driver() );
 
-  // Setting a random cooldown for now, its got none in data leading to sims spamming the hell out of it and getting
-  // stuck. Also has no cooldown in game...
-  // TODO - Remove once theres a cooldown in data.
-  effect.cooldown_      = 60_s;
   effect.execute_action = use;
 }
 
@@ -6563,7 +6559,7 @@ void zees_thug_hotline( special_effect_t& effect )
   struct zees_thug_hotline_pet_spell_t : public spell_t
   {
     zees_thug_hotline_pet_spell_t( std::string_view n, pet_t* p, const spell_data_t* s, std::string_view options_str,
-                                   action_t* a )
+                                   action_t* a, const special_effect_t& e )
       : spell_t( n, p, s )
     {
       auto proxy = a;
@@ -6575,6 +6571,8 @@ void zees_thug_hotline( special_effect_t& effect )
 
       parse_options( options_str );
 
+      base_multiplier = role_mult( e );
+
       // Not 100% confident this is correct. Just what it appeared to be at a glance.
       cooldown->duration = 4_s;
       cooldown->hasted = true;
@@ -6584,7 +6582,7 @@ void zees_thug_hotline( special_effect_t& effect )
   struct gutstab_t : public zees_thug_hotline_pet_spell_t
   {
     gutstab_t( const special_effect_t& e, unique_gear_pet_t* p, std::string_view options_str, action_t* a )
-      : zees_thug_hotline_pet_spell_t( "gutstab", p, p->find_spell( 1217675 ), options_str, a )
+      : zees_thug_hotline_pet_spell_t( "gutstab", p, p->find_spell( 1217675 ), options_str, a, e )
     {
       base_dd_min = base_dd_max = e.driver()->effectN( 1 ).average( e );
     }
@@ -6593,7 +6591,7 @@ void zees_thug_hotline( special_effect_t& effect )
   struct fan_of_stabs_t : public zees_thug_hotline_pet_spell_t
   {
     fan_of_stabs_t( const special_effect_t& e, unique_gear_pet_t* p, std::string_view options_str, action_t* a )
-      : zees_thug_hotline_pet_spell_t( "fan_of_stabs", p, p->find_spell( 1217676 ), options_str, a )
+      : zees_thug_hotline_pet_spell_t( "fan_of_stabs", p, p->find_spell( 1217676 ), options_str, a, e )
     {
       aoe         = -1;
       base_dd_min = base_dd_max = e.driver()->effectN( 4 ).average( e );
@@ -6603,7 +6601,7 @@ void zees_thug_hotline( special_effect_t& effect )
   struct snipe_t : public zees_thug_hotline_pet_spell_t
   {
     snipe_t( const special_effect_t& e, unique_gear_pet_t* p, std::string_view options_str, action_t* a )
-      : zees_thug_hotline_pet_spell_t( "snipe", p, p->find_spell( 1217719 ), options_str, a )
+      : zees_thug_hotline_pet_spell_t( "snipe", p, p->find_spell( 1217719 ), options_str, a, e )
     {
       base_dd_min = base_dd_max = e.driver()->effectN( 3 ).average( e );
     }
@@ -6612,7 +6610,7 @@ void zees_thug_hotline( special_effect_t& effect )
   struct thwack_t : public zees_thug_hotline_pet_spell_t
   {
     thwack_t( const special_effect_t& e, unique_gear_pet_t* p, std::string_view options_str, action_t* a )
-      : zees_thug_hotline_pet_spell_t( "thwack", p, p->find_spell( 1217638 ), options_str, a )
+      : zees_thug_hotline_pet_spell_t( "thwack", p, p->find_spell( 1217638 ), options_str, a, e )
     {
       base_dd_min = base_dd_max = e.driver()->effectN( 2 ).average( e );
     }
@@ -6622,7 +6620,7 @@ void zees_thug_hotline( special_effect_t& effect )
   {
     thwack_thwack_thwack_t( const special_effect_t& e, unique_gear_pet_t* p, std::string_view options_str,
                             action_t* a )
-      : zees_thug_hotline_pet_spell_t( "thwack_thwack_thwack", p, p->find_spell( 1217665 ), options_str, a )
+      : zees_thug_hotline_pet_spell_t( "thwack_thwack_thwack", p, p->find_spell( 1217665 ), options_str, a, e )
     {
       aoe         = -1;
       base_dd_min = base_dd_max = e.driver()->effectN( 4 ).average( e );
@@ -6825,17 +6823,23 @@ void mister_locknstalk( special_effect_t& effect )
     };
     mister_locknstalk_modes_t mode;
     mister_locknstalk_cb_t( const special_effect_t& e )
-      : dbc_proc_callback_t( e.player, e ), st_damage( nullptr ), aoe_damage( nullptr ), proxy( nullptr ), mode( MODE_DYNAMIC )
+      : dbc_proc_callback_t( e.player, e ),
+        st_damage( nullptr ),
+        aoe_damage( nullptr ),
+        proxy( nullptr ),
+        mode( MODE_DYNAMIC )
     {
-      proxy = new action_t( action_e::ACTION_OTHER, "mister_locknstalk", e.player, e.driver() );
-      st_damage              = create_proc_action<generic_proc_t>( "precision_targeting", e, 1215690 );
+      proxy                  = new action_t( action_e::ACTION_OTHER, "mister_locknstalk", e.player, e.driver() );
+      auto st_damage_spell   = e.player->find_spell( 1215690 );
+      st_damage              = create_proc_action<generic_proc_t>( "precision_targeting", e, st_damage_spell );
       st_damage->base_dd_min = st_damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
-      // st_damage->base_multiplier                      = role_mult( e );
+      st_damage->base_multiplier                      = role_mult( e.player, st_damage_spell );
       proxy->add_child( st_damage );
 
-      aoe_damage              = create_proc_action<generic_aoe_proc_t>( "mass_destruction", e, 1215733, true );
+      auto aoe_damage_spell   = e.player->find_spell( 1215733 );
+      aoe_damage              = create_proc_action<generic_aoe_proc_t>( "mass_destruction", e, aoe_damage_spell, true );
       aoe_damage->base_dd_min = aoe_damage->base_dd_max = e.driver()->effectN( 2 ).average( e );
-      // aoe_damage->base_multiplier                       = role_mult( e );
+      aoe_damage->base_multiplier                       = role_mult( e.player, aoe_damage_spell );
       proxy->add_child( aoe_damage );
 
       const auto& option = e.player->thewarwithin_opts.mister_locknstalk_mode;
@@ -7164,6 +7168,7 @@ void vile_contamination( special_effect_t& effect )
   // Setting a reasonably high non 0 duration so the DoT works as expected. Data contains no duration resulting in it
   // never applying.
   dot->dot_duration = 300_s;
+  dot->base_td_multiplier = role_mult( effect );
 
   effect.execute_action = dot;
   new dbc_proc_callback_t( effect.player, effect );
