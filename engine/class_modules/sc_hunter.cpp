@@ -2281,9 +2281,10 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
       ->set_default_value_from_effect( 2 );
 
     buffs.spearhead = 
-      make_buff( this, "spearhead", spells.spearhead_debuff )
+      make_buff( this, "spearhead_buff", spells.spearhead_debuff )
         ->set_default_value( o()->talents.deadly_duo->effectN( 2 ).percent() )
         ->set_schools_from_effect( 3 );
+
     buffs.potent_mutagen = 
       make_buff( this, "potent_mutagen", o()->find_spell( 1218003 ) )
       //2025-02-11 - For some reason the base value is still 1 (so the pet buff says 1 second reduction per hit) but the server script doing the reduction only reduces by 0.5s
