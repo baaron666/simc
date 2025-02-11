@@ -1006,6 +1006,8 @@ public:
     action_t* lunar_storm_periodic = nullptr;
 
     action_t* phantom_pain = nullptr;
+
+    action_t* potent_mutagen = nullptr; //TWW S2 BM 4PC
   } actions;
 
   cdwaste::player_data_t cd_waste;
@@ -2116,7 +2118,7 @@ struct hunter_main_pet_base_t : public stable_pet_t
       make_buff( this, "piercing_fangs", o() -> find_spell( 392054 ) )
         -> set_default_value_from_effect( 1 )
         -> set_chance( o() -> talents.piercing_fangs.ok() );
-  }
+}
 
   double composite_melee_auto_attack_speed() const override
   {
@@ -2234,6 +2236,7 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
     buff_t* solitary_companion = nullptr;
     buff_t* bloodseeker = nullptr;
     buff_t* spearhead = nullptr;
+    buff_t* potent_mutagen = nullptr; //TWW S2 BM 4pc
   } buffs;
   
   target_specific_t<hunter_main_pet_td_t> target_data;
@@ -2295,6 +2298,9 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
       make_buff( this, "spearhead", spells.spearhead_debuff )
         ->set_default_value( o()->talents.deadly_duo->effectN( 2 ).percent() )
         ->set_schools_from_effect( 3 );
+    buffs.potent_mutagen = 
+      make_buff( this, "potent_mutagen", o()->find_spell( 1218003 ) )
+      ->set_default_value( o()->find_spell( 1218004 )->effectN( 2 ).base_value() );
   }
 
   void init_action_list() override
@@ -2941,6 +2947,12 @@ struct pet_melee_t : public hunter_pet_melee_t<hunter_pet_t>
     if ( ( p()==o()->pets.main || p()==o()->pets.animal_companion ) && o()->rng().roll( o()->tier_set.tww_s1_bm_4pc->effectN( 1 ).percent() ) )
     {
       o()->buffs.harmonize->trigger();
+    }
+
+    if( p()==o()->pets.main && o()->pets.main->buffs.potent_mutagen->up() )
+    {
+      o()->actions.potent_mutagen->execute_on_target( s->target );
+      o()->cooldowns.bestial_wrath->adjust( -timespan_t::from_seconds( o()->pets.main->buffs.potent_mutagen->value() ) );
     }
   }
 
@@ -5114,6 +5126,19 @@ struct cobra_shot_snakeskin_quiver_t: public cobra_shot_t
 
 struct barbed_shot_t: public hunter_ranged_attack_t
 {
+  static const snapshot_state_e STATE_EFFECTIVENESS = STATE_USER_1;
+
+  struct state_data_t
+  {
+    double effectiveness = 1.0;
+
+    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out )
+    {
+      fmt::format_to( out, "effectiveness={}", data.effectiveness );
+    }
+  };
+  using state_t = hunter_action_state_t<state_data_t>;
+
   struct poisoned_barbs_t final : hunter_ranged_attack_t
   {
     serpent_sting_t* poisoned_barbs_serpent_sting = nullptr;
@@ -5151,6 +5176,14 @@ struct barbed_shot_t: public hunter_ranged_attack_t
 
     if ( p->talents.poisoned_barbs.ok() )
       poisoned_barbs = p->get_background_action<poisoned_barbs_t>( "poisoned_barbs" );
+  }
+
+  void init() override
+  {
+    hunter_ranged_attack_t::init();
+
+    // Don't let dot ticks lose our cast state.
+    snapshot_flags = STATE_EFFECTIVENESS;
   }
 
   void init_finished() override
@@ -5213,6 +5246,19 @@ struct barbed_shot_t: public hunter_ranged_attack_t
       p() -> cooldowns.kill_command -> adjust( -p() -> talents.master_handler -> effectN( 1 ).time_value() );
     }
   }
+
+  action_state_t* new_state() override
+  {
+    return new state_t( this, target );
+  }
+
+  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+  {
+    hunter_ranged_attack_t::snapshot_internal( s, flags, rt );
+
+    if ( flags & STATE_MUL_SPELL_TA )
+      s->ta_multiplier *= debug_cast<state_t*>( s )->effectiveness;
+  }
 };
 
 // Barrage (Beast Mastery Talent) ===========================================
@@ -5263,6 +5309,34 @@ struct barrage_t: public hunter_spell_t
 struct laceration_t : public residual_bleed_base_t
 {
   laceration_t( hunter_t* p ) : residual_bleed_base_t( "laceration", p, p->talents.laceration_bleed ) {}
+};
+
+// Barbed Shot (Empowered) (The War Within Season 2 2 Piece Set Bonus) ==============
+struct barbed_shot_tww_s2_bm_2pc_t : public barbed_shot_t
+{
+  barbed_shot_tww_s2_bm_2pc_t( util::string_view n, hunter_t* p ) : barbed_shot_t( p, "" )
+  {
+    background = dual = true;
+    base_costs[ RESOURCE_FOCUS ] = 0;
+  }
+
+  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+  {
+    barbed_shot_t::snapshot_internal( s, flags, rt );
+
+    if ( flags & STATE_EFFECTIVENESS )
+      debug_cast<state_t*>( s )->effectiveness = p()->tier_set.tww_s2_bm_2pc->effectN( 1 ).percent();
+  }
+};
+
+// Potent Mutagen (The War Within Season 2 4 Piece Set Bonus) ======================
+struct potent_mutagen_t : public hunter_spell_t
+{
+  
+    potent_mutagen_t( hunter_t* p ) : hunter_spell_t( "potent_mutagen", p, p->find_spell( 1218004 ) )
+    {
+      background = dual = true;
+    }
 };
 
 //==============================
@@ -7154,6 +7228,7 @@ struct dire_command_summon_t final : hunter_spell_t
 struct bestial_wrath_t: public hunter_spell_t
 {
   timespan_t precast_time = 0_ms;
+  attacks::barbed_shot_tww_s2_bm_2pc_t* barbed_shot_tww_s2_bm_2pc = nullptr;
 
   bestial_wrath_t( hunter_t* player, util::string_view options_str ):
     hunter_spell_t( "bestial_wrath", player, player -> talents.bestial_wrath )
@@ -7162,6 +7237,9 @@ struct bestial_wrath_t: public hunter_spell_t
     parse_options( options_str );
 
     precast_time = clamp( precast_time, 0_ms, data().duration() );
+
+    if ( player->tier_set.tww_s2_bm_2pc.ok() )
+      barbed_shot_tww_s2_bm_2pc = player->get_background_action<attacks::barbed_shot_tww_s2_bm_2pc_t>( "barbed_shot_tww_s2_bm_2pc" );
   }
 
   bool usable_precombat() const override
@@ -7212,6 +7290,12 @@ struct bestial_wrath_t: public hunter_spell_t
 
     if ( p()->talents.lead_from_the_front->ok() )
       p()->trigger_howl_of_the_pack_leader_ready();
+
+    if ( p()->tier_set.tww_s2_bm_4pc.ok() )
+    {
+      p()->pets.main->buffs.potent_mutagen->trigger();
+      barbed_shot_tww_s2_bm_2pc->execute_on_target( target );
+    }
   }
 
   bool ready() override
@@ -8550,6 +8634,9 @@ void hunter_t::create_actions()
 
   if ( talents.phantom_pain.ok() )
     actions.phantom_pain = new attacks::phantom_pain_t( this );
+
+  if ( tier_set.tww_s2_bm_4pc.ok() )
+    actions.potent_mutagen = new attacks::potent_mutagen_t( this );
 }
 
 void hunter_t::create_buffs()
@@ -9251,6 +9338,37 @@ void hunter_t::init_special_effects()
     special_effects.push_back( effect );
 
     auto cb = new sentinel_cb_t( *effect, this );
+    cb->initialize();
+  }
+
+  if ( tier_set.tww_s2_bm_2pc.ok() )
+  {
+    struct jackpot_cb_t : public dbc_proc_callback_t
+    {
+      hunter_t* player;
+      attacks::barbed_shot_tww_s2_bm_2pc_t* barbed_shot = player->get_background_action<attacks::barbed_shot_tww_s2_bm_2pc_t>( "barbed_shot_tww_s2_bm_2pc" );
+
+      jackpot_cb_t( const special_effect_t& e, hunter_t* p )
+        : dbc_proc_callback_t( p, e ), player( p )
+      {
+      }
+
+      void execute( action_t* a, action_state_t* s ) override
+      {
+        dbc_proc_callback_t::execute( a, s );
+
+        barbed_shot->execute_on_target( s->target );
+
+        if( player->tier_set.tww_s2_bm_4pc.ok())
+          player->pets.main->buffs.potent_mutagen->trigger();
+      }
+    };
+    auto const effect = new special_effect_t( this );
+    effect->name_str = "jackpot";
+    effect->spell_id = tier_set.tww_s2_bm_2pc->id();
+    special_effects.push_back( effect );
+
+    auto cb = new jackpot_cb_t( *effect, this );
     cb->initialize();
   }
 
