@@ -1979,8 +1979,6 @@ struct stable_pet_t : public hunter_pet_t
 {
   struct actions_t
   {
-    hunter_pet_t::actions_t pet;
-
     action_t* stomp = nullptr;
     action_t* thundering_hooves = nullptr;
   } actions;
@@ -2054,8 +2052,6 @@ struct hunter_main_pet_base_t : public stable_pet_t
 {
   struct actions_t
   {
-    stable_pet_t::actions_t stable;
-
     action_t* kill_command = nullptr;
     action_t* kill_cleave = nullptr;
     action_t* bestial_wrath = nullptr;
@@ -2063,8 +2059,6 @@ struct hunter_main_pet_base_t : public stable_pet_t
 
   struct buffs_t
   {
-    hunter_pet_t::buffs_t pet;
-
     buff_t* frenzy = nullptr;
     buff_t* thrill_of_the_hunt = nullptr;
     buff_t* bestial_wrath = nullptr;
@@ -2083,8 +2077,6 @@ struct hunter_main_pet_base_t : public stable_pet_t
   void create_buffs() override
   {
     stable_pet_t::create_buffs();
-
-    buffs.pet = hunter_pet_t::buffs;
 
     buffs.frenzy =
       make_buff( this, "frenzy", o() -> find_spell( 272790 ) )
@@ -2207,8 +2199,6 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
 {
   struct spells_t
   {
-    hunter_main_pet_base_t::spells_t base;
-
     spell_data_ptr_t bloodshed;
     spell_data_ptr_t flanking_strike;
     spell_data_ptr_t spearhead_debuff;
@@ -2216,8 +2206,6 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
 
   struct actions_t
   {
-    hunter_main_pet_base_t::actions_t base;
-
     action_t* basic_attack = nullptr;
 
     action_t* brutal_companion_ba = nullptr;
@@ -2231,8 +2219,6 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
 
   struct buffs_t
   {
-    hunter_main_pet_base_t::buffs_t base;
-
     buff_t* solitary_companion = nullptr;
     buff_t* bloodseeker = nullptr;
     buff_t* spearhead = nullptr;
@@ -2702,7 +2688,7 @@ struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, mel
     hunter_pet_action_t::impact( s );
 
     if ( o() -> talents.kill_cleave.ok() && s -> action -> result_is_hit( s -> result ) &&
-      s -> action -> sim -> active_enemies > 1 && p() -> buffs.pet.beast_cleave -> up() )
+      s -> action -> sim -> active_enemies > 1 && p() -> hunter_pet_t::buffs.beast_cleave -> up() )
     {
       const double target_da_multiplier = ( 1.0 / s -> target_da_multiplier );
       const double amount = s -> result_total * o() -> talents.kill_cleave -> effectN( 1 ).percent() * target_da_multiplier;
@@ -3331,8 +3317,6 @@ void stable_pet_t::init_spells()
 {
   hunter_pet_t::init_spells();
 
-  actions.pet = hunter_pet_t::actions;
-
   if ( o() -> talents.bloody_frenzy.ok() )
     actions.stomp = new actions::stomp_t( this );
 
@@ -3344,8 +3328,6 @@ void hunter_main_pet_base_t::init_spells()
 {
   stable_pet_t::init_spells();
 
-  actions.stable = stable_pet_t::actions;
-
   if ( o()->specialization() == HUNTER_BEAST_MASTERY )
   {
     spells.kill_command = find_spell( 83381 );
@@ -3356,8 +3338,8 @@ void hunter_main_pet_base_t::init_spells()
     if ( o() -> talents.kill_cleave.ok() )
       actions.kill_cleave = new actions::kill_cleave_t( this );
 
-    if ( o() -> talents.stomp.ok() || !actions.stable.stomp )
-      actions.stable.stomp = new actions::stomp_t( this );
+    if ( !stable_pet_t::actions.stomp && ( o()->talents.stomp.ok() || o()->talents.bloody_frenzy.ok() ) )
+      stable_pet_t::actions.stomp = new actions::stomp_t( this );
   }
   else if ( o()->specialization() == HUNTER_SURVIVAL )
   {
@@ -3369,13 +3351,11 @@ void hunter_main_pet_t::init_spells()
 {
   hunter_main_pet_base_t::init_spells();
 
-  actions.base = hunter_main_pet_base_t::actions;
-
   if ( o()->specialization() == HUNTER_SURVIVAL )
   {
     spells.spearhead_debuff = find_spell( 1221386 );
 
-    actions.base.kill_command = new actions::kill_command_sv_t( this );
+    hunter_main_pet_base_t::actions.kill_command = new actions::kill_command_sv_t( this );
 
     if ( o()->talents.flanking_strike.ok() )
     {
@@ -3389,13 +3369,13 @@ void hunter_main_pet_t::init_spells()
   else if ( o()->specialization() == HUNTER_BEAST_MASTERY )
   {
     spells.bloodshed = find_spell( 321538 );
-  }
+    
+    if ( o()->talents.bloodshed.ok() )
+      actions.bloodshed = new actions::bloodshed_t( this );
 
-  if ( o()->talents.brutal_companion.ok() )
-    actions.brutal_companion_ba = new actions::brutal_companion_ba_t( this, "Claw" );
-  
-  if ( o()->talents.bloodshed.ok() )
-    actions.bloodshed = new actions::bloodshed_t( this );
+    if ( o()->talents.brutal_companion.ok() )
+      actions.brutal_companion_ba = new actions::brutal_companion_ba_t( this, "Claw" );
+  }
 
   if ( o()->talents.no_mercy.ok() )
     actions.no_mercy_ba = new actions::no_mercy_ba_t( this, "Claw" );
@@ -5217,7 +5197,7 @@ struct barbed_shot_t: public hunter_ranged_attack_t
     for ( auto pet : pets::active<pets::hunter_main_pet_base_t>( p() -> pets.main, p() -> pets.animal_companion ) )
     {
       if ( p() -> talents.stomp.ok() )
-        pet -> actions.stable.stomp -> execute();
+        pet -> stable_pet_t::actions.stomp -> execute();
 
       pet -> buffs.frenzy -> trigger();
       pet -> buffs.thrill_of_the_hunt -> trigger();
@@ -7059,7 +7039,7 @@ struct kill_command_t: public hunter_spell_t
   bool target_ready( player_t* candidate_target ) override
   {
     if ( p()->pets.main &&
-         p()->pets.main->actions.base.kill_command->target_ready( candidate_target ) )
+         p()->pets.main->hunter_main_pet_base_t::actions.kill_command->target_ready( candidate_target ) )
       return hunter_spell_t::target_ready( candidate_target );
 
     return false;
@@ -7068,7 +7048,7 @@ struct kill_command_t: public hunter_spell_t
   bool ready() override
   {
     if ( p()->pets.main &&
-         p()->pets.main->actions.base.kill_command->ready() ) // Range check from the pet.
+         p()->pets.main->hunter_main_pet_base_t::actions.kill_command->ready() ) // Range check from the pet.
     {
         return hunter_spell_t::ready();
     }
@@ -8775,12 +8755,12 @@ void hunter_t::create_buffs()
             //In-game this (re)application of beast_cleave happens multiple times a second, since the regular Beast Cleave buff is longer than the time between ticks, we can get by with just refreshing once per tick
             //In 11.0 it has been changed to use the player's remaining duration of beast_cleave, instead of the remaining duration of call_of_the_wild - this change is to support covering_fire functionality
             timespan_t duration = buffs.beast_cleave -> remains();
-            for ( auto pet : pets::active<pets::hunter_main_pet_base_t>( pets.main, pets.animal_companion ) )
+            for ( auto pet : pets::active<pets::stable_pet_t>( pets.main, pets.animal_companion ) )
             {
-              pet -> actions.stable.stomp -> execute();
+              pet -> actions.stomp -> execute();
               if ( duration > 0_ms )
               {
-                pet -> buffs.pet.beast_cleave -> trigger( duration );
+                pet -> buffs.beast_cleave -> trigger( duration );
               }
             }
             for ( auto pet : ( pets.cotw_stable_pet.active_pets() ) )
@@ -9004,7 +8984,7 @@ void hunter_t::create_buffs()
   
   buffs.lead_from_the_front =
     make_buff( this, "lead_from_the_front", talents.lead_from_the_front_buff )
-      ->set_default_value_from_effect( specialization() == HUNTER_BEAST_MASTERY ? 5 : 6 );
+      ->set_default_value_from_effect( specialization() == HUNTER_BEAST_MASTERY ? 4 : 5 );
 
   buffs.howl_of_the_pack
     = make_buff( this, "howl_of_the_pack", find_spell( 462515 ) )
