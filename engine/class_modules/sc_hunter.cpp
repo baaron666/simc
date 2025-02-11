@@ -2118,7 +2118,7 @@ struct hunter_main_pet_base_t : public stable_pet_t
       make_buff( this, "piercing_fangs", o() -> find_spell( 392054 ) )
         -> set_default_value_from_effect( 1 )
         -> set_chance( o() -> talents.piercing_fangs.ok() );
-}
+  }
 
   double composite_melee_auto_attack_speed() const override
   {
@@ -7291,11 +7291,11 @@ struct bestial_wrath_t: public hunter_spell_t
     if ( p()->talents.lead_from_the_front->ok() )
       p()->trigger_howl_of_the_pack_leader_ready();
 
-    if ( p()->tier_set.tww_s2_bm_4pc.ok() )
-    {
-      p()->pets.main->buffs.potent_mutagen->trigger();
+    if ( p()->tier_set.tww_s2_bm_2pc.ok() )
       barbed_shot_tww_s2_bm_2pc->execute_on_target( target );
-    }
+
+    if ( p()->tier_set.tww_s2_bm_4pc.ok() )
+      p()->pets.main->buffs.potent_mutagen->trigger();
   }
 
   bool ready() override
