@@ -493,9 +493,14 @@ public:
     // Set Bonuses
     damage_buff_t* tww1_assassination_2pc;
     damage_buff_t* tww1_assassination_4pc;
+    damage_buff_t* tww1_outlaw_4pc;
     damage_buff_t* tww1_subtlety_2pc;
     damage_buff_t* tww1_subtlety_4pc;
-    damage_buff_t* tww1_outlaw_4pc;
+
+    damage_buff_t* tww2_assassination_2pc;
+    damage_buff_t* tww2_assassination_4pc;
+    damage_buff_t* tww2_outlaw_2pc;
+    damage_buff_t* tww2_subtlety_2pc;
 
   } buffs;
 
@@ -794,6 +799,7 @@ public:
     const spell_data_t* tww1_assassination_4pc_buff;
     const spell_data_t* tww1_outlaw_2pc_spell;
     const spell_data_t* tww1_outlaw_4pc_buff;
+    const spell_data_t* tww2_assassination_4pc_buff;
 
   } spec;
 
@@ -1157,6 +1163,7 @@ public:
     proc_t* weaponmaster;
 
     // Set Bonus
+    proc_t* tww2_subtlety_4pc;
 
   } procs;
 
@@ -1169,6 +1176,13 @@ public:
     const spell_data_t* tww1_outlaw_4pc;
     const spell_data_t* tww1_subtlety_2pc;
     const spell_data_t* tww1_subtlety_4pc;
+
+    const spell_data_t* tww2_assassination_2pc;
+    const spell_data_t* tww2_assassination_4pc;
+    const spell_data_t* tww2_outlaw_2pc;
+    const spell_data_t* tww2_outlaw_4pc;
+    const spell_data_t* tww2_subtlety_2pc;
+    const spell_data_t* tww2_subtlety_4pc;
   } set_bonuses;
 
   // Options
@@ -1689,6 +1703,7 @@ public:
     damage_affect_data follow_the_blood;
     damage_affect_data mastery_executioner;
     damage_affect_data mastery_potent_assassin;
+    damage_affect_data tww2_subtlety_4pc;
   } affected_by;
 
   std::vector<damage_buff_t*> direct_damage_buffs;
@@ -1916,6 +1931,21 @@ public:
           affected_by.deeper_daggers.periodic = true;
       }
     }
+
+    if ( p->set_bonuses.tww2_subtlety_4pc->ok() )
+    {
+      auto buff_spell = p->set_bonuses.tww2_subtlety_2pc->effectN( 1 ).trigger();
+
+      affected_by.tww2_subtlety_4pc.direct_percent = p->set_bonuses.tww2_subtlety_4pc->effectN( 1 ).percent();
+      affected_by.tww2_subtlety_4pc.direct = ab::data().affected_by( buff_spell->effectN( 2 ) ) ||
+        ab::data().affected_by_label( buff_spell->effectN( 4 ) ) ||
+        ab::data().affected_by_label( buff_spell->effectN( 6 ) );
+
+      affected_by.tww2_subtlety_4pc.periodic_percent = p->set_bonuses.tww2_subtlety_4pc->effectN( 1 ).percent();
+      affected_by.tww2_subtlety_4pc.periodic = ab::data().affected_by( buff_spell->effectN( 3 ) ) ||
+        ab::data().affected_by_label( buff_spell->effectN( 5 ) ) ||
+        ab::data().affected_by_label( buff_spell->effectN( 7 ) );
+    }
   }
 
   void init() override
@@ -1980,9 +2010,14 @@ public:
 
     register_damage_buff( p()->buffs.tww1_assassination_2pc );
     register_damage_buff( p()->buffs.tww1_assassination_4pc );
+    register_damage_buff( p()->buffs.tww1_outlaw_4pc );
     register_damage_buff( p()->buffs.tww1_subtlety_2pc );
     register_damage_buff( p()->buffs.tww1_subtlety_4pc );
-    register_damage_buff( p()->buffs.tww1_outlaw_4pc );
+
+    register_damage_buff( p()->buffs.tww2_assassination_2pc );
+    register_damage_buff( p()->buffs.tww2_assassination_4pc );
+    register_damage_buff( p()->buffs.tww2_outlaw_2pc );
+    register_damage_buff( p()->buffs.tww2_subtlety_2pc );   
 
     if ( ab::base_costs[ RESOURCE_COMBO_POINT ] > 0 )
     {
@@ -2376,6 +2411,7 @@ public:
   void trigger_echoing_reprimand( const action_state_t* state );
   void trigger_tww1_assassination_set_bonus( const action_state_t* state );
   void trigger_tww1_outlaw_set_bonus( const action_state_t* );
+  void trigger_tww2_set_bonus_removal();
 
   // General Methods ==========================================================
 
@@ -2466,6 +2502,13 @@ public:
       }
     }
 
+    // TWW2 Set Bonus
+    if ( affected_by.tww2_subtlety_4pc.direct &&
+         p()->buffs.shadow_dance->check() && p()->buffs.tww2_subtlety_2pc->check() )
+    {
+      m *= 1.0 + affected_by.tww2_subtlety_4pc.direct_percent;
+    }
+
     return m;
   }
 
@@ -2515,6 +2558,13 @@ public:
       {
         m *= 1.0 + p()->talent.deathstalker.follow_the_blood->effectN( 1 ).percent();
       }
+    }
+
+    // TWW2 Set Bonus
+    if ( affected_by.tww2_subtlety_4pc.periodic &&
+         p()->buffs.shadow_dance->check() && p()->buffs.tww2_subtlety_2pc->check() )
+    {
+      m *= 1.0 + affected_by.tww2_subtlety_4pc.periodic_percent;
     }
 
     return m;
@@ -3866,6 +3916,7 @@ struct dispatch_t: public rogue_attack_t
     {
       trigger_restless_blades( execute_state );
       trigger_hand_of_fate( execute_state, true, inevitable );
+      trigger_tww2_set_bonus_removal();
     }
 
     trigger_cut_to_the_chase( execute_state );
@@ -4235,6 +4286,7 @@ struct crimson_tempest_t : public rogue_attack_t
   {
     rogue_attack_t::execute();
     trigger_hand_of_fate( execute_state );
+    trigger_tww2_set_bonus_removal();
   }
 };
 
@@ -4427,6 +4479,8 @@ struct envenom_t : public rogue_attack_t
         p()->procs.amplifying_poison_deathmark_consumed->occur();
       }
     }
+
+    trigger_tww2_set_bonus_removal();
   }
 
   void impact( action_state_t* state ) override
@@ -4526,6 +4580,7 @@ struct eviscerate_t : public rogue_attack_t
     }
 
     trigger_cut_to_the_chase( execute_state );
+    trigger_tww2_set_bonus_removal();
   }
 
   void impact( action_state_t* state ) override
@@ -5395,6 +5450,11 @@ struct rupture_t : public rogue_attack_t
       else
         p()->buffs.finality_rupture->trigger();
     }
+
+    if ( !is_secondary_action() && p()->set_bonuses.tww2_assassination_2pc->ok() )
+    {
+      trigger_tww2_set_bonus_removal();
+    }
   }
 
   void impact( action_state_t* state ) override
@@ -5584,8 +5644,9 @@ struct secret_technique_t : public rogue_attack_t
     }
 
     // 2023-10-02 -- Clone attacks do not trigger Shadow Blades proc damage
+    // 2025-02-08 -- Fixed on 11.1 PTR
     bool procs_shadow_blades_damage() const override
-    { return secondary_trigger_type != secondary_trigger::SECRET_TECHNIQUE_CLONE; }
+    { return secondary_trigger_type != secondary_trigger::SECRET_TECHNIQUE_CLONE || p()->is_ptr(); }
   };
 
   secret_technique_attack_t* player_attack;
@@ -5651,6 +5712,7 @@ struct secret_technique_t : public rogue_attack_t
     }
 
     p()->buffs.tww1_subtlety_4pc->trigger();
+    trigger_tww2_set_bonus_removal();
   }
 
   bool consumes_supercharger() const override
@@ -5944,6 +6006,8 @@ struct black_powder_t: public rogue_attack_t
     {
       p()->buffs.finality_black_powder->expire();
     }
+
+    trigger_tww2_set_bonus_removal();
   }
 
   bool procs_poison() const override
@@ -8212,13 +8276,36 @@ struct roll_the_bones_t : public buff_t
       // -- a roll down to 1.24 buffs (plus additional value for synergies between buffs).
       // Source: https://us.battle.net/forums/en/wow/topic/20753815486?page=2#post-21
       // Odds double checked on 2020-03-09.
-      rogue->options.fixed_rtb_odds = { 79.0, 20.0, 0.0, 0.0, 1.0, 0.0 };
-
-      if ( rogue->talent.outlaw.sleight_of_hand->ok() )
+      
+      if ( rogue->is_ptr() )
       {
-        rogue->options.fixed_rtb_odds[ 0 ] -= rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value();
-        rogue->options.fixed_rtb_odds[ 1 ] += rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value();
+        // 2025-02-09 -- 5 buff chance has been increased from 1% to 2% on 11.1 PTR
+        //               Sleight of Hand and TWW2 4pc bonus applies 25% of their value to 5-buff
+        rogue->options.fixed_rtb_odds = { 78.0, 20.0, 0.0, 0.0, 2.0, 0.0 };
+
+        double roll_bonus = ( rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value() +
+                              rogue->set_bonuses.tww2_outlaw_4pc->effectN( 1 ).base_value() );
+
+        if ( roll_bonus > 0 )
+        {
+          rogue->options.fixed_rtb_odds[ 0 ] -= roll_bonus;
+          rogue->options.fixed_rtb_odds[ 1 ] += roll_bonus * 0.75;
+          rogue->options.fixed_rtb_odds[ 4 ] += roll_bonus * 0.25;
+        }
       }
+      else
+      {
+        rogue->options.fixed_rtb_odds = { 79.0, 20.0, 0.0, 0.0, 1.0, 0.0 };
+
+        if ( rogue->talent.outlaw.sleight_of_hand->ok() )
+        {
+          rogue->options.fixed_rtb_odds[ 0 ] -= rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value();
+          rogue->options.fixed_rtb_odds[ 1 ] += rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value();
+        }
+      }
+
+      rogue->sim->print_log( "{} {} odds set to {:.1f}% one, {:.1f}% two and {:.1f}% five buffs",
+                             *rogue, *this, rogue->options.fixed_rtb_odds[ 0 ], rogue->options.fixed_rtb_odds[ 1 ], rogue->options.fixed_rtb_odds[ 4 ] );
     }
 
     if ( !rogue->options.fixed_rtb_odds.empty() )
@@ -8304,6 +8391,11 @@ struct roll_the_bones_t : public buff_t
 
     procs[ buffs_rolled - 1 ]->occur();
     rogue->buffs.loaded_dice->expire();
+
+    if ( rogue->set_bonuses.tww2_outlaw_4pc->ok() )
+    {
+      rogue->buffs.tww2_outlaw_2pc->trigger( buffs_rolled );
+    }
 
     overflow_restore();
   }
@@ -8723,7 +8815,8 @@ void actions::rogue_action_t<Base>::trigger_shadow_techniques( const action_stat
                          p()->talent.subtlety.improved_shadow_techniques->effectN( 1 ).base_value();
     p()->resource_gain( RESOURCE_ENERGY, energy_gain, p()->gains.shadow_techniques, state->action );
     // 2024-11-28 -- Shadowcraft's implementation appears to trigger the energize twice
-    if ( p()->bugs && p()->talent.subtlety.shadowcraft->ok() && p()->buffs.symbols_of_death->check() )
+    // 2025-02-08 -- Fixed on 11.1 PTR
+    if ( p()->bugs && !p()->is_ptr() && p()->talent.subtlety.shadowcraft->ok() && p()->buffs.symbols_of_death->check() )
     {
       p()->resource_gain( RESOURCE_ENERGY, energy_gain, p()->gains.shadow_techniques, state->action );
     }
@@ -9441,7 +9534,6 @@ void actions::rogue_action_t<Base>::trigger_tww1_assassination_set_bonus( const 
   p()->buffs.tww1_assassination_2pc->trigger();
 }
 
-
 template <typename Base>
 void actions::rogue_action_t<Base>::trigger_tww1_outlaw_set_bonus( const action_state_t* state )
 {
@@ -9456,6 +9548,42 @@ void actions::rogue_action_t<Base>::trigger_tww1_outlaw_set_bonus( const action_
 
   if ( p()->set_bonuses.tww1_outlaw_4pc->ok() )
     p()->buffs.tww1_outlaw_4pc->increment();
+}
+
+template <typename Base>
+void actions::rogue_action_t<Base>::trigger_tww2_set_bonus_removal()
+{
+  if ( p()->set_bonuses.tww2_assassination_2pc->ok() && p()->buffs.tww2_assassination_2pc->check() &&
+       p()->rng().roll( p()->set_bonuses.tww2_assassination_2pc->effectN( 1 ).percent() ) )
+  {
+    // 2025-02-08 -- Based on testing, 20% chance is nowhere in spell data currently
+    if ( p()->set_bonuses.tww2_assassination_4pc->ok() && p()->rng().roll( 0.2 ) )
+    {
+      // Buff stack change callback for the 4pc handles expiration and restoration of 2pc buff stacks
+      p()->buffs.tww2_assassination_4pc->trigger( p()->buffs.tww2_assassination_4pc->max_stack() );
+      return;
+    }
+
+    p()->buffs.tww2_assassination_2pc->expire();
+  }
+
+  if ( p()->set_bonuses.tww2_outlaw_2pc->ok() && p()->buffs.tww2_outlaw_2pc->check() &&
+       p()->rng().roll( p()->set_bonuses.tww2_outlaw_2pc->effectN( 1 ).percent() ) )
+  {
+    p()->buffs.tww2_outlaw_2pc->expire();
+  }
+
+  if ( p()->set_bonuses.tww2_subtlety_2pc->ok() && p()->buffs.tww2_subtlety_2pc->check() &&
+       p()->rng().roll( p()->set_bonuses.tww2_subtlety_2pc->effectN( 1 ).percent() ) )
+  {
+    if ( p()->set_bonuses.tww2_subtlety_4pc->ok() && p()->buffs.shadow_dance->check() )
+    {
+      p()->procs.tww2_subtlety_4pc->occur();
+      return;
+    }
+
+    p()->buffs.tww2_subtlety_2pc->expire();
+  }
 }
 
 // ==========================================================================
@@ -11098,6 +11226,15 @@ void rogue_t::init_spells()
   spec.tww1_outlaw_2pc_spell = set_bonuses.tww1_outlaw_2pc->ok() ? find_spell( 459002 ) : spell_data_t::not_found();
   spec.tww1_outlaw_4pc_buff = set_bonuses.tww1_outlaw_4pc->ok() ? find_spell( 458826 ) : spell_data_t::not_found();
 
+  set_bonuses.tww2_assassination_2pc = sets->set( ROGUE_ASSASSINATION, TWW2, B2 );
+  set_bonuses.tww2_assassination_4pc = sets->set( ROGUE_ASSASSINATION, TWW2, B4 );
+  set_bonuses.tww2_outlaw_2pc = sets->set( ROGUE_OUTLAW, TWW2, B2 );
+  set_bonuses.tww2_outlaw_4pc = sets->set( ROGUE_OUTLAW, TWW2, B4 );
+  set_bonuses.tww2_subtlety_2pc = sets->set( ROGUE_SUBTLETY, TWW2, B2 );
+  set_bonuses.tww2_subtlety_4pc = sets->set( ROGUE_SUBTLETY, TWW2, B4 );
+
+  spec.tww2_assassination_4pc_buff = set_bonuses.tww2_assassination_4pc->ok() ? find_spell( 1219264 ) : spell_data_t::not_found();
+
   // Active Spells ==========================================================
 
   auto_attack = new actions::auto_melee_attack_t( this, "" );
@@ -11413,6 +11550,8 @@ void rogue_t::init_procs()
 
   procs.amplifying_poison_consumed            = get_proc( "Amplifying Poison Consumed" );
   procs.amplifying_poison_deathmark_consumed  = get_proc( "Amplifying Poison (Deathmark) Consumed" );
+
+  procs.tww2_subtlety_4pc                     = get_proc( "Winning Streak During Shadow Dance" );
 }
 
 // rogue_t::init_scaling ====================================================
@@ -11963,11 +12102,51 @@ void rogue_t::create_buffs()
   buffs.tww1_assassination_4pc = make_buff<damage_buff_t>( this, "thrombotic_tincture", spec.tww1_assassination_4pc_buff );
   buffs.tww1_assassination_4pc->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
 
+  buffs.tww1_outlaw_4pc = make_buff<damage_buff_t>( this, "ethereal_rampage", spec.tww1_outlaw_4pc_buff );
+  buffs.tww1_outlaw_4pc->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
+
   buffs.tww1_subtlety_2pc = make_buff<damage_buff_t>( this, "poised_shadows", set_bonuses.tww1_subtlety_2pc->effectN( 1 ).trigger() );
   buffs.tww1_subtlety_4pc = make_buff<damage_buff_t>( this, "bolstering_shadows", set_bonuses.tww1_subtlety_4pc->effectN( 1 ).trigger() );
 
-  buffs.tww1_outlaw_4pc = make_buff<damage_buff_t>( this, "ethereal_rampage", spec.tww1_outlaw_4pc_buff );
-  buffs.tww1_outlaw_4pc->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
+  auto tww2_assassination_buff = set_bonuses.tww2_assassination_2pc->effectN( 1 ).trigger();
+  buffs.tww2_assassination_2pc = make_buff<damage_buff_t>( this, "winning_streak_asssassination", tww2_assassination_buff );
+  if ( set_bonuses.tww2_assassination_2pc->ok() )
+  {
+    buffs.tww2_assassination_2pc->set_chance( 1.0 ); // Proc rate chance on the buff is the removal percent, not application
+  }
+  // Clone buff for the 4pc and manually increase since it does not use an affecting whitelist
+  buffs.tww2_assassination_4pc = make_buff<damage_buff_t>( this, "winning_streak_asssassination_cashout", tww2_assassination_buff,
+                                                           tww2_assassination_buff->effectN( 1 ).percent() * ( 1.0 + spec.tww2_assassination_4pc_buff->effectN( 1 ).percent() ) );
+  if ( set_bonuses.tww2_assassination_4pc->ok() )
+  {
+    buffs.tww2_assassination_4pc->set_chance( 1.0 ) // Proc rate chance on the buff is the removal percent, not application
+      ->set_duration( spec.tww2_assassination_4pc_buff->duration() )
+      ->set_stack_change_callback( [ this ]( buff_t* b, int old_, int new_ ) {
+      // Restore the original 2pc stack value on expiration of the 4pc
+      if ( new_ == 0 )
+      {
+        assert( b->default_value && !buffs.tww2_assassination_2pc->check() );
+        buffs.tww2_assassination_2pc->trigger( as<int>( b->default_value ) );
+      }
+      else if ( old_ == 0 )
+      {
+        assert( buffs.tww2_assassination_2pc->check() );
+        b->default_value = buffs.tww2_assassination_2pc->check();
+        buffs.tww2_assassination_2pc->expire();
+      }
+    } );
+  }
+  
+  buffs.tww2_outlaw_2pc = make_buff<damage_buff_t>( this, "winning_streak_outlaw", set_bonuses.tww2_outlaw_2pc->effectN( 1 ).trigger() );
+  buffs.tww2_outlaw_2pc->set_chance( 1.0 ); // Proc rate chance on the buff is the removal percent, not application
+  
+  buffs.tww2_subtlety_2pc = make_buff<damage_buff_t>( this, "winning_streak_subtlety", set_bonuses.tww2_subtlety_2pc->effectN( 1 ).trigger(), false );
+  buffs.tww2_subtlety_2pc->set_chance( 1.0 ); // Proc rate chance on the buff is the removal percent, not application
+  buffs.tww2_subtlety_2pc->set_cooldown( 400_ms ); // TODO -- Update when value is not 400 seconds in spell data...
+  if ( set_bonuses.tww2_subtlety_2pc->ok() )
+  {
+    buffs.tww2_subtlety_2pc->set_direct_mod( set_bonuses.tww2_subtlety_2pc->effectN( 1 ).trigger(), 1 );
+  }
 }
 
 // rogue_t::invalidate_cache =========================================
@@ -12367,6 +12546,99 @@ void rogue_t::init_special_effects()
     };
 
     auto cb = new singular_focus_cb_t( this, *singular_focus_driver );
+    cb->initialize();
+  }
+
+  if ( set_bonuses.tww2_assassination_2pc->ok() )
+  {
+    auto const winning_streak_driver = new special_effect_t( this );
+    winning_streak_driver->name_str = "winning_streak_driver";
+    winning_streak_driver->spell_id = set_bonuses.tww2_assassination_2pc->id();
+    winning_streak_driver->proc_flags_ = set_bonuses.tww2_assassination_2pc->proc_flags();
+    winning_streak_driver->proc_flags2_ = PF2_ALL_CAST;
+    special_effects.push_back( winning_streak_driver );
+
+    struct winning_streak_driver_cb_t : public dbc_proc_callback_t
+    {
+      rogue_t* rogue;
+
+      winning_streak_driver_cb_t( rogue_t* p, const special_effect_t& e ) : dbc_proc_callback_t( p, e ), rogue( p )
+      {
+      }
+
+      void execute( action_t* a, action_state_t* s ) override
+      {
+        dbc_proc_callback_t::execute( a, s );
+        // Don't trigger the 2pc buff if the 4pc is already present, as the 4pc buff restores stacks when it fades
+        if ( !rogue->buffs.tww2_assassination_4pc->check() )
+        {
+          rogue->buffs.tww2_assassination_2pc->trigger();
+        }
+      }
+    };
+
+    auto cb = new winning_streak_driver_cb_t( this, *winning_streak_driver );
+    cb->initialize();
+  }
+
+  if ( set_bonuses.tww2_outlaw_2pc->ok() )
+  {
+    auto const winning_streak_driver = new special_effect_t( this );
+    winning_streak_driver->name_str = "winning_streak_driver";
+    winning_streak_driver->spell_id = set_bonuses.tww2_outlaw_2pc->id();
+    winning_streak_driver->proc_flags_ = set_bonuses.tww2_outlaw_2pc->proc_flags();
+    winning_streak_driver->proc_flags2_ = PF2_ALL_CAST;
+    special_effects.push_back( winning_streak_driver );
+
+    struct winning_streak_driver_cb_t : public dbc_proc_callback_t
+    {
+      rogue_t* rogue;
+
+      winning_streak_driver_cb_t( rogue_t* p, const special_effect_t& e ) : dbc_proc_callback_t( p, e ), rogue( p )
+      {
+      }
+
+      void execute( action_t* a, action_state_t* s ) override
+      {
+        dbc_proc_callback_t::execute( a, s );
+
+        // Proc-based stack limit is defined in a dummy effect on the 2pc bonus spell
+        if ( rogue->buffs.tww2_outlaw_2pc->check() < rogue->set_bonuses.tww2_outlaw_2pc->effectN( 2 ).base_value() )
+        {
+          rogue->buffs.tww2_outlaw_2pc->trigger();
+        }
+      }
+    };
+
+    auto cb = new winning_streak_driver_cb_t( this, *winning_streak_driver );
+    cb->initialize();
+  }
+
+  if ( set_bonuses.tww2_subtlety_2pc->ok() )
+  {
+    auto const winning_streak_driver = new special_effect_t( this );
+    winning_streak_driver->name_str = "winning_streak_driver";
+    winning_streak_driver->spell_id = set_bonuses.tww2_subtlety_2pc->id();
+    winning_streak_driver->proc_flags_ = set_bonuses.tww2_subtlety_2pc->proc_flags();
+    winning_streak_driver->proc_flags2_ = PF2_ALL_CAST;
+    special_effects.push_back( winning_streak_driver );
+
+    struct winning_streak_driver_cb_t : public dbc_proc_callback_t
+    {
+      rogue_t* rogue;
+
+      winning_streak_driver_cb_t( rogue_t* p, const special_effect_t& e ) : dbc_proc_callback_t( p, e ), rogue( p )
+      {
+      }
+
+      void execute( action_t* a, action_state_t* s ) override
+      {
+        dbc_proc_callback_t::execute( a, s );
+        rogue->buffs.tww2_subtlety_2pc->trigger( rogue->set_bonuses.tww2_subtlety_4pc->ok() && rogue->buffs.shadow_dance->check() ? 2 : 1 );
+      }
+    };
+
+    auto cb = new winning_streak_driver_cb_t( this, *winning_streak_driver );
     cb->initialize();
   }
 
