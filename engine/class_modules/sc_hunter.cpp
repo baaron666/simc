@@ -426,6 +426,9 @@ public:
     spell_data_ptr_t tww_s1_sv_2pc;
     spell_data_ptr_t tww_s1_sv_4pc;
 
+    // TWW Season 2 - Liberation of Undermine
+    spell_data_ptr_t tww_s2_bm_2pc;
+    spell_data_ptr_t tww_s2_bm_4pc;
     spell_data_ptr_t tww_s2_mm_2pc;
     spell_data_ptr_t tww_s2_mm_4pc;
     spell_data_ptr_t tww_s2_sv_2pc;
@@ -747,6 +750,7 @@ public:
     spell_data_ptr_t dire_beast;
 
     spell_data_ptr_t a_murder_of_crows;
+    spell_data_ptr_t a_murder_of_crows_dot;
     spell_data_ptr_t barrage;
     spell_data_ptr_t savagery;
     spell_data_ptr_t bestial_wrath;
@@ -7408,7 +7412,7 @@ struct a_murder_of_crows_t : public hunter_spell_t
     }
   };
 
-  a_murder_of_crows_t( hunter_t* p ) : hunter_spell_t( "a_murder_of_crows", p, p->talents.a_murder_of_crows )
+  a_murder_of_crows_t( hunter_t* p ) : hunter_spell_t( "a_murder_of_crows", p, p->talents.a_murder_of_crows_dot )
   {
     background = dual = true;
     tick_action = p->get_background_action<peck_t>( "a_murder_of_crows_peck" );
@@ -8291,6 +8295,7 @@ void hunter_t::init_spells()
     talents.dire_beast                        = find_talent_spell( talent_tree::SPECIALIZATION, "Dire Beast", HUNTER_BEAST_MASTERY );
 
     talents.a_murder_of_crows                 = find_talent_spell( talent_tree::SPECIALIZATION, "A Murder of Crows", HUNTER_BEAST_MASTERY );
+    talents.a_murder_of_crows_dot             = talents.a_murder_of_crows.ok() ? find_spell( 131894 ) : spell_data_t::not_found();
     talents.barrage                           = find_talent_spell( talent_tree::SPECIALIZATION, "Barrage", HUNTER_BEAST_MASTERY );
     talents.savagery                          = find_talent_spell( talent_tree::SPECIALIZATION, "Savagery", HUNTER_BEAST_MASTERY );
     talents.bestial_wrath                     = find_talent_spell( talent_tree::SPECIALIZATION, "Bestial Wrath", HUNTER_BEAST_MASTERY );
@@ -8419,7 +8424,7 @@ void hunter_t::init_spells()
 
     talents.banshees_mark = find_talent_spell( talent_tree::HERO, "Banshee's Mark" );
     if ( !talents.a_murder_of_crows.ok() )
-      talents.a_murder_of_crows = talents.banshees_mark.ok() ? find_spell( 131894 ) : spell_data_t::not_found();
+      talents.a_murder_of_crows_dot = talents.banshees_mark.ok() ? find_spell( 131894 ) : spell_data_t::not_found();
     talents.shadow_surge  = find_talent_spell( talent_tree::HERO, "Shadow Surge" );
     talents.shadow_surge_spell = talents.shadow_surge.ok() ? find_spell( 444269 ) : spell_data_t::not_found();
     talents.bleak_powder  = find_talent_spell( talent_tree::HERO, "Bleak Powder" );
@@ -8539,6 +8544,8 @@ void hunter_t::init_spells()
   tier_set.tww_s1_sv_2pc = sets -> set( HUNTER_SURVIVAL, TWW1, B2 );
   tier_set.tww_s1_sv_4pc = sets -> set( HUNTER_SURVIVAL, TWW1, B4 );
 
+  tier_set.tww_s2_bm_2pc = sets -> set( HUNTER_BEAST_MASTERY, TWW2, B2 );
+  tier_set.tww_s2_bm_4pc = sets -> set( HUNTER_BEAST_MASTERY, TWW2, B4 );
   tier_set.tww_s2_mm_2pc = sets -> set( HUNTER_MARKSMANSHIP, TWW2, B2 );
   tier_set.tww_s2_mm_4pc = sets -> set( HUNTER_MARKSMANSHIP, TWW2, B4 );
   tier_set.tww_s2_sv_2pc = sets -> set( HUNTER_SURVIVAL, TWW2, B2 );
