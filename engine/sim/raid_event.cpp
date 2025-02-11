@@ -386,7 +386,7 @@ struct pull_event_t final : raid_event_t
 
     timespan_t time_to_percent( double percent ) const override
     {
-      double target_hp = resources.initial[ RESOURCE_HEALTH ] * percent;
+      double target_hp = resources.initial[ RESOURCE_HEALTH ] * (percent / 100);
       if ( target_hp >= resources.current[ RESOURCE_HEALTH ])
         return timespan_t::zero();
 
