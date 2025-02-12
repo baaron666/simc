@@ -134,6 +134,7 @@ public:
   void execute() override;
   void impact( action_state_t *state ) override;
   void tick( dot_t *dot ) override;
+  void assess_damage( result_amount_type typ, action_state_t *s ) override;
   void trigger_storm_earth_and_fire( const action_t *action );
   void trigger_mystic_touch( action_state_t *state );
 };
@@ -356,6 +357,9 @@ public:
     propagate_const<buff_t *> storm_earth_and_fire;
     propagate_const<buff_t *> touch_of_karma;
 
+    // Mistweaver
+    propagate_const<buff_t *> lesson_of_anger;
+
     // Shado-Pan
     propagate_const<buff_t *> high_impact;
     propagate_const<buff_t *> veterans_eye;
@@ -375,7 +379,7 @@ public:
 // utility to create target_effect_t compatible functions from monk_td_t member references
 // adapted from sc_death_knight.cpp
 template <typename T>
-static std::function<int( actor_target_data_t * )> td_fn( T effect, bool stack = true )
+static std::function<double( actor_target_data_t * )> td_fn( T effect, bool stack = true )
 {
   if constexpr ( std::is_invocable_v<T, monk_td_t::debuff_t> )
   {
@@ -447,6 +451,9 @@ public:
     propagate_const<action_t *> exploding_keg;
     propagate_const<action_t *> niuzao_call_to_arms_summon;
     propagate_const<action_t *> chi_surge;
+
+    // Mistweaver
+    propagate_const<action_t *> lesson_of_anger_damage;
 
     // Windwalker
     propagate_const<action_t *> empowered_tiger_lightning;
@@ -607,6 +614,10 @@ public:
     propagate_const<buff_t *> secret_infusion_mastery;
     propagate_const<buff_t *> secret_infusion_versatility;
     propagate_const<buff_t *> sheiluns_gift;
+    propagate_const<buff_t *> lesson_of_anger;
+    propagate_const<buff_t *> lesson_of_despair;
+    propagate_const<buff_t *> lesson_of_doubt;
+    propagate_const<buff_t *> lesson_of_fear;
     propagate_const<buff_t *> teachings_of_the_monastery;
     propagate_const<buff_t *> thunder_focus_tea;
 
@@ -1070,6 +1081,11 @@ public:
       player_talent_t peaceful_mending;
       player_talent_t veil_of_pride;
       player_talent_t shaohaos_lessons;
+      const spell_data_t *lesson_of_doubt_buff;
+      const spell_data_t *lesson_of_despair_buff;
+      const spell_data_t *lesson_of_fear_buff;
+      const spell_data_t *lesson_of_anger_buff;
+      const spell_data_t *lesson_of_anger_damage;
       // Row 10
       player_talent_t awakened_jadefire;
       const spell_data_t *awakened_jadefire_buff;
