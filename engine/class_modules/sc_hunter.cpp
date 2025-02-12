@@ -383,6 +383,7 @@ struct hunter_td_t: public actor_target_data_t
     dot_t* spearhead;
 
     dot_t* black_arrow;
+    dot_t* rend_flesh;
   } dots;
 
   hunter_td_t( player_t* target, hunter_t* p );
@@ -889,6 +890,7 @@ public:
     spell_data_ptr_t howl_of_the_pack_leader_boar_charge_impact;
     spell_data_ptr_t howl_of_the_pack_leader_boar_charge_cleave;
     spell_data_ptr_t howl_of_the_pack_leader_bear_summon;
+    spell_data_ptr_t howl_of_the_pack_leader_bear_bleed;
 
     spell_data_ptr_t pack_mentality;
     spell_data_ptr_t dire_summons;
@@ -999,6 +1001,7 @@ public:
     action_t* wyverns_cry = nullptr;
     action_t* bear_summon = nullptr;
     action_t* boar_charge = nullptr;
+    action_t* rend_flesh = nullptr;
 
     action_t* sentinel = nullptr;
     action_t* symphonic_arsenal = nullptr;
@@ -1715,8 +1718,8 @@ struct hunter_pet_t: public pet_t
   {
     double ap = pet_t::composite_melee_attack_power();
 
-    // TODO
-    ap *= 1 + o()->talents.better_together->effectN( 2 ).percent();
+    // TODO does nothing in game
+    // ap *= 1 + o()->talents.better_together->effectN( 2 ).percent();
 
     return ap;
   }
@@ -1919,31 +1922,17 @@ struct hati_t final : public dire_critter_t
 // Bear
 // ==========================================================================
 
-struct bear_td_t: public actor_target_data_t
-{
-public:
-  struct dots_t
-  {
-    dot_t* rend_flesh = nullptr;
-  } dots;
-
-  bear_td_t( player_t* target, bear_t* p );
-};
-
 struct bear_t final : public dire_critter_t
 {
-  struct actives_t
+  struct actions_t
   {
     action_t* rend_flesh = nullptr;
   } actions;
-  
-  target_specific_t<bear_td_t> target_data;
 
   bear_t( hunter_t* owner, util::string_view n = "bear" ) : dire_critter_t( owner, n )
   {
-    // owner_coeff.ap_from_ap TODO
-    // auto_attack_multiplier TODO
-    main_hand_weapon.swing_time = 1.5_s;
+    owner_coeff.ap_from_ap = 0.56;
+    auto_attack_multiplier = 7.5;
   }
 
   void summon( timespan_t duration = 0_ms ) override
@@ -1958,17 +1947,10 @@ struct bear_t final : public dire_critter_t
       actions.rend_flesh->execute_on_target( target );
   }
 
-  const bear_td_t* find_target_data( const player_t* target ) const override
+  void apply_affecting_auras( action_t& action ) override
   {
-    return target_data[ target ];
-  }
-
-  bear_td_t* get_target_data( player_t* target ) const override
-  {
-    bear_td_t*& td = target_data[target];
-    if ( !td )
-      td = new bear_td_t( target, const_cast<bear_t*>( this ) );
-    return td;
+    // TODO: Ignore player aura, check other pet damage
+    pet_t::apply_affecting_auras(action);
   }
 
   void init_spells() override;
@@ -2932,9 +2914,13 @@ struct pet_melee_t : public hunter_pet_melee_t<hunter_pet_t>
 
     trigger_beast_cleave( s );
 
-    if ( ( p()==o()->pets.main || p()==o()->pets.animal_companion ) && o()->rng().roll( o()->tier_set.tww_s1_bm_4pc->effectN( 1 ).percent() ) )
+    if ( ( p()==o()->pets.main || p()==o()->pets.animal_companion ) )
     {
-      o()->buffs.harmonize->trigger();
+      if ( o()->rng().roll( o()->tier_set.tww_s1_bm_4pc->effectN( 1 ).percent() ) )
+        o()->buffs.harmonize->trigger();
+
+      if ( o()->buffs.wyverns_cry->check() )
+        o()->buffs.wyverns_cry->increment();
     }
 
     if( p()==o()->pets.main && o()->pets.main->buffs.potent_mutagen->up() )
@@ -2942,13 +2928,6 @@ struct pet_melee_t : public hunter_pet_melee_t<hunter_pet_t>
       o()->actions.potent_mutagen->execute_on_target( s->target );
       o()->cooldowns.bestial_wrath->adjust( -timespan_t::from_seconds( o()->pets.main->buffs.potent_mutagen->value() ) );
     }
-  }
-
-  void execute() override
-  {
-    hunter_pet_melee_t::execute();
-
-    o()->buffs.wyverns_cry->trigger();
   }
 };
 
@@ -3178,20 +3157,15 @@ struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, melee_attack_t>
   }
 };
 
-// Rend Flesh (Bear) ========================================================
+// Rend Flesh (Bear) ===================================================
 
-// The tick damage shows up as Bear damage in the combat log but the dot shows as applied by the player 
-// and the Lead From the Front bonus applies to the dot damage.
-// TODO maybe move this to a player action after more testing
 struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 {
   struct envenomed_fangs_t : public hunter_pet_action_t<bear_t, melee_attack_t>
   {
-    envenomed_fangs_t( bear_t* p ) : hunter_pet_action_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell )
-    {
-    }
+    envenomed_fangs_t( bear_t* p ) : hunter_pet_action_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell ) {}
   };
-
+  
   struct
   {
     double chance = 0;
@@ -3201,7 +3175,7 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 
   envenomed_fangs_t* envenomed_fangs = nullptr;
 
-  rend_flesh_t( bear_t* p ) : hunter_pet_action_t( "rend_flesh", p, p -> find_spell( 471999 ) )
+  rend_flesh_t( bear_t* p ) : hunter_pet_action_t( "rend_flesh", p, p->o()->talents.howl_of_the_pack_leader_bear_bleed )
   {
     background = dual = true;
     aoe = as<int>( data().effectN( 2 ).base_value() );
@@ -3230,6 +3204,16 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 
     if ( o()->talents.envenomed_fangs.ok() )
       envenomed_fangs = new envenomed_fangs_t( p );
+  }
+
+  dot_t* get_dot( player_t* t )
+  {
+    if ( !t )
+      t = target;
+    if ( !t )
+      return nullptr;
+
+    return o()->get_target_data( t )->dots.rend_flesh;
   }
 
   void tick( dot_t* d )
@@ -3265,20 +3249,15 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
   double composite_ta_multiplier( const action_state_t* s ) const override
   {
     double m = hunter_pet_action_t::composite_ta_multiplier( s );
-
-    if ( o()->buffs.lead_from_the_front->check() )
-      m *= 1 + o()->talents.lead_from_the_front_buff->effectN( 2 ).percent();
     
+    // Inherit multipliers from the player
+    m *= o()->actions.rend_flesh->composite_ta_multiplier( s );
+
     return m;
   }
 };
 
 } // end namespace pets::actions
-
-bear_td_t::bear_td_t( player_t* target, bear_t* p ) : actor_target_data_t( target, p )
-{
-  dots.rend_flesh = target->get_dot( "rend_flesh", p );
-}
 
 hunter_main_pet_td_t::hunter_main_pet_td_t( player_t* target, hunter_main_pet_t* p ) : actor_target_data_t( target, p )
 {
@@ -3548,12 +3527,10 @@ int hunter_t::ticking_dots( hunter_td_t* td )
   dots += hunter_dots.wildfire_bomb->is_ticking();
   dots += hunter_dots.merciless_blow->is_ticking();
   dots += hunter_dots.spearhead->is_ticking();
+  dots += hunter_dots.rend_flesh->is_ticking();
 
   auto pet_dots = pets.main->get_target_data( td->target )->dots;
   dots += pet_dots.bloodseeker->is_ticking();
-
-  if ( pets.bear )
-    dots += pets.bear->get_target_data( td->target )->dots.rend_flesh->is_ticking();
 
   return dots;
 }
@@ -4970,6 +4947,14 @@ struct lunar_storm_periodic_t : hunter_ranged_attack_t
 
     return tl.size();
   }
+};
+
+// Rend Flesh (Pack Leader) ========================================================
+
+// Used by the pet action to inherit damage modifiers from the player
+struct rend_flesh_t : public hunter_melee_attack_t
+{
+  rend_flesh_t( hunter_t* p ) : hunter_melee_attack_t( "rend_flesh", p, p->talents.howl_of_the_pack_leader_bear_bleed ) {}
 };
 
 //==============================
@@ -7934,7 +7919,8 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
   dots.barbed_shot = t -> get_dot( "barbed_shot", p );
   dots.explosive_shot = t->get_dot( "explosive_shot", p );
   dots.merciless_blow = t->get_dot( "merciless_blow", p );
-  dots.spearhead = t->get_dot( "spearhead", p ) ;
+  dots.spearhead = t->get_dot( "spearhead", p );
+  dots.rend_flesh = t->get_dot( "rend_flesh", p );
 
   t -> register_on_demise_callback( p, [this](player_t*) { target_demise(); } );
 }
@@ -8434,6 +8420,7 @@ void hunter_t::init_spells()
     talents.howl_of_the_pack_leader_boar_charge_impact = talents.howl_of_the_pack_leader.ok() ? find_spell( 471936 ) : spell_data_t::not_found();
     talents.howl_of_the_pack_leader_boar_charge_cleave = talents.howl_of_the_pack_leader.ok() ? find_spell( 471938 ) : spell_data_t::not_found();
     talents.howl_of_the_pack_leader_bear_summon = talents.howl_of_the_pack_leader.ok() ? find_spell( 471993 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_bear_bleed = talents.howl_of_the_pack_leader.ok() ? find_spell( 471999 ) : spell_data_t::not_found();
 
     talents.pack_mentality = find_talent_spell( talent_tree::HERO, "Pack Mentality" );
     talents.dire_summons = find_talent_spell( talent_tree::HERO, "Dire Summons" );
@@ -8597,6 +8584,7 @@ void hunter_t::create_actions()
     actions.wyverns_cry = new spells::wyverns_cry_t( this );
     actions.bear_summon = new spells::bear_summon_t( this );
     actions.boar_charge = new attacks::boar_charge_t( this );
+    actions.rend_flesh = new attacks::rend_flesh_t( this );
   }
 
   if ( talents.sentinel.ok() )
