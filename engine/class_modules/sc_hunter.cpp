@@ -7259,11 +7259,14 @@ struct bestial_wrath_t: public hunter_spell_t
     if ( p()->talents.lead_from_the_front->ok() )
       p()->trigger_howl_of_the_pack_leader_ready();
 
-    if ( p()->tier_set.tww_s2_bm_2pc.ok() )
-      barbed_shot_tww_s2_bm_2pc->execute_on_target( target );
+    if ( !is_precombat )
+    {
+      if ( p()->tier_set.tww_s2_bm_2pc.ok() )
+        barbed_shot_tww_s2_bm_2pc->execute_on_target( target );
 
-    if ( p()->tier_set.tww_s2_bm_4pc.ok() )
-      p()->pets.main->buffs.potent_mutagen->trigger();
+      if ( p()->tier_set.tww_s2_bm_4pc.ok() )
+        p()->pets.main->buffs.potent_mutagen->trigger();
+    }
   }
 
   bool ready() override
