@@ -2506,7 +2506,7 @@ public:
     if ( affected_by.tww2_subtlety_4pc.direct &&
          p()->buffs.shadow_dance->check() && p()->buffs.tww2_subtlety_2pc->check() )
     {
-      m *= 1.0 + affected_by.tww2_subtlety_4pc.direct_percent;
+      m *= 1.0 + ( affected_by.tww2_subtlety_4pc.direct_percent * p()->buffs.tww2_subtlety_2pc->check() );
     }
 
     return m;
@@ -2564,7 +2564,7 @@ public:
     if ( affected_by.tww2_subtlety_4pc.periodic &&
          p()->buffs.shadow_dance->check() && p()->buffs.tww2_subtlety_2pc->check() )
     {
-      m *= 1.0 + affected_by.tww2_subtlety_4pc.periodic_percent;
+      m *= 1.0 + ( affected_by.tww2_subtlety_4pc.periodic_percent * p()->buffs.tww2_subtlety_2pc->check() );
     }
 
     return m;
