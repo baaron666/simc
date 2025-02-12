@@ -210,7 +210,7 @@ public:
     buff_t* rising_wrath; // TWW1 4pc
     buff_t* heightened_wrath; // TWW1 4pc
     buff_t* luck_of_the_draw; // TWW2 2pc Protection
-    
+
     // Ret
     buffs::crusade_buff_t* crusade;
     buffs::shield_of_vengeance_buff_t* shield_of_vengeance;
@@ -274,6 +274,8 @@ public:
     } herald_of_the_sun;
 
     buff_t* rise_from_ash; // Ret TWW1 4p
+    buff_t* winning_streak; // Ret TWW2 2pc
+    buff_t* all_in; // Ret TWW2 4pc
   } buffs;
 
   // Gains
@@ -299,6 +301,7 @@ public:
     gain_t* hp_divine_auxiliary;
     gain_t* eye_of_tyr;
     gain_t* luck_of_the_draw;
+    gain_t* all_in_refund;
   } gains;
 
   // Spec Passives
@@ -462,10 +465,12 @@ public:
     } herald_of_the_sun;
 
     const spell_data_t* highlords_judgment_hidden;
+
+    const spell_data_t* winning_streak; // Ret TWW2 2p
+    const spell_data_t* all_in; // Ret TWW2 4p
   } spells;
 
   struct rppms_t {
-    real_ppm_t* radiant_glory;
     real_ppm_t* judge_jury_and_executioner;
   } rppm;
 
@@ -1186,7 +1191,8 @@ public:
     bool avenging_wrath, judgment, blessing_of_dawn, seal_of_reprisal, seal_of_order, divine_purpose,
       divine_purpose_cost, sacred_strength;                                                // Shared
     bool crusade, highlords_judgment, highlords_judgment_hidden, final_reckoning_st, final_reckoning_aoe,
-      blades_of_light, divine_hammer, ret_t29_2p, ret_t29_4p, rise_from_ash; // Ret
+      blades_of_light, divine_hammer, ret_t29_2p, ret_t29_4p, rise_from_ash, winning_streak,
+      all_in; // Ret
     bool avenging_crusader;                                                                // Holy
     bool bastion_of_light, sentinel, heightened_wrath, luck_of_the_draw;  // Prot
     bool gleaming_rays; // Herald of the Sun
@@ -1234,7 +1240,7 @@ public:
           this->data().affected_by( p->sets->set( PALADIN_RETRIBUTION, T29, B4 )->effectN( 1 ) );
       this->affected_by.rise_from_ash =
           this->data().affected_by( p->find_spell( 454693 )->effectN( 1 ) );
-      if ( p->talents.divine_hammer->ok() )
+      if ( !p->dbc->ptr && p->talents.divine_hammer->ok() )
       {
         for ( auto i = 2; i < 5; i++ )
         {
@@ -1246,6 +1252,9 @@ public:
           }
         }
       }
+
+      this->affected_by.winning_streak = this->data().affected_by( p->spells.winning_streak->effectN( 1 ) );
+      this->affected_by.all_in = this->data().affected_by( p->spells.all_in->effectN( 1 ) );
     }
     if ( p->specialization() == PALADIN_HOLY )
     {
@@ -1359,6 +1368,10 @@ public:
 
   void execute() override
   {
+    bool had_winning_streak = false;
+    if ( affected_by.winning_streak && p()->buffs.winning_streak->up() )
+      had_winning_streak = true;
+
     ab::execute();
 
     if ( ( this->affected_by.blades_of_light || always_do_capstones ) && p()->talents.divine_arbiter->ok() )
@@ -1387,6 +1400,19 @@ public:
     if ( affected_by.divine_hammer && p()->buffs.divine_hammer->up() )
     {
       p()->buffs.divine_hammer->current_value = p()->buffs.divine_hammer->current_value * 1.15;
+    }
+
+    if ( had_winning_streak )
+    {
+      if ( ab::rng().roll( p()->buffs.winning_streak->data().effectN( 2 ).percent() ) )
+      {
+        p()->buffs.winning_streak->expire();
+        if ( p()->sets->has_set_bonus( PALADIN_RETRIBUTION, TWW2, B4 ) )
+        {
+          p()->buffs.all_in->trigger();
+          p()->resource_gain( ab::current_resource(), ab::last_resource_cost, p()->gains.all_in_refund );
+        }
+      }
     }
   }
 
@@ -1436,6 +1462,16 @@ public:
       if ( affected_by.crusade && p()->buffs.crusade->up() )
       {
         am *= 1.0 + p()->buffs.crusade->get_damage_mod();
+      }
+
+      if ( affected_by.winning_streak && p()->buffs.winning_streak->up() )
+      {
+        am *= 1.0 + p()->buffs.winning_streak->stack_value();
+      }
+
+      if ( affected_by.all_in && p()->buffs.all_in->up() )
+      {
+        am *= 1.0 + p()->buffs.all_in->value();
       }
     }
 
@@ -1769,6 +1805,11 @@ public:
       return 0.0;
     }
 
+    if ( ab::affected_by.all_in && ab::p()->buffs.all_in->up() )
+    {
+      return 0.0;
+    }
+
     return ab::cost();
   }
 
@@ -1854,6 +1895,12 @@ public:
           break;
         }
       }
+    }
+
+    if ( p->dbc->ptr && p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() )
+    {
+      unsigned base_cost = as<int>( ab::base_cost() );
+      p->buffs.divine_hammer->extend_duration( p, timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() * base_cost ) );
     }
 
     if ( p->talents.relentless_inquisitor->ok() && !ab::background )

@@ -1678,12 +1678,12 @@ void paladin_t::create_buffs_retribution()
   buffs.echoes_of_wrath = make_buff( this, "echoes_of_wrath", find_spell( 423590 ) );
 
   buffs.rise_from_ash = make_buff( this, "rise_from_ash", find_spell( 454693 ) );
+  buffs.winning_streak = make_buff( this, "winning_streak", find_spell( 1216828 ) );
+  buffs.all_in = make_buff( this, "all_in", find_spell( 1216837 ) );
 }
 
 void paladin_t::init_rng_retribution()
 {
-  // TODO(mserrano): is this right? It looks right-ish from logs, but it's hard to say
-  rppm.radiant_glory = get_rppm( "radiant_glory", 1.0 );
   rppm.judge_jury_and_executioner = get_rppm( "judge_jury_and_executioner", talents.judge_jury_and_executioner );
 }
 
@@ -1783,6 +1783,9 @@ void paladin_t::init_spells_retribution()
 
   spells.crusade = find_spell( 231895 );
   spells.highlords_judgment_hidden = find_spell( 449198 );
+
+  spells.winning_streak = find_spell( 1216828 );
+  spells.all_in = find_spell( 1216837 );
 }
 
 // Action Priority List Generation

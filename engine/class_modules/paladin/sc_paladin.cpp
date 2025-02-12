@@ -8,6 +8,7 @@
 #include "sc_paladin.hpp"
 
 #include "simulationcraft.hpp"
+#include "action/dbc_proc_callback.hpp"
 #include "action/parse_effects.hpp"
 #include "item/special_effect.hpp"
 #include <algorithm>
@@ -2115,10 +2116,9 @@ struct hammer_of_light_ptr_t : public holy_power_consumer_t<paladin_melee_attack
       dual                       = true;
     }
 
-    
-  size_t available_targets( std::vector<player_t*>& tl ) const override
+    size_t available_targets( std::vector<player_t*>& tl ) const override
     {
-    holy_power_consumer_t::available_targets( tl );
+      holy_power_consumer_t::available_targets( tl );
 
       // Does not hit the main target
       auto it = range::find( tl, target );
@@ -3951,6 +3951,7 @@ void paladin_t::init_gains()
   gains.hp_divine_auxiliary        = get_gain( "divine_auxiliary" );
   gains.eye_of_tyr                 = get_gain( "eye_of_tyr" );
   gains.luck_of_the_draw           = get_gain( "luck_of_the_draw" );
+  gains.all_in_refund              = get_gain( "all_in_refund" );
 }
 
 // paladin_t::init_procs ====================================================
@@ -4407,35 +4408,61 @@ void paladin_t::init_special_effects()
   }
 
   if ( sets->has_set_bonus( PALADIN_PROTECTION, TWW2, B2 ) )
+  {
+    struct luck_of_the_draw_cb_t : public dbc_proc_callback_t
     {
-      struct luck_of_the_draw_cb_t : public dbc_proc_callback_t
+      paladin_t* p;
+
+      luck_of_the_draw_cb_t( paladin_t* player, const special_effect_t& effect )
+        : dbc_proc_callback_t( player, effect ), p( player )
       {
-        paladin_t* p;
+      }
 
-        luck_of_the_draw_cb_t( paladin_t* player, const special_effect_t& effect )
-          : dbc_proc_callback_t( player, effect ), p( player )
-        {
-        }
+      void execute( action_t*, action_state_t* ) override
+      {
+        p->buffs.luck_of_the_draw->trigger();
+        p->buffs.guardian_of_ancient_kings->execute(-1, 1, p->sets->set(PALADIN_PROTECTION, TWW2, B2)->effectN(2).time_value());
+      }
+    };
 
-        void execute( action_t*, action_state_t* ) override
-        {
-          p->buffs.luck_of_the_draw->trigger();
-          p->buffs.guardian_of_ancient_kings->execute(-1, 1, p->sets->set(PALADIN_PROTECTION, TWW2, B2)->effectN(2).time_value());
-        }
-      };
+    auto const luck_of_the_draw_driver = new special_effect_t( this );
+    luck_of_the_draw_driver->name_str  = "luck_of_the_draw_driver";
+    luck_of_the_draw_driver->spell_id  = 1215987;
+    special_effects.push_back( luck_of_the_draw_driver );
 
-      auto const luck_of_the_draw_driver = new special_effect_t( this );
-      luck_of_the_draw_driver->name_str  = "luck_of_the_draw_driver";
-      luck_of_the_draw_driver->spell_id  = 1215987;
-      special_effects.push_back( luck_of_the_draw_driver );
-
-      auto cb = new luck_of_the_draw_cb_t( this, *luck_of_the_draw_driver );
-      cb->initialize();
-    }
+    auto cb = new luck_of_the_draw_cb_t( this, *luck_of_the_draw_driver );
+    cb->initialize();
   }
 
+  if ( sets->has_set_bonus( PALADIN_RETRIBUTION, TWW2, B2 ) )
+  {
+    struct winning_streak_cb_t : public dbc_proc_callback_t
+    {
+      paladin_t* p;
 
+      winning_streak_cb_t( paladin_t* player, const special_effect_t& e )
+        : dbc_proc_callback_t( player, e ), p( player ) {}
 
+      void execute( action_t* a, action_state_t* s ) override
+      {
+        dbc_proc_callback_t::execute( a, s );
+
+        p->buffs.winning_streak->trigger();
+      }
+    };
+
+    auto const *set = sets->set( PALADIN_RETRIBUTION, TWW2, B2 );
+    auto const winning_streak_driver = new special_effect_t( this );
+    winning_streak_driver->name_str = "winning_streak_driver";
+    winning_streak_driver->spell_id = set->id();
+    winning_streak_driver->proc_flags_ = set->proc_flags();
+    winning_streak_driver->proc_flags2_ = PF2_ALL_CAST;
+    special_effects.push_back( winning_streak_driver );
+
+    auto cb = new winning_streak_cb_t( this, *winning_streak_driver );
+    cb->initialize();
+  }
+}
 
 void paladin_t::init_rng()
 {
