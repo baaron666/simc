@@ -7085,7 +7085,8 @@ struct wyverns_cry_t final : hunter_spell_t
   {
     hunter_spell_t::execute();
 
-    p()->buffs.wyverns_cry->trigger( as<int>( p()->talents.howl_of_the_pack_leader->effectN( 3 ).base_value() ) );
+    p()->buffs.wyverns_cry->trigger( as<int>( p()->talents.howl_of_the_pack_leader->effectN( 3 ).base_value() 
+      + p()->specs.survival_hunter->effectN( 12 ).base_value() ) );
   }
 };
 
