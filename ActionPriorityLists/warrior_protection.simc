@@ -30,7 +30,7 @@ actions+=/fireblood
 actions+=/ancestral_call
 actions+=/bag_of_tricks
 actions+=/potion,if=buff.avatar.up|buff.avatar.up&target.health.pct<=20
-actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+((15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up)*cooldown.shield_slam.ready+(20+20*talent.champions_bulwark.enabled)*cooldown.shield_charge.ready+30*cooldown.demoralizing_shout.ready*talent.booming_voice.enabled+10*cooldown.avatar.ready+10*(1+talent.piercing_challenge.enabled)*cooldown.champions_spear.ready+10*cooldown.ravager.ready+(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up*)*cooldown.thunder_clap.ready)*(1+buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+((15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up)*cooldown.shield_slam.ready+(20+20*talent.champions_bulwark.enabled)*cooldown.shield_charge.ready+30*cooldown.demoralizing_shout.ready*talent.booming_voice.enabled+10*cooldown.avatar.ready+10*(1+talent.piercing_challenge.enabled)*cooldown.champions_spear.ready+10*cooldown.ravager.ready+(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up)*cooldown.thunder_clap.ready)*(1+buff.last_stand.up*talent.unnerving_focus.enabled)
 actions+=/ravager
 actions+=/demoralizing_shout,if=talent.booming_voice.enabled
 actions+=/champions_spear
