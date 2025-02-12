@@ -4976,7 +4976,8 @@ struct shattering_star_t : public evoker_spell_t
 {
   size_t tier_set_proc;
   shattering_star_t( evoker_t* p, std::string_view name, size_t tier_set_proc, std::string_view options_str = {} )
-    : evoker_spell_t( name, p, p->talent.shattering_star, options_str ), tier_set_proc( tier_set_proc )
+    : evoker_spell_t( name, p, tier_set_proc > 0 ? p->find_spell( 370452 ) : p->talent.shattering_star, options_str ),
+      tier_set_proc( tier_set_proc )
   {
     aoe = as<int>( data().effectN( 1 ).base_value() );
     if ( tier_set_proc )
@@ -4994,7 +4995,7 @@ struct shattering_star_t : public evoker_spell_t
   }
 
   shattering_star_t( evoker_t* p, std::string_view options_str )
-    : shattering_star_t( p, "shattering_star", false, options_str )
+    : shattering_star_t( p, "shattering_star", 0, options_str )
   {
   }
 
