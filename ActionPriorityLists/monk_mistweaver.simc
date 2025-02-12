@@ -19,6 +19,7 @@ actions+=/touch_of_death
 actions+=/thunder_focus_tea
 actions+=/invoke_chiji,if=talent.invokers_delight
 actions+=/invoke_yulon,if=talent.invokers_delight
+actions+=/sheiluns_gift,if=talent.shaohaos_lessons&(buff.sheiluns_gift.stack>=10|(buff.sheiluns_gift.stack*4>=fight_remains&buff.sheiluns_gift.stack>=3)|(fight_style.dungeonslice&buff.sheiluns_gift.stack>=5&active_enemies>=4))
 actions+=/celestial_conduit
 actions+=/rising_sun_kick,if=talent.secret_infusion&buff.thunder_focus_tea.up
 actions+=/spinning_crane_kick,if=buff.dance_of_chiji.up
