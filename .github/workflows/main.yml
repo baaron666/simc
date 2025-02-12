@@ -22,13 +22,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        compiler: [gcc-12, gcc-7, gcc-14]
+        compiler: [gcc-12, gcc-14]
         cppVersion: [17, 20]
         include:
-          - compiler: gcc-7
-            cxx: g++-7
-            packages: gcc-7 g++-7
-            os: ubuntu-20.04
           - compiler: gcc-12
             cxx: g++-12
             packages: gcc-12 g++-12
@@ -37,9 +33,6 @@ jobs:
             cxx: g++-14
             packages: gcc-14 g++-14
             os: ubuntu-24.04
-        exclude:
-          - compiler: gcc-7
-            cppVersion: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -89,11 +82,8 @@ jobs:
     strategy:
       matrix:
         cppVersion: [17, 20]
-        compiler: [clang++-7, clang++-15, clang++-18]
+        compiler: [clang++-15, clang++-18]
         include:
-          - compiler: clang++-7
-            os: ubuntu-20.04
-            packages: clang-7 lld-7
           - compiler: clang++-15
             os: ubuntu-22.04
             packages: clang-15 lld-15
@@ -102,9 +92,6 @@ jobs:
             os: ubuntu-24.04
             packages: clang-18 lld-18
             enable_file_prefix_map: true
-        exclude:
-          - compiler: clang++-7
-            cppVersion: 20
 
     steps:
       - uses: actions/checkout@v4
@@ -567,7 +554,7 @@ jobs:
       fail-fast: false
       matrix:
         cppVersion: [17, 20]
-        compiler: [clang++-7, clang++-15, clang++-18, gcc-7, gcc-12, gcc-14]
+        compiler: [clang++-15, clang++-18, gcc-12, gcc-14]
         type: [spell_query, log_debug, patchwerk, dungeon_slice]
         include:
           - type: spell_query
@@ -578,8 +565,6 @@ jobs:
             simc_flags: $SIMC_PROFILE iterations=10 cleanup_threads=1
           - type: dungeon_slice
             simc_flags: $SIMC_PROFILE iterations=10 fight_style=DungeonSlice cleanup_threads=1
-          - compiler: clang++-7
-            os: ubuntu-20.04
           - compiler: clang++-15
             os: ubuntu-22.04
           - compiler: clang++-18
@@ -588,13 +573,6 @@ jobs:
             os: ubuntu-24.04
           - compiler: gcc-12
             os: ubuntu-22.04
-          - compiler: gcc-7
-            os: ubuntu-20.04
-        exclude:
-          - compiler: clang++-7
-            cppVersion: 20
-          - compiler: gcc-7
-            cppVersion: 20
 
     steps:
       - uses: actions/cache@v4
