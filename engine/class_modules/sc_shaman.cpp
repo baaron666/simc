@@ -4871,8 +4871,7 @@ struct sundering_reactivity_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_flametongue = false;
-    may_proc_windfury = player->dbc->ptr;
+    may_proc_flametongue = may_proc_windfury = player->dbc->ptr;
     may_proc_flowing_spirits = false;
     p()->set_mw_proc_state( this, mw_proc_state::DISABLED );
   }
