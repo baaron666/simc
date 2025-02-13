@@ -2550,11 +2550,9 @@ struct hunter_pet_action_t: public Base
 private:
   using ab = Base;
 public:
-  // Used to pull player spell modifiers that affect pet spells
-  hunter_action_t<Base>* player_action;
 
   hunter_pet_action_t( util::string_view n, T_PET* p, const spell_data_t* s = spell_data_t::nil() ) :
-    ab( n, p, s ), player_action( new hunter_action_t<Base>( fmt::format( "{}_player", n ), o(), s ) )
+    ab( n, p, s )
   {
     // If pets are not reported separately, create single stats_t objects for the various pet abilities.
     if ( ! ab::sim -> report_pets_separately )
@@ -2571,42 +2569,6 @@ public:
         }
       }
     }
-  }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double am = ab::composite_da_multiplier( s );
-
-    am *= player_action->composite_da_multiplier( s );
-
-    return am;
-  }
-
-  double composite_ta_multiplier( const action_state_t* s ) const override
-  {
-    double am = ab::composite_ta_multiplier( s );
-    
-    am *= player_action->composite_ta_multiplier( s );
-
-    return am;
-  }
-
-  double composite_target_da_multiplier( player_t* target ) const override
-  {
-    double da = ab::composite_target_da_multiplier( target );
-
-    da *= player_action->composite_target_da_multiplier( target );
-
-    return da;
-  }
-
-  double composite_target_ta_multiplier( player_t* target ) const override
-  {
-    double ta = ab::composite_target_ta_multiplier( target );
-
-    ta *= player_action->composite_target_ta_multiplier( target );
-
-    return ta;
   }
 
   T_PET* p() { return static_cast<T_PET*>( ab::player ); }
@@ -2649,20 +2611,61 @@ public:
   }
 };
 
-// Template for common hunter main pet action code.
-template <class Base>
-struct hunter_main_pet_action_t : public hunter_pet_action_t<hunter_main_pet_t, Base>
+template <typename Pet>
+struct hunter_pet_attack_t: public hunter_pet_action_t<Pet, melee_attack_t>
 {
 private:
-  using ab = hunter_pet_action_t<hunter_main_pet_t, Base>;
+  using ab = hunter_pet_action_t<Pet, melee_attack_t>;
 public:
+  // Used to pull player spell modifiers that affect pet spells
+  hunter_action_t<melee_attack_t>* player_action;
 
-  hunter_main_pet_action_t( util::string_view n, hunter_main_pet_t* p, const spell_data_t* s = spell_data_t::nil() ) : ab( n, p, s ) {}
-  
-  hunter_main_pet_td_t* td( player_t* t = nullptr ) const { return ab::p()->get_target_data( t ? t : ab::target ); }
+  hunter_pet_attack_t( util::string_view n, Pet* p, const spell_data_t* s ) : 
+    ab( n, p, s ), player_action( new hunter_action_t<melee_attack_t>( fmt::format( "player_{}", n ), ab::o(), s ) ) {}
+
+  void init() override
+  {
+    ab::init();
+
+    player_action->init();
+  }
+
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double am = ab::composite_da_multiplier( s );
+
+    am *= player_action->composite_da_multiplier( s );
+
+    return am;
+  }
+
+  double composite_ta_multiplier( const action_state_t* s ) const override
+  {
+    double am = ab::composite_ta_multiplier( s );
+    
+    am *= player_action->composite_ta_multiplier( s );
+
+    return am;
+  }
+
+  double composite_target_da_multiplier( player_t* target ) const override
+  {
+    double da = ab::composite_target_da_multiplier( target );
+
+    da *= player_action->composite_target_da_multiplier( target );
+
+    return da;
+  }
+
+  double composite_target_ta_multiplier( player_t* target ) const override
+  {
+    double ta = ab::composite_target_ta_multiplier( target );
+
+    ta *= player_action->composite_target_ta_multiplier( target );
+
+    return ta;
+  }
 };
-
-using hunter_main_pet_attack_t = hunter_main_pet_action_t<melee_attack_t>;
 
 // ==========================================================================
 // Hunter Pet Attacks
@@ -2670,7 +2673,7 @@ using hunter_main_pet_attack_t = hunter_main_pet_action_t<melee_attack_t>;
 
 // Kill Command ============================================================
 
-struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, melee_attack_t>
+struct kill_command_bm_t: public hunter_pet_attack_t<hunter_main_pet_base_t>
 {
   struct {
     double percent = 0;
@@ -2678,7 +2681,7 @@ struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, mel
     benefit_t* benefit = nullptr;
   } killer_instinct;
 
-  kill_command_bm_t( hunter_main_pet_base_t* p ) : hunter_pet_action_t( "kill_command", p, p->o()->talents.kill_command_pet )
+  kill_command_bm_t( hunter_main_pet_base_t* p ) : hunter_pet_attack_t( "kill_command", p, p->o()->talents.kill_command_pet )
   {
     background = dual = proc = true;
 
@@ -2694,12 +2697,12 @@ struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, mel
 
   void execute() override
   {
-    hunter_pet_action_t::execute();
+    hunter_pet_attack_t::execute();
   }
 
   void impact( action_state_t* s ) override
   {
-    hunter_pet_action_t::impact( s );
+    hunter_pet_attack_t::impact( s );
 
     if ( o() -> talents.kill_cleave.ok() && s -> action -> result_is_hit( s -> result ) &&
       s -> action -> sim -> active_enemies > 1 && p() -> hunter_pet_t::buffs.beast_cleave -> up() )
@@ -2741,7 +2744,7 @@ struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, mel
 
   double composite_da_multiplier( const action_state_t* s ) const override
   {
-    double da = hunter_pet_action_t::composite_da_multiplier( s );
+    double da = hunter_pet_attack_t::composite_da_multiplier( s );
 
     if ( p() == o()->pets.main && 
       ( o()->buffs.howl_of_the_pack_leader_wyvern_ready
@@ -2764,7 +2767,7 @@ struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, mel
   
   double composite_crit_damage_bonus_multiplier() const override
   {
-    double cm = hunter_pet_action_t::composite_crit_damage_bonus_multiplier();
+    double cm = hunter_pet_attack_t::composite_crit_damage_bonus_multiplier();
 
     if ( o() -> talents.go_for_the_throat.ok() )
     {
@@ -2776,7 +2779,7 @@ struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, mel
 
   double composite_target_multiplier( player_t* t ) const override
   {
-    double am = hunter_pet_action_t::composite_target_multiplier( t );
+    double am = hunter_pet_attack_t::composite_target_multiplier( t );
 
     am *= 1 + p()->get_target_data( t )->debuffs.venomous_bite->check_value();
 
@@ -2784,9 +2787,9 @@ struct kill_command_bm_t: public hunter_pet_action_t<hunter_main_pet_base_t, mel
   }
 };
 
-struct kill_command_sv_t : public hunter_main_pet_attack_t
+struct kill_command_sv_t : public hunter_pet_attack_t<hunter_main_pet_t>
 {
-  kill_command_sv_t( hunter_main_pet_t* p ) : hunter_main_pet_attack_t( "kill_command", p, p->o()->talents.kill_command_pet )
+  kill_command_sv_t( hunter_main_pet_t* p ) : hunter_pet_attack_t( "kill_command", p, p->o()->talents.kill_command_pet )
   {
     if ( !o()->talents.bloodseeker.ok() )
       dot_duration = 0_ms;
@@ -2796,7 +2799,7 @@ struct kill_command_sv_t : public hunter_main_pet_attack_t
   
   void impact( action_state_t* s ) override
   {
-    hunter_main_pet_attack_t::impact( s );
+    hunter_pet_attack_t::impact( s );
 
     if ( o()->buffs.frenzied_tear->check() && p()==o()->pets.main )
     {
@@ -2810,14 +2813,14 @@ struct kill_command_sv_t : public hunter_main_pet_attack_t
   
   void trigger_dot( action_state_t* s ) override
   {
-    hunter_main_pet_attack_t::trigger_dot( s );
+    hunter_pet_attack_t::trigger_dot( s );
 
     o() -> trigger_bloodseeker_update();
   }
 
   void last_tick( dot_t* d ) override
   {
-    hunter_main_pet_attack_t::last_tick( d );
+    hunter_pet_attack_t::last_tick( d );
 
     o() -> trigger_bloodseeker_update();
   }
@@ -2825,10 +2828,9 @@ struct kill_command_sv_t : public hunter_main_pet_attack_t
 
 // Beast Cleave ==============================================================
 
-struct beast_cleave_attack_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
+struct beast_cleave_attack_t: public hunter_pet_attack_t<hunter_pet_t>
 {
-  beast_cleave_attack_t( hunter_pet_t* p ) :
-    hunter_pet_action_t( "beast_cleave", p, p -> find_spell( 118459 ) )
+  beast_cleave_attack_t( hunter_pet_t* p ) : hunter_pet_attack_t( "beast_cleave", p, p->find_spell( 118459 ) )
   {
     background = true;
     callbacks = false;
@@ -2846,7 +2848,7 @@ struct beast_cleave_attack_t: public hunter_pet_action_t<hunter_pet_t, melee_att
 
   void init() override
   {
-    hunter_pet_action_t::init();
+    hunter_pet_attack_t::init();
 
     snapshot_flags |= STATE_TGT_MUL_DA;
     snapshot_flags |= STATE_TGT_MUL_PET;
@@ -2854,7 +2856,7 @@ struct beast_cleave_attack_t: public hunter_pet_action_t<hunter_pet_t, melee_att
 
   size_t available_targets( std::vector< player_t* >& tl ) const override
   {
-    hunter_pet_action_t::available_targets( tl );
+    hunter_pet_attack_t::available_targets( tl );
 
     // Cannot hit the original target.
     range::erase_remove( tl, target );
@@ -2865,9 +2867,9 @@ struct beast_cleave_attack_t: public hunter_pet_action_t<hunter_pet_t, melee_att
 
 // Kill Cleave ==============================================================
 
-struct kill_cleave_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
+struct kill_cleave_t: public hunter_pet_attack_t<hunter_pet_t>
 {
-  kill_cleave_t( hunter_pet_t* p ) : hunter_pet_action_t( "kill_cleave", p, p -> find_spell( 389448 ) )
+  kill_cleave_t( hunter_pet_t* p ) : hunter_pet_attack_t( "kill_cleave", p, p->find_spell( 389448 ) )
   {
     background = true;
     callbacks = false;
@@ -2885,13 +2887,14 @@ struct kill_cleave_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
 
   void init() override
   {
-    hunter_pet_action_t::init();
+    hunter_pet_attack_t::init();
+
     snapshot_flags |= STATE_TGT_MUL_DA;
   }
 
   size_t available_targets( std::vector< player_t* >& tl ) const override
   {
-    hunter_pet_action_t::available_targets( tl );
+    hunter_pet_attack_t::available_targets( tl );
 
     // Cannot hit the original target.
     range::erase_remove( tl, target );
@@ -2902,9 +2905,9 @@ struct kill_cleave_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
 
 // Frenzied Tear ==================================================================
 
-struct frenzied_tear_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
+struct frenzied_tear_t: public hunter_pet_attack_t<hunter_pet_t>
 {
-  frenzied_tear_t( hunter_pet_t* p ) : hunter_pet_action_t( "frenzied_tear", p, p -> find_spell( 83381 ) )
+  frenzied_tear_t( hunter_pet_t* p ) : hunter_pet_attack_t( "frenzied_tear", p, p->find_spell( 83381 ) )
   {
     background = true;
     // The starting damage includes all the buffs
@@ -2915,7 +2918,7 @@ struct frenzied_tear_t: public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
 
   void init() override
   {
-    hunter_pet_action_t::init();
+    hunter_pet_attack_t::init();
 
     snapshot_flags &= STATE_NO_MULTIPLIER;
     snapshot_flags |= STATE_TGT_MUL_DA;
@@ -2956,14 +2959,14 @@ struct pet_melee_t : public hunter_pet_melee_t<hunter_pet_t>
 
 // Claw/Bite/Smack ======================================================
 
-struct basic_attack_base_t : public hunter_main_pet_attack_t
+struct basic_attack_base_t : public hunter_pet_attack_t<hunter_main_pet_t>
 {
   struct {
     double chance = 0.0;
   } frenzied_tear; 
 
-  basic_attack_base_t( hunter_main_pet_t* p, util::string_view n, util::string_view suffix ):
-    hunter_main_pet_attack_t( fmt::format("{}{}", n, suffix), p, p -> find_pet_spell( n ) )
+  basic_attack_base_t( hunter_main_pet_t* p, util::string_view n, util::string_view suffix ) : 
+    hunter_pet_attack_t( fmt::format("{}{}", n, suffix), p, p->find_pet_spell( n ) )
   {
     school = SCHOOL_PHYSICAL;
 
@@ -2973,7 +2976,7 @@ struct basic_attack_base_t : public hunter_main_pet_attack_t
 
   void impact( action_state_t* s ) override
   {
-    hunter_main_pet_attack_t::impact( s );
+    hunter_pet_attack_t::impact( s );
 
     if ( result_is_hit( s -> result ) )
       trigger_beast_cleave( s );
@@ -3079,16 +3082,16 @@ struct brutal_companion_ba_t : public basic_attack_base_t
 
 // Flanking Strike ===================================================
 
-struct flanking_strike_t: public hunter_main_pet_attack_t
+struct flanking_strike_t: public hunter_pet_attack_t<hunter_main_pet_t>
 {
-  flanking_strike_t( hunter_main_pet_t* p ) : hunter_main_pet_attack_t( "flanking_strike", p, p->o()->talents.flanking_strike_pet )
+  flanking_strike_t( hunter_main_pet_t* p ) : hunter_pet_attack_t( "flanking_strike", p, p->o()->talents.flanking_strike_pet )
   {
     background = true;
   }
 
   double bonus_da( const action_state_t* s ) const override
   {
-    double bonus = hunter_main_pet_attack_t::bonus_da( s );
+    double bonus = hunter_pet_attack_t::bonus_da( s );
 
     // Adding raw player ap (* effect 1 from talent spell tooltip).
     bonus += o()->cache.attack_power() * o()->composite_attack_power_multiplier() * o()->talents.flanking_strike->effectN( 1 ).percent();
@@ -3099,9 +3102,9 @@ struct flanking_strike_t: public hunter_main_pet_attack_t
 
 // Coordinated Assault ====================================================
 
-struct coordinated_assault_t: public hunter_main_pet_attack_t
+struct coordinated_assault_t: public hunter_pet_attack_t<hunter_main_pet_t>
 {
-  coordinated_assault_t( hunter_main_pet_t* p ) : hunter_main_pet_attack_t( "coordinated_assault", p, p->o()->talents.coordinated_assault_dmg )
+  coordinated_assault_t( hunter_main_pet_t* p ) : hunter_pet_attack_t( "coordinated_assault", p, p->o()->talents.coordinated_assault_dmg )
   {
     background = true;
   }
@@ -3109,9 +3112,9 @@ struct coordinated_assault_t: public hunter_main_pet_attack_t
 
 // Stomp ===================================================================
 
-struct stomp_t : public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
+struct stomp_t : public hunter_pet_attack_t<hunter_pet_t>
 {
-  stomp_t( hunter_pet_t* p, double effectiveness = 1.0, util::string_view n = "stomp"  ) : hunter_pet_action_t( n, p, p -> find_spell( 201754 ) )
+  stomp_t( hunter_pet_t* p, double effectiveness = 1.0, util::string_view n = "stomp"  ) : hunter_pet_attack_t( n, p, p->find_spell( 201754 ) )
   {
     background = true;
     aoe = -1;
@@ -3121,9 +3124,9 @@ struct stomp_t : public hunter_pet_action_t<hunter_pet_t, melee_attack_t>
 
 // Bloodshed ===============================================================
 
-struct bloodshed_t : hunter_main_pet_attack_t
+struct bloodshed_t : hunter_pet_attack_t<hunter_main_pet_t>
 {
-  bloodshed_t( hunter_main_pet_t* p ) : hunter_main_pet_attack_t( "bloodshed", p, p->o()->talents.bloodshed_dot )
+  bloodshed_t( hunter_main_pet_t* p ) : hunter_pet_attack_t( "bloodshed", p, p->o()->talents.bloodshed_dot )
   {
     background = true;
     aoe = o() -> talents.shower_of_blood.ok() ? as<int>( o() -> talents.shower_of_blood -> effectN( 1 ).base_value() ) : 1;
@@ -3131,14 +3134,14 @@ struct bloodshed_t : hunter_main_pet_attack_t
 
   void execute() override
   {
-    hunter_main_pet_attack_t::execute();
+    hunter_pet_attack_t::execute();
   }
 
   void impact( action_state_t* s ) override
   {
-    hunter_main_pet_attack_t::impact( s );
+    hunter_pet_attack_t::impact( s );
 
-    td( s->target )->hunter_main_pet_base_td_t::debuffs.venomous_bite->trigger( composite_dot_duration( s ) );
+    p()->get_target_data( s->target )->hunter_main_pet_base_td_t::debuffs.venomous_bite->trigger( composite_dot_duration( s ) );
 
     if ( auto ac = o()->pets.animal_companion )
     {
@@ -3151,41 +3154,41 @@ struct bloodshed_t : hunter_main_pet_attack_t
 
 // Bestial Wrath ===========================================================
 
-struct bestial_wrath_t : hunter_pet_action_t<hunter_main_pet_base_t, melee_attack_t>
+struct bestial_wrath_t : hunter_pet_attack_t<hunter_main_pet_base_t>
 {
-  bestial_wrath_t( hunter_main_pet_base_t* p ) : hunter_pet_action_t( "bestial_wrath", p, p -> find_spell( 344572 ) )
+  bestial_wrath_t( hunter_main_pet_base_t* p ) : hunter_pet_attack_t( "bestial_wrath", p, p->find_spell( 344572 ) )
   {
     background = true;
   }
 
   void impact( action_state_t* s ) override
   {
-    hunter_pet_action_t::impact( s );
+    hunter_pet_attack_t::impact( s );
   }
 };
 
 // Ravenous Leap (Fenryr) ===================================================
 
-struct ravenous_leap_t : public hunter_pet_action_t<fenryr_t, melee_attack_t>
+struct ravenous_leap_t : public hunter_pet_attack_t<fenryr_t>
 {
-  ravenous_leap_t( fenryr_t* p ) : hunter_pet_action_t( "ravenous_leap", p, p -> find_spell( 459753 ) )
+  ravenous_leap_t( fenryr_t* p ) : hunter_pet_attack_t( "ravenous_leap", p, p->find_spell( 459753 ) )
   {
     background = true;
   }
 
   void impact( action_state_t* s ) override
   {
-    hunter_pet_action_t::impact( s );
+    hunter_pet_attack_t::impact( s );
   }
 };
 
 // Rend Flesh (Bear) ===================================================
 
-struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
+struct rend_flesh_t : public hunter_pet_attack_t<bear_t>
 {
-  struct envenomed_fangs_t : public hunter_pet_action_t<bear_t, melee_attack_t>
+  struct envenomed_fangs_t : public hunter_pet_attack_t<bear_t>
   {
-    envenomed_fangs_t( bear_t* p ) : hunter_pet_action_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell ) {}
+    envenomed_fangs_t( bear_t* p ) : hunter_pet_attack_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell ) {}
   };
   
   struct
@@ -3197,7 +3200,7 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 
   envenomed_fangs_t* envenomed_fangs = nullptr;
 
-  rend_flesh_t( bear_t* p ) : hunter_pet_action_t( "rend_flesh", p, p->o()->talents.howl_of_the_pack_leader_bear_bleed )
+  rend_flesh_t( bear_t* p ) : hunter_pet_attack_t( "rend_flesh", p, p->o()->talents.howl_of_the_pack_leader_bear_bleed )
   {
     background = dual = true;
     aoe = as<int>( data().effectN( 2 ).base_value() );
@@ -3240,7 +3243,7 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 
   void tick( dot_t* d )
   {
-    hunter_pet_action_t::tick( d );
+    hunter_pet_attack_t::tick( d );
 
     if ( rng().roll( ursine_fury.chance ) )
       ursine_fury.cooldown->adjust( ursine_fury.reduction );
@@ -3248,7 +3251,7 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 
   void impact( action_state_t* s ) override
   {
-    hunter_pet_action_t::impact( s );
+    hunter_pet_attack_t::impact( s );
 
     if ( o()->talents.envenomed_fangs.ok() )
     {
@@ -3270,7 +3273,7 @@ struct rend_flesh_t : public hunter_pet_action_t<bear_t, melee_attack_t>
 
   double composite_ta_multiplier( const action_state_t* s ) const override
   {
-    double m = hunter_pet_action_t::composite_ta_multiplier( s );
+    double m = hunter_pet_attack_t::composite_ta_multiplier( s );
     
     // Inherit multipliers from the player
     m *= o()->actions.rend_flesh->composite_ta_multiplier( s );
@@ -9405,8 +9408,6 @@ void hunter_t::init_special_effects()
 void hunter_t::init_finished()
 {
   player_t::init_finished();
-
-  init_actions();
 }
 
 void hunter_t::reset()
