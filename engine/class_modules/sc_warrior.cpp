@@ -14,7 +14,7 @@ namespace
 // ==========================================================================
 // Warrior
 // To Do: Clean up green text
-// Fury - Gathering Storm tick behavior - Fury needs 2 more
+// Fury - 
 // Arms - 
 // ==========================================================================
 
@@ -4575,7 +4575,8 @@ struct thunder_blast_t : public warrior_attack_t
           p()->talents.warrior.seismic_reverberation->ok() &&
           state->n_targets >= p()->talents.warrior.seismic_reverberation->effectN( 1 ).base_value() )
     {
-      seismic_action->base_dd_min = seismic_action->base_dd_max = state->result_amount * ( 1.0 + p()->talents.warrior.seismic_reverberation->effectN( 4 ).percent() );
+      // Seismic Reverb deals 70% reduced Thunder Blast damage, despite only listing Whirlwind/Cleave as affected spells
+      seismic_action->base_dd_min = seismic_action->base_dd_max = state->result_amount * ( 1.0 + p()->talents.warrior.seismic_reverberation->effectN( 3 ).percent() );
       seismic_action->execute_on_target( target );
     }
   }
@@ -4765,7 +4766,8 @@ struct thunder_clap_t : public warrior_attack_t
           p()->talents.warrior.seismic_reverberation->ok() &&
           state->n_targets >= p()->talents.warrior.seismic_reverberation->effectN( 1 ).base_value() )
     {
-      seismic_action->base_dd_min = seismic_action->base_dd_max = state->result_amount * ( 1.0 + p()->talents.warrior.seismic_reverberation->effectN( 4 ).percent() );
+      // Seismic Reverb deals 70% reduced Thunder Clap damage, despite only listing Whirlwind/Cleave as affected spells
+      seismic_action->base_dd_min = seismic_action->base_dd_max = state->result_amount * ( 1.0 + p()->talents.warrior.seismic_reverberation->effectN( 3 ).percent() );
       seismic_action->execute_on_target( target );
     }
   }
