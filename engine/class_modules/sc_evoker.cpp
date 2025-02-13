@@ -1264,6 +1264,7 @@ struct evoker_t : public player_t
     propagate_const<cooldown_t*> upheaval;
     propagate_const<cooldown_t*> breath_of_eons;
     propagate_const<cooldown_t*> tip_the_scales;
+    propagate_const<cooldown_t*> hover;
   } cooldown;
 
   // Gains
@@ -4719,20 +4720,20 @@ struct firestorm_t : public evoker_spell_t
 
 struct fury_of_the_aspects_t : public evoker_spell_t
 {
-    fury_of_the_aspects_t( evoker_t* p, std::string_view options_str )
-        : evoker_spell_t( "fury_of_the_aspects_t", p, p->find_class_spell( "Fury of the Aspects" ), options_str )
-    {
-    }
+  fury_of_the_aspects_t( evoker_t* p, std::string_view options_str )
+    : evoker_spell_t( "fury_of_the_aspects_t", p, p->find_class_spell( "Fury of the Aspects" ), options_str )
+  {
+  }
 
-    void execute() override
-    {
-        evoker_spell_t::execute();
+  void execute() override
+  {
+    evoker_spell_t::execute();
 
-        if ( p()->talent.chronowarden.time_convergence.enabled() )
-        {
-            p()->buff.time_convergence_intellect->trigger();
-        }
+    if ( p()->talent.chronowarden.time_convergence.enabled() )
+    {
+      p()->buff.time_convergence_intellect->trigger();
     }
+  }
 };
 
 struct hover_t : public evoker_spell_t
@@ -4966,20 +4967,20 @@ struct obsidian_shards_t : public residual_action::residual_periodic_action_t<ev
 
 struct oppressing_roar_t : public evoker_spell_t
 {
-    oppressing_roar_t( evoker_t* p, std::string_view options_str )
-        : evoker_spell_t( "oppressing_roar", p, p->talent.oppressing_roar, options_str )
-    {
-    }
+  oppressing_roar_t( evoker_t* p, std::string_view options_str )
+    : evoker_spell_t( "oppressing_roar", p, p->talent.oppressing_roar, options_str )
+  {
+  }
 
-    void execute() override
-    {
-        evoker_spell_t::execute();
+  void execute() override
+  {
+    evoker_spell_t::execute();
 
-        if ( p()->talent.chronowarden.time_convergence.enabled() )
-        {
-            p()->buff.time_convergence_intellect->trigger();
-        }
+    if ( p()->talent.chronowarden.time_convergence.enabled() )
+    {
+      p()->buff.time_convergence_intellect->trigger();
     }
+  }
 };
 
 struct quell_t : public evoker_spell_t
@@ -5075,20 +5076,20 @@ struct shattering_star_t : public evoker_spell_t
 
 struct time_spiral_t : public evoker_spell_t
 {
-    time_spiral_t( evoker_t* p, std::string_view options_str )
-        : evoker_spell_t( "time_spiral", p, p->talent.time_spiral, options_str )
-    {
-    }
+  time_spiral_t( evoker_t* p, std::string_view options_str )
+    : evoker_spell_t( "time_spiral", p, p->talent.time_spiral, options_str )
+  {
+  }
 
-    void execute() override
-    {
-        evoker_spell_t::execute();
+  void execute() override
+  {
+    evoker_spell_t::execute();
 
-        if ( p()->talent.chronowarden.time_convergence.enabled() )
-        {
-            p()->buff.time_convergence_intellect->trigger();
-        }
+    if ( p()->talent.chronowarden.time_convergence.enabled() )
+    {
+      p()->buff.time_convergence_intellect->trigger();
     }
+  }
 };
 
 struct tip_the_scales_t : public evoker_spell_t
@@ -7691,6 +7692,7 @@ evoker_t::evoker_t( sim_t* sim, std::string_view name, race_e r )
   cooldown.upheaval       = get_cooldown( "upheaval" );
   cooldown.breath_of_eons = get_cooldown( "breath_of_eons" );
   cooldown.tip_the_scales = get_cooldown( "tip_the_scales" );
+  cooldown.hover          = get_cooldown( "hover" );
 
   resource_regeneration             = regen_type::DYNAMIC;
   regen_caches[ CACHE_HASTE ]       = true;
