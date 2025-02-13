@@ -357,27 +357,32 @@ struct simplified_player_t : public player_t
 
   
   std::map<std::string, bob_settings_t> bob_settings = {
-      { "default", { ROLE_SPELL, 10.3 , true, 1.5_s, 0.40, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } }, // 250.9k
+      { "default", { ROLE_SPELL, is_ptr() ? 12.1  : 10.3 , true, 1.5_s, 0.40, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } }, // 250.9k
       { "tank",    { ROLE_TANK,   6.1 , true, 1.5_s, 0.45, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } },      // 157.4k
       { "healer",  { ROLE_HEAL,   1.8 , true, 1.5_s, 0.25, -1, 5, 1, 0.0, 20000.0, 0.0011, {} } },      // 78k
-      { "shadow",  { ROLE_SPELL,  6.45, true, 1.5_s, 0.45, -1, 8, 1, 0.0, 20000.0, 0.0011, {       // 244.8k
-          { "two_mins_cds",      0.4, 15_s, 120_s, 3_s },
+      { "shadow",  { ROLE_SPELL,  is_ptr() ? 7.08 : 6.45, true, 1.5_s, 0.45, -1, 8, 1, 0.2, 20000.0, 0.0011, {       // 244.8k
+          { "two_mins_cds",      0.4, is_ptr() ? 40_s : 15_s, 120_s, 3_s },
           { "one_mins_cds",      0.4, 15_s,  60_s, 3_s },
-          { "two_mins_cds_two",  0.4, 45_s, 120_s, 3_s } } } },
-      { "bm",      { ROLE_SPELL,  6.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
+          { "two_mins_cds_two",  0.4, is_ptr() ? 65_s : 45_s, 120_s, 3_s } } } },
+      { "bm",      { ROLE_SPELL,  is_ptr() ? 7.85 : 6.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
           { "two_mins_cds",           0.3,   20_s, 120_s, 3_s },
           { "two_mins_cds_lingering", 0.15,  30_s, 120_s, 3_s },
           { "30s_cds",                0.35, 15_s,  30_s, 3_s } } } },
-      { "assa",    { ROLE_SPELL,  4.65, false,   1_s, 0.5,  -1, 8, 1, 0.8, 11100.0, 0.0011, {              // 234.6k
+      { "assa",    { ROLE_SPELL, is_ptr() ? 4.94 : 4.65, false,   1_s, 0.5,  -1, 8, 1, 0.8, 11100.0, 0.0011, {              // 234.6k
           { "two_mins_cds", 0.9 , 20_s, 120_s, 6_s },
           { "one_mins_cds", 0.65, 14_s,  60_s, 8_s } } } },
-      { "unh",     { ROLE_SPELL,  5.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 18000.0, 0.0011, {             // 251.4k
+      { "unh",     { ROLE_SPELL, is_ptr() ? 7.0 : 5.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 18000.0, 0.0011, {             // 251.4k
           { "90s_cds",      1.1, 20_s,  90_s, 7_s },
           { "45s_cds",      0.6, 20_s,  45_s, 8_s } } } },
       // Could probably use some RNG in the 40s cds to better emulate the 30-40s variance in use timing
-      { "dk_frost",{ ROLE_SPELL,  8.4,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 13900.0, 0.0011, {             // 262.4k
-          { "two_mins_cds", 0.2,  20_s, 120_s, 3_s },
-          { "40s_cds", 0.25, 12_s, 34_s, 3_s } } } },
+      { "dk_frost",{ ROLE_SPELL,  is_ptr() ? 7.55 : 8.4,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 13900.0, 0.0011, {             // 262.4k
+          { "breath_of_sindragosa", 0.45,  20_s, 45_s*3, 3_s },
+          { "empower_rune_weapon", 0.2, 20_s, 45_s * 3, 3_s },
+          { "pillar_of_frost",    0.4, 12_s, 45_s, 2_s },
+          { "reapers_mark",        0.75,  6_s, 45_s, 4_s },
+          { "reapers_mark_cascade", 0.4, 6_s, 45_s, 10_s },
+          { "reapers_mark_cascade2", 0.1, 6_s, 45_s, 16_s }
+      } } },
   };
 
   simplified_player_t( sim_t* sim, std::string_view name, race_e r = RACE_HUMAN )
