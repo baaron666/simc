@@ -360,9 +360,10 @@ struct simplified_player_t : public player_t
       { "default", { ROLE_SPELL, is_ptr() ? 12.1  : 10.3 , true, 1.5_s, 0.40, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } }, // 250.9k
       { "tank",    { ROLE_TANK,   6.1 , true, 1.5_s, 0.45, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } },      // 157.4k
       { "healer",  { ROLE_HEAL,   1.8 , true, 1.5_s, 0.25, -1, 5, 1, 0.0, 20000.0, 0.0011, {} } },      // 78k
-      { "shadow",  { ROLE_SPELL,  is_ptr() ? 7.08 : 6.45, true, 1.5_s, 0.45, -1, 8, 1, 0.2, 20000.0, 0.0011, {       // 244.8k
+      { "shadow",  { ROLE_SPELL,  is_ptr() ? 8.36 : 6.45, true, 1.5_s, 0.45, -1, 8, 1, -0.55, 20000.0, 0.0011, {       // 244.8k
           { "two_mins_cds",      0.4, is_ptr() ? 40_s : 15_s, 120_s, 3_s },
-          { "one_mins_cds",      0.4, 15_s,  60_s, 3_s },
+          { "one_mins_cds",      0.3, 15_s,  60_s, 3_s },
+          { "one_mins_cds_lingering",      0.25, 30_s,  60_s, 3_s },
           { "two_mins_cds_two",  0.4, is_ptr() ? 65_s : 45_s, 120_s, 3_s } } } },
       { "bm",      { ROLE_SPELL,  is_ptr() ? 7.85 : 6.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
           { "two_mins_cds",           0.3,   20_s, 120_s, 3_s },
@@ -523,8 +524,7 @@ struct simplified_player_t : public player_t
         }
       }
 
-      if ( haste_modifier > 0 )
-        m *= 1.0 - haste_modifier + haste_modifier / p()->cache.spell_cast_speed();
+      m *= 1.0 - haste_modifier + haste_modifier / p()->cache.spell_cast_speed();
 
       return m;
     }
