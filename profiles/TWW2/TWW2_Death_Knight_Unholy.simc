@@ -202,30 +202,30 @@ actions.variables+=/variable,name=pooling_runic_power,op=setif,value=1,value_els
 actions.variables+=/variable,name=spend_rp,op=setif,value=1,value_else=0,condition=(!talent.rotten_touch|talent.rotten_touch&!debuff.rotten_touch.up|runic_power.deficit<20)&((talent.improved_death_coil&(active_enemies=2|talent.coil_of_devastation)|rune<3|pet.gargoyle.active|buff.sudden_doom.react|!variable.pop_wounds&debuff.festering_wound.stack>=4))
 actions.variables+=/variable,name=epidemic_targets,value=3+talent.improved_death_coil+(talent.frenzied_bloodthirst&buff.essence_of_the_blood_queen.stack>5)+(talent.hungering_thirst&talent.harbinger_of_doom&buff.sudden_doom.up)
 
-head=cauldron_champions_crown,id=229253,bonus_id=11996/10356/11960/6652/12176/1579/10255/10878,gem_id=213743
-neck=strapped_rescuekeg,id=221060,bonus_id=10879,ilevel=678,gem_id=213482/213482
-shoulders=cauldron_champions_screamplate,id=229251,bonus_id=11996/10356/11962/6652/1579/10255
+head=cauldron_champions_crown,id=229253,bonus_id=11996/10356/11960/6652/12176/1527/10255/10878,gem_id=213743
+neck=strapped_rescuekeg,id=221060,bonus_id=10879,ilevel=678,gem_id=213494/213494
+shoulders=cauldron_champions_screamplate,id=229251,bonus_id=11996/10356/11962/6652/1527/10255
 back=consecrated_cloak,id=222817,bonus_id=11144/9627/9633/8902/8793/10222/10520/8960,ilevel=675,crafted_stats=32/36
-chest=cauldron_champions_ribcage,id=229256,bonus_id=11996/10356/11958/6652/1579/10255,enchant=crystalline_radiance_3
-wrists=everforged_vambraces,id=222435,bonus_id=11144/9627/9633/8902/8793/10222/10520/8960/10878,ilevel=675,gem_id=213482,crafted_stats=32/36
-hands=cauldron_champions_fistguards,id=229254,bonus_id=11996/10356/11959/6652/1579/10255
-waist=coinoperated_girdle,id=228886,bonus_id=11996/10356/6652/12176/1579/10255/10878,ilevel=678,gem_id=213482
+chest=cauldron_champions_ribcage,id=229256,bonus_id=11996/10356/11958/6652/1527/10255,enchant=crystalline_radiance_3
+wrists=everforged_vambraces,id=222435,bonus_id=11144/9627/9633/8902/8793/10222/10520/8960/10878,ilevel=675,gem_id=213494,crafted_stats=32/36
+hands=cauldron_champions_fistguards,id=229254,bonus_id=11996/10356/11959/6652/1527/10255
+waist=coinoperated_girdle,id=228886,bonus_id=11996/10356/6652/12176/1527/10255/10878,ilevel=678,gem_id=213494
 legs=galvanized_oxxein_legguards,id=178800,ilevel=678,enchant=stormbound_armor_kit_3
-feet=cauldron_champions_greatboots,id=229255,bonus_id=11996/10356/6652/1579/10255,enchant=defenders_march_3
-finger1=the_jastor_diamond,id=231265,bonus_id=6652/10394/10392/10356/11996/1527/10255/10879,gem_id=213482/213482,enchant=radiant_haste_3
-finger2=footbomb_championship_ring,id=159462,bonus_id=9880/10879,ilevel=678,gem_id=213482/213482,enchant=radiant_haste_3
+feet=cauldron_champions_greatboots,id=229255,bonus_id=11996/10356/6652/1527/10255,enchant=defenders_march_3
+finger1=the_jastor_diamond,id=231265,bonus_id=6652/10394/10392/10356/11996/1527/10255/10879,gem_id=213494/213494,enchant=radiant_haste_3
+finger2=miniature_roulette_wheel,id=228843,bonus_id=10356/1527/8781/8948/8950,gem_id=213494/213494,enchant=radiant_mastery_3
 trinket1=eye_of_kezan,id=230198,bonus_id=6652/10356/11996/1527/10255,ilevel=678
 trinket2=house_of_cards,id=230027,bonus_id=6652/10356/11996/1527/10255,ilevel=678
 main_hand=bestinslots,id=232526,bonus_id=6652/10356/11996/9418/1527/10255,enchant=rune_of_the_fallen_crusader
 
 # Gear Summary
-# gear_ilvl=694.93
-# gear_strength=65671
-# gear_stamina=528832
-# gear_crit_rating=1857
-# gear_haste_rating=21806
-# gear_mastery_rating=22168
-# gear_versatility_rating=839
-# gear_armor=93645
+# gear_ilvl=677.60
+# gear_strength=51214
+# gear_stamina=392419
+# gear_crit_rating=1586
+# gear_haste_rating=22705
+# gear_mastery_rating=19657
+# gear_versatility_rating=699
+# gear_armor=72548
 # set_bonus=thewarwithin_season_2_2pc=1
 # set_bonus=thewarwithin_season_2_4pc=1
