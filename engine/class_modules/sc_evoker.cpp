@@ -4721,7 +4721,7 @@ struct firestorm_t : public evoker_spell_t
 struct fury_of_the_aspects_t : public evoker_spell_t
 {
   fury_of_the_aspects_t( evoker_t* p, std::string_view options_str )
-    : evoker_spell_t( "fury_of_the_aspects_t", p, p->find_class_spell( "Fury of the Aspects" ), options_str )
+    : evoker_spell_t( "fury_of_the_aspects", p, p->find_class_spell( "Fury of the Aspects" ), options_str )
   {
   }
 
