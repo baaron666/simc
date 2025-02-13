@@ -290,9 +290,6 @@ void subtlety( player_t* p )
   action_priority_list_t* fill = p->get_action_priority_list( "fill" );
 
   precombat->add_action( "apply_poison" );
-  precombat->add_action( "flask" );
-  precombat->add_action( "augmentation" );
-  precombat->add_action( "food" );
   precombat->add_action( "snapshot_stats" );
   precombat->add_action( "variable,name=priority_rotation,value=priority_rotation" );
   precombat->add_action( "variable,name=trinket_sync_slot,value=1,if=trinket.1.has_stat.any_dps&(!trinket.2.has_stat.any_dps|trinket.1.is.treacherous_transmitter|trinket.1.cooldown.duration>=trinket.2.cooldown.duration)" );
