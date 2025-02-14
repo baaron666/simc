@@ -10590,6 +10590,13 @@ struct primordial_storm_t : public shaman_spell_t
       reduced_aoe_targets = p()->talent.primordial_storm->effectN( 3 ).base_value();
     }
 
+    void init() override
+    {
+      shaman_attack_t::init();
+
+      may_proc_flowing_spirits = false;
+    }
+
     double action_multiplier() const override
     {
       double m = shaman_attack_t::action_multiplier();
@@ -10626,6 +10633,15 @@ struct primordial_storm_t : public shaman_spell_t
     // Spell data does not indicate this, textual description does
     affected_by_maelstrom_weapon = true;
   }
+
+  void init() override
+  {
+    shaman_spell_t::init();
+
+    // Allow only single proc attempt per Primordial Storm
+    may_proc_flowing_spirits = true;
+  }
+
 
   void trigger_lightning_damage()
   {
