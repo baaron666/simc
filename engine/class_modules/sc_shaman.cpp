@@ -2707,7 +2707,7 @@ private:
 public:
   bool may_proc_windfury;
   bool may_proc_flametongue;
-  bool may_proc_stormbringer;
+  bool may_proc_stormsurge;
   bool may_proc_lightning_shield;
   bool may_proc_hot_hand;
   bool may_proc_ability_procs;  // For things that explicitly state they proc from "abilities"
@@ -2719,7 +2719,7 @@ public:
     : base_t( token, p, s, variant_ ),
       may_proc_windfury( p->talent.windfury_weapon.ok() ),
       may_proc_flametongue( true ),
-      may_proc_stormbringer( p->spec.stormbringer->ok() ),
+      may_proc_stormsurge( p->spec.stormbringer->ok() ),
       may_proc_lightning_shield( false ),
       may_proc_hot_hand( p->talent.hot_hand.ok() ),
       may_proc_ability_procs( true ),
@@ -2737,9 +2737,9 @@ public:
   {
     ab::init();
 
-    if ( may_proc_stormbringer )
+    if ( may_proc_stormsurge )
     {
-      may_proc_stormbringer = ab::weapon != nullptr;
+      may_proc_stormsurge = ab::weapon != nullptr;
     }
 
     if ( may_proc_flametongue )
@@ -2773,7 +2773,7 @@ public:
       proc_hh = player->get_proc( std::string( "Hot Hand: " ) + full_name() );
     }
 
-    if ( may_proc_stormbringer )
+    if ( may_proc_stormsurge )
     {
       proc_sb = player->get_proc( std::string( "Stormsurge: " ) + full_name() );
     }
@@ -2933,7 +2933,7 @@ struct shaman_spell_t : public shaman_spell_base_t<spell_t>
 {
   action_t* overload;
 
-  bool may_proc_stormbringer = false;
+  bool may_proc_stormsurge = false;
   proc_t* proc_sb;
   bool affected_by_master_of_the_elements = false;
   proc_t* proc_moe;
@@ -2947,12 +2947,12 @@ struct shaman_spell_t : public shaman_spell_base_t<spell_t>
     base_t( token, p, s, type_ ), overload( nullptr ), proc_sb( nullptr ), proc_moe( nullptr ),
     accumulated_lightning_rod_damage( 0.0 ), lr_event( nullptr )
   {
-    may_proc_stormbringer = false;
+    may_proc_stormsurge = false;
   }
 
   void init_finished() override
   {
-    if ( may_proc_stormbringer )
+    if ( may_proc_stormsurge )
     {
       proc_sb = player->get_proc( std::string( "Stormsurge: " ) + full_name() );
     }
@@ -4366,7 +4366,7 @@ struct stormblast_t : public shaman_attack_t
     snapshot_flags = update_flags = ~STATE_MUL_PLAYER_DAM & ( STATE_MUL_DA | STATE_TGT_MUL_DA );
 
     may_proc_windfury = may_proc_flametongue = may_proc_hot_hand = false;
-    may_proc_stormbringer = may_proc_ability_procs = false;
+    may_proc_stormsurge = may_proc_ability_procs = false;
 
     p()->set_mw_proc_state( this, mw_proc_state::DISABLED );
   }
@@ -4457,7 +4457,7 @@ struct windfury_attack_t : public shaman_attack_t
   {
     shaman_attack_t::init_finished();
 
-    if ( may_proc_stormbringer )
+    if ( may_proc_stormsurge )
     {
       if ( weapon->slot == SLOT_MAIN_HAND )
       {
@@ -4518,7 +4518,7 @@ struct crash_lightning_attack_t : public shaman_attack_t
     shaman_attack_t::init();
 
     may_proc_windfury = may_proc_flametongue = may_proc_hot_hand = false;
-    may_proc_stormbringer = false;
+    may_proc_stormsurge = false;
   }
 };
 
@@ -4536,7 +4536,7 @@ struct icy_edge_attack_t : public shaman_attack_t
     shaman_attack_t::init();
 
     may_proc_windfury = may_proc_flametongue = may_proc_hot_hand = false;
-    may_proc_stormbringer = false;
+    may_proc_stormsurge = false;
   }
 };
 
@@ -4788,7 +4788,7 @@ struct sundering_reactivity_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_flametongue = may_proc_windfury = may_proc_stormbringer = player->dbc->ptr;
+    may_proc_flametongue = may_proc_windfury = may_proc_stormsurge = player->dbc->ptr;
     may_proc_flowing_spirits = false;
 
     if ( ! p()->dbc->ptr )
@@ -5179,7 +5179,7 @@ struct lava_lash_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_stormbringer = true;
+    may_proc_stormsurge = true;
 
     if ( p()->talent.reactivity.ok() && p()->action.reactivity )
     {
@@ -5567,7 +5567,7 @@ struct stormstrike_base_t : public shaman_attack_t
   void init() override
   {
     shaman_attack_t::init();
-    may_proc_flametongue = may_proc_windfury = may_proc_stormbringer = false;
+    may_proc_flametongue = may_proc_windfury = may_proc_stormsurge = false;
 
     may_proc_flowing_spirits = p()->talent.flowing_spirits.ok() &&
       !p()->talent.elemental_spirits.ok();
@@ -5808,7 +5808,7 @@ struct sundering_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_stormbringer = may_proc_flametongue = true;
+    may_proc_stormsurge = may_proc_flametongue = true;
   }
 
   void execute() override
@@ -9380,7 +9380,7 @@ struct doom_winds_damage_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_flametongue = may_proc_stormbringer = may_proc_windfury = false;
+    may_proc_flametongue = may_proc_stormsurge = may_proc_windfury = false;
   }
 
   void execute() override
@@ -9401,7 +9401,7 @@ struct doom_winds_t : public shaman_attack_t
 
     weapon = &( player->main_hand_weapon );
     weapon_multiplier = 0.0;
-    may_proc_flowing_spirits = may_proc_flametongue = may_proc_stormbringer = may_proc_windfury = false;
+    may_proc_flowing_spirits = may_proc_flametongue = may_proc_stormsurge = may_proc_windfury = false;
 
     if ( player->action.doom_winds == nullptr )
     {
@@ -9415,7 +9415,7 @@ struct doom_winds_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_stormbringer = false;
+    may_proc_stormsurge = false;
   }
 
   void execute() override
@@ -11808,7 +11808,7 @@ action_t* shaman_t::create_proc_action( util::string_view name, const special_ef
       {
         shaman_attack_t::init();
 
-        may_proc_flametongue = may_proc_flowing_spirits = may_proc_stormbringer = false;
+        may_proc_flametongue = may_proc_flowing_spirits = may_proc_stormsurge = false;
         may_proc_windfury = false;
       }
     };
@@ -12521,7 +12521,7 @@ void shaman_t::trigger_stormbringer( const action_state_t* state, double overrid
 
   if ( attack )
   {
-    if ( attack->may_proc_stormbringer )
+    if ( attack->may_proc_stormsurge )
     {
       result_e r = state->result;
       if ( r == RESULT_HIT || r == RESULT_CRIT || r == RESULT_GLANCE || r == RESULT_NONE )
@@ -12548,7 +12548,7 @@ void shaman_t::trigger_stormbringer( const action_state_t* state, double overrid
 
   if ( spell )
   {
-    if ( spell->may_proc_stormbringer )
+    if ( spell->may_proc_stormsurge )
     {
       if ( override_proc_chance < 0 )
       {
