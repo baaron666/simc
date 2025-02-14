@@ -6487,7 +6487,6 @@ void flarendos_pilot_light( special_effect_t& effect )
       } );
 
   effect.custom_buff = int_buff;
-  new dbc_proc_callback_t( effect.player, effect );
 }
 
 // Amorphous Relic
