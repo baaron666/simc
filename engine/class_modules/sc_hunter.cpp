@@ -326,6 +326,7 @@ struct hunter_t;
 namespace pets
 {
 struct dire_critter_t;
+struct dire_beast_t;
 struct dark_hound_t;
 struct fenryr_t;
 struct hati_t;
@@ -400,11 +401,11 @@ public:
   {
     pets::hunter_main_pet_t* main = nullptr;
     pets::animal_companion_t* animal_companion = nullptr;
-    pets::bear_t* bear = nullptr;
-    spawner::pet_spawner_t<pets::dire_critter_t, hunter_t> dire_beast;
+    spawner::pet_spawner_t<pets::dire_beast_t, hunter_t> dire_beast;
     spawner::pet_spawner_t<pets::dark_hound_t, hunter_t> dark_hound;
     spawner::pet_spawner_t<pets::fenryr_t, hunter_t> fenryr;
     spawner::pet_spawner_t<pets::hati_t, hunter_t> hati;
+    spawner::pet_spawner_t<pets::bear_t, hunter_t> bear;
     spawner::pet_spawner_t<pets::call_of_the_wild_pet_t, hunter_t> cotw_stable_pet;
     spawner::pet_spawner_t<pets::beast_of_opportunity_pet_t, hunter_t> boo_stable_pet;
 
@@ -413,6 +414,7 @@ public:
       dark_hound( "dark_hound", p ),
       fenryr( "fenryr", p ),
       hati( "hati", p ),
+      bear( "bear", p ),
       cotw_stable_pet( "call_of_the_wild_pet", p ), 
       boo_stable_pet( "beast_of_opportunity_pet", p )
     {
@@ -1005,10 +1007,7 @@ public:
 
     action_t* a_murder_of_crows = nullptr;
 
-    action_t* wyverns_cry = nullptr;
-    action_t* bear_summon = nullptr;
     action_t* boar_charge = nullptr;
-    action_t* rend_flesh = nullptr;
 
     action_t* sentinel = nullptr;
     action_t* symphonic_arsenal = nullptr;
@@ -1796,16 +1795,9 @@ struct dark_hound_t final : public hunter_pet_t
 
 struct dire_critter_t : public hunter_pet_t
 {
-  const spell_data_t* energize = find_spell( 281036 );
-
   dire_critter_t( hunter_t* owner, util::string_view n = "dire_beast" )
     : hunter_pet_t( owner, n, PET_HUNTER, true /* GUARDIAN */, true /* dynamic */ )
   {
-    // 11-10-22 Dire Beast - Damage increased by 400%. (15% -> 60%)
-    // 13-10-22 Dire Beast damage increased by 50%. (60% -> 90%)
-    // 22-7-24 Dire Beast damage increased by 10% (90% -> 100%)
-    owner_coeff.ap_from_ap = 1;
-
     resource_regeneration = regen_type::DISABLED;
   }
 
@@ -1813,11 +1805,47 @@ struct dire_critter_t : public hunter_pet_t
   {
     hunter_pet_t::summon( duration );
 
-    o()->buffs.dire_beast->trigger( duration );
-    o()->resource_gain( RESOURCE_FOCUS, energize->effectN( 2 ).base_value(), o()->gains.dire_beast );
-
+    if( o()->talents.dire_cleave.ok() )
+      buffs.beast_cleave->trigger( o()->talents.dire_cleave->effectN( 2 ).time_value() );
+    
     if ( main_hand_attack )
       main_hand_attack->execute();
+  }
+
+  double composite_player_multiplier( school_e school ) const override
+  {
+    double m = hunter_pet_t::composite_player_multiplier( school );
+
+    m *= 1 + o()->talents.dire_frenzy->effectN( 2 ).percent();
+
+    return m;
+  }
+
+  void init_spells() override;
+};
+
+// ==========================================================================
+// Dire Beast
+// ==========================================================================
+
+struct dire_beast_t final : public dire_critter_t
+{
+  const spell_data_t* energize = find_spell( 281036 );
+
+  dire_beast_t( hunter_t* owner, util::string_view n = "dire_beast" ) : dire_critter_t( owner, n )
+  {
+    // 11-10-22 Dire Beast - Damage increased by 400%. (15% -> 60%)
+    // 13-10-22 Dire Beast damage increased by 50%. (60% -> 90%)
+    // 22-7-24 Dire Beast damage increased by 10% (90% -> 100%)
+    owner_coeff.ap_from_ap = 1;
+  }
+
+  void summon( timespan_t duration = 0_ms ) override
+  {
+    dire_critter_t::summon( duration );
+
+    o()->buffs.dire_beast->trigger( duration );
+    o()->resource_gain( RESOURCE_FOCUS, energize->effectN( 2 ).base_value(), o()->gains.dire_beast );
 
     if ( o()->talents.huntmasters_call.ok() )
     {
@@ -1839,21 +1867,7 @@ struct dire_critter_t : public hunter_pet_t
         o()->buffs.huntmasters_call->expire();
       }
     }
-
-    if( o()->talents.dire_cleave.ok() )
-      this->buffs.beast_cleave->trigger( o()->talents.dire_cleave->effectN( 2 ).time_value() );
   }
-
-  double composite_player_multiplier( school_e school ) const override
-  {
-    double m = hunter_pet_t::composite_player_multiplier( school );
-
-    m *= 1 + o()->talents.dire_frenzy->effectN( 2 ).percent();
-
-    return m;
-  }
-
-  void init_spells() override;
 };
 
 // =========================================================================
@@ -1889,11 +1903,7 @@ struct fenryr_t final : public dire_critter_t
 
   void summon( timespan_t duration = 0_ms ) override
   {
-    // Don't run the base summon function as we don't want to trigger the dire beast buff or energize
-    hunter_pet_t::summon( duration );
-
-    if ( main_hand_attack )
-      main_hand_attack->execute();
+    dire_critter_t::summon( duration );
 
     actions.ravenous_leap->execute_on_target( target );
   }
@@ -1925,15 +1935,6 @@ struct hati_t final : public dire_critter_t
     owner_coeff.ap_from_ap = 0.4;
     auto_attack_multiplier = 4.85;
     main_hand_weapon.swing_time = 1.5_s;
-  }
-
-  void summon( timespan_t duration = 0_ms ) override
-  {
-    // Don't run the base summon function as we don't want to trigger the dire beast buff or energize
-    hunter_pet_t::summon( duration );
-
-    if ( main_hand_attack )
-      main_hand_attack->execute();
   }
 };
 
@@ -1970,11 +1971,7 @@ struct bear_t final : public dire_critter_t
 
   void summon( timespan_t duration = 0_ms ) override
   {
-    // Don't run the base summon function as we don't want to trigger the dire beast buff or energize
-    hunter_pet_t::summon( duration );
-
-    if ( main_hand_attack )
-      main_hand_attack->execute();
+    dire_critter_t::summon( duration );
 
     if ( actions.rend_flesh )
       actions.rend_flesh->execute_on_target( target );
@@ -3373,16 +3370,6 @@ struct rend_flesh_t : public hunter_pet_attack_t<bear_t>
       }
     }
   }
-
-  double composite_ta_multiplier( const action_state_t* s ) const override
-  {
-    double m = hunter_pet_attack_t::composite_ta_multiplier( s );
-    
-    // Inherit multipliers from the player
-    m *= o()->actions.rend_flesh->composite_ta_multiplier( s );
-
-    return m;
-  }
 };
 
 } // end namespace pets::actions
@@ -3891,7 +3878,7 @@ bool hunter_t::consume_howl_of_the_pack_leader( player_t* target )
   if ( buffs.howl_of_the_pack_leader_wyvern_ready->check() )
   {
     up = true;
-    actions.wyverns_cry->execute();
+    buffs.wyverns_cry->trigger( as<int>( talents.howl_of_the_pack_leader->effectN( 3 ).base_value() + specs.survival_hunter->effectN( 12 ).base_value() ) );
     buffs.howl_of_the_pack_leader_wyvern_ready->expire();
   }
 
@@ -3914,7 +3901,7 @@ bool hunter_t::consume_howl_of_the_pack_leader( player_t* target )
   if ( buffs.howl_of_the_pack_leader_bear_ready->check() )
   {
     up = true;
-    actions.bear_summon->execute_on_target( target );
+    pets.bear.spawn( talents.howl_of_the_pack_leader_bear_summon->duration() + talents.dire_frenzy->effectN( 1 ).time_value() );
     buffs.howl_of_the_pack_leader_bear_ready->expire();
   }
 
@@ -6805,6 +6792,7 @@ struct summon_pet_t: public hunter_spell_t
   void execute() override
   {
     hunter_spell_t::execute();
+
     pet -> type = PLAYER_PET;
     pet -> summon();
 
@@ -7202,37 +7190,6 @@ struct kill_command_t: public hunter_spell_t
     }
 
     return hunter_spell_t::create_expression( expression_str );
-  }
-};
-
-// Howl of the Pack Leader (Pack Leader Talent)
-
-struct wyverns_cry_t final : hunter_spell_t
-{
-  wyverns_cry_t( hunter_t* p ) : hunter_spell_t( "wyverns_cry", p, p->talents.howl_of_the_pack_leader_wyvern_summon )
-  {
-  }
-
-  void execute() override
-  {
-    hunter_spell_t::execute();
-
-    p()->buffs.wyverns_cry->trigger( as<int>( p()->talents.howl_of_the_pack_leader->effectN( 3 ).base_value() 
-      + p()->specs.survival_hunter->effectN( 12 ).base_value() ) );
-  }
-};
-
-struct bear_summon_t final : hunter_spell_t
-{
-  bear_summon_t( hunter_t* p ) : hunter_spell_t( "bear_summon", p, p->talents.howl_of_the_pack_leader_bear_summon )
-  {
-  }
-
-  void execute() override
-  {
-    hunter_spell_t::execute();
-
-    p()->pets.bear->summon( data().duration() );
   }
 };
 
@@ -8217,9 +8174,6 @@ void hunter_t::create_pets()
 
   if ( talents.animal_companion.ok() )
     pets.animal_companion = new pets::animal_companion_t( this );
-
-  if ( talents.howl_of_the_pack_leader.ok() )
-    pets.bear = new pets::bear_t( this );
 }
 
 void hunter_t::init()
@@ -8722,12 +8676,7 @@ void hunter_t::create_actions()
     actions.a_murder_of_crows = new spells::a_murder_of_crows_t( this );
 
   if ( talents.howl_of_the_pack_leader.ok() )
-  {
-    actions.wyverns_cry = new spells::wyverns_cry_t( this );
-    actions.bear_summon = new spells::bear_summon_t( this );
     actions.boar_charge = new attacks::boar_charge_t( this );
-    actions.rend_flesh = new attacks::rend_flesh_t( this );
-  }
 
   if ( talents.sentinel.ok() )
     actions.sentinel = new attacks::sentinel_t( this );
