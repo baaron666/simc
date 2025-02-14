@@ -3073,9 +3073,6 @@ struct hot_streak_spell_t : public custom_state_spell_t<fire_mage_spell_t, hot_s
     if ( time_to_execute > 0_ms && !p()->buffs.hyperthermia->check() && p()->buffs.fury_of_the_sun_king->check() )
     {
       expire_skb = true;
-      // Extending Combustion doesn't trigger Frostfire Empowerment
-      if ( !p()->buffs.combustion->check() )
-        p()->trigger_flash_freezeburn();
       p()->buffs.combustion->extend_duration_or_trigger( 1000 * p()->talents.sun_kings_blessing->effectN( 2 ).time_value() );
     }
 
@@ -7463,7 +7460,6 @@ struct time_anomaly_tick_event_t final : public mage_event_t
             break;
           case TA_COMBUSTION:
             mage->buffs.combustion->trigger( 1000 * mage->talents.time_anomaly->effectN( 4 ).time_value() );
-            mage->trigger_flash_freezeburn();
             break;
           case TA_FIRE_BLAST:
             mage->cooldowns.fire_blast->reset( true );
@@ -7475,7 +7471,6 @@ struct time_anomaly_tick_event_t final : public mage_event_t
           case TA_ICY_VEINS:
             mage->buffs.icy_veins->trigger( 1000 * mage->talents.time_anomaly->effectN( 5 ).time_value() );
             mage->buffs.cryopathy->trigger( mage->buffs.cryopathy->max_stack() );
-            mage->trigger_flash_freezeburn();
             if ( mage->pets.water_elemental->is_sleeping() )
               mage->pets.water_elemental->summon();
             break;
