@@ -2009,6 +2009,7 @@ struct hprio_cd_min_remains_expr_t : public expr_t
 struct shaman_action_state_t : public action_state_t
 {
   spell_variant exec_type = spell_variant::NORMAL;
+  double mw_mul = 0.0;
 
   shaman_action_state_t( action_t* action_, player_t* target_ ) :
     action_state_t( action_, target_ )
@@ -2018,6 +2019,7 @@ struct shaman_action_state_t : public action_state_t
   {
     action_state_t::initialize();
     exec_type = spell_variant::NORMAL;
+    mw_mul = 0.0;
   }
 
   void copy_state( const action_state_t* s ) override
@@ -2026,6 +2028,7 @@ struct shaman_action_state_t : public action_state_t
 
     auto lbs = debug_cast<const shaman_action_state_t*>( s );
     exec_type = lbs->exec_type;
+    mw_mul = lbs->mw_mul;
   }
 
   std::ostringstream& debug_str( std::ostringstream& s ) override
@@ -2033,6 +2036,7 @@ struct shaman_action_state_t : public action_state_t
     action_state_t::debug_str( s );
 
     s << " exec_type=" << exec_type_str( exec_type );
+    s << " mw_mul=" << mw_mul;
 
     return s;
   }
@@ -2093,6 +2097,11 @@ public:
   bool may_proc_flowing_spirits;
   proc_t *proc_fs;
 
+  bool affected_by_maelstrom_weapon = false;
+  int mw_consume_max_stack, mw_consumed_stacks, mw_affected_stacks;
+  // Maelstrom-consuming parent spell to inherit stacks from its cast
+  action_t* mw_parent;
+
   shaman_action_t( util::string_view n, shaman_t* player, const spell_data_t* s = spell_data_t::nil(),
                   spell_variant type_ = spell_variant::NORMAL )
     : ab( n, player, s ),
@@ -2126,7 +2135,10 @@ public:
       affected_by_elemental_weapons_da( false ),
       affected_by_elemental_weapons_ta( false ),
       may_proc_flowing_spirits( false ),
-      proc_fs( nullptr )
+      proc_fs( nullptr ),
+      affected_by_maelstrom_weapon( false ),
+      mw_consume_max_stack( 0 ), mw_consumed_stacks( 0 ), mw_affected_stacks( 0 ),
+      mw_parent( nullptr )
   {
     ab::may_crit = true;
     ab::track_cd_waste = s->cooldown() > timespan_t::zero() || s->charge_cooldown() > timespan_t::zero();
@@ -2143,6 +2155,16 @@ public:
       maelstrom_gain    = effect.resource( RESOURCE_MAELSTROM );
       ab::energize_type = action_energize::NONE;  // disable resource generation from spell data.
     }
+
+    if ( this->data().affected_by( player->spell.maelstrom_weapon->effectN( 1 ) ) )
+    {
+      affected_by_maelstrom_weapon = true;
+    }
+
+    mw_consume_max_stack = std::max(
+        as<int>( this->p()->buff.maelstrom_weapon->data().max_stacks() ),
+        as<int>( this->p()->talent.overflowing_maelstrom->effectN( 1 ).base_value() )
+    );
     affected_by_stormkeeper_cast_time =
         ab::data().affected_by( player->find_spell( 191634 )->effectN( 1 ) );
     affected_by_stormkeeper_damage    =
@@ -2198,10 +2220,124 @@ public:
     }
   }
 
+  shaman_t* p()
+  { return debug_cast<shaman_t*>( ab::player ); }
+
+  const shaman_t* p() const
+  { return debug_cast<shaman_t*>( ab::player ); }
+
+  shaman_td_t* td( player_t* t ) const
+  { return p()->get_target_data( t ); }
+
+  static shaman_action_state_t* cast_state( action_state_t* s )
+  { return debug_cast<shaman_action_state_t*>( s ); }
+
+  static const shaman_action_state_t* cast_state( const action_state_t* s )
+  { return debug_cast<const shaman_action_state_t*>( s ); }
+
   std::string full_name() const
   {
     std::string n = ab::data().name_cstr();
     return n.empty() ? ab::name_str : n;
+  }
+
+  virtual bool benefit_from_maelstrom_weapon() const
+  {
+    return affected_by_maelstrom_weapon && this->p()->buff.maelstrom_weapon->up();
+  }
+
+  // Some spells do not consume Maelstrom Weapon stacks always, so need to control this on
+  // a spell to spell level
+  virtual bool consume_maelstrom_weapon() const
+  {
+    if ( this->exec_type == spell_variant::THORIMS_INVOCATION )
+    {
+      return true;
+    }
+
+    // Don't consume MW stacks if the spell inherits MW stacks from a parent MW-consuming spell
+    if ( this->mw_parent != nullptr )
+    {
+      return false;
+    }
+
+    return benefit_from_maelstrom_weapon() && !this->background;
+  }
+
+  virtual int maelstrom_weapon_stacks() const
+  {
+    if ( !benefit_from_maelstrom_weapon() )
+    {
+      return 0;
+    }
+
+    auto mw_stacks = std::min( mw_consume_max_stack, this->p()->buff.maelstrom_weapon->check() );
+
+    if ( this->exec_type == spell_variant::THORIMS_INVOCATION )
+    {
+      mw_stacks = std::min( mw_stacks,
+        as<int>( this->p()->talent.thorims_invocation->effectN( 1 ).base_value() ) );
+    }
+
+    return mw_stacks;
+  }
+
+  double compute_mw_multiplier()
+  {
+    if ( ( !this->p()->spec.maelstrom_weapon->ok() && !this->p()->talent.maelstrom_weapon.ok() ) ||
+      !affected_by_maelstrom_weapon )
+    {
+      return 0.0;
+    }
+
+    double mw_multiplier = 0.0;
+    mw_affected_stacks = maelstrom_weapon_stacks();
+    mw_consumed_stacks = consume_maelstrom_weapon() ? mw_affected_stacks : 0;
+
+    if ( mw_affected_stacks && affected_by_maelstrom_weapon )
+    {
+      double stack_value = this->p()->talent.improved_maelstrom_weapon->effectN( 1 ).percent() +
+                           this->p()->talent.raging_maelstrom->effectN( 2 ).percent();
+
+      mw_multiplier = stack_value * mw_affected_stacks;
+    }
+
+    if ( this->sim->debug && mw_multiplier )
+    {
+      this->sim->out_debug.print(
+        "{} {} mw_affected={}, mw_benefit={}, mw_consumed={}, mw_stacks={}, mw_multiplier={}",
+        this->player->name(), this->name(), affected_by_maelstrom_weapon,
+        benefit_from_maelstrom_weapon(), mw_consumed_stacks,
+        mw_affected_stacks, mw_multiplier );
+    }
+
+    return mw_multiplier;
+  }
+
+  virtual double composite_maelstrom_gain_coefficient( const action_state_t* state = nullptr ) const
+  {
+    double m = maelstrom_gain_coefficient;
+
+    m *= p()->composite_maelstrom_gain_coefficient( state );
+
+    return m;
+  }
+
+  virtual void trigger_maelstrom_gain( const action_state_t* state )
+  {
+    if ( maelstrom_gain == 0 )
+    {
+      return;
+    }
+
+    double g = maelstrom_gain;
+    g *= composite_maelstrom_gain_coefficient( state );
+
+    if ( maelstrom_gain_per_target ) {
+      g *= state->n_targets;
+    }
+
+    ab::player->resource_gain( RESOURCE_MAELSTROM, g, gain, this );
   }
 
   void init() override
@@ -2213,7 +2349,6 @@ public:
       ab::special && ab::callbacks && !ab::proc && ab::data().flags( SX_ALLOW_CLASS_ABILITY_PROCS ) &&
       ab::has_direct_damage_effect( ab::data() );
   }
-
 
   void init_finished() override
   {
@@ -2241,28 +2376,41 @@ public:
     }
 
     proc_fs = p()->get_proc( std::string( "Flowing Spirits: " ) + full_name() );
-
   }
-
-  static shaman_action_state_t* cast_state( action_state_t* s )
-  { return debug_cast<shaman_action_state_t*>( s ); }
-
-  static const shaman_action_state_t* cast_state( const action_state_t* s )
-  { return debug_cast<const shaman_action_state_t*>( s ); }
 
   action_state_t* new_state() override
   { return new shaman_action_state_t( this, this->target ); }
 
-  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+  void snapshot_state( action_state_t* s, result_amount_type rt ) override
   {
-    ab::snapshot_internal( s, flags, rt );
+    auto shaman_state = cast_state( s );
 
-    cast_state( s )->exec_type = this->exec_type;
+    shaman_state->exec_type = this->exec_type;
+
+    // Inherit Maelstrom Weapon multiplier from the parent. Presumes that the parent always executes
+    // before this action.
+    if ( mw_parent )
+    {
+        shaman_state->mw_mul = cast_state( mw_parent->execute_state )->mw_mul;
+    }
+    // Compute and cache Maelstrom Weapon multiplier before executing the spell. MW multiplier is
+    // used to compute the damage of the spell, either during execute or during impact (Lava Burst).
+    else
+    {
+      if ( affected_by_maelstrom_weapon )
+      {
+        shaman_state->mw_mul = compute_mw_multiplier();
+      }
+    }
+
+    ab::snapshot_state( s, rt );
   }
 
-  double composite_total_attack_power() const override
+  double composite_da_multiplier( const action_state_t* state ) const override
   {
-    double m = ab::composite_total_attack_power();
+    auto m = ab::composite_da_multiplier( state );
+
+    m *= 1.0 + this->cast_state( state )->mw_mul;
 
     return m;
   }
@@ -2388,52 +2536,6 @@ public:
     return m;
   }
 
-  shaman_t* p()
-  {
-    return debug_cast<shaman_t*>( ab::player );
-  }
-  const shaman_t* p() const
-  {
-    return debug_cast<shaman_t*>( ab::player );
-  }
-
-  shaman_td_t* td( player_t* t ) const
-  {
-    return p()->get_target_data( t );
-  }
-
-  virtual double composite_maelstrom_gain_coefficient( const action_state_t* state = nullptr ) const
-  {
-    double m = maelstrom_gain_coefficient;
-
-    m *= p()->composite_maelstrom_gain_coefficient( state );
-
-    return m;
-  }
-
-  virtual bool is_damaging_ability() const
-  {
-    return is_direct_damage_ability() || is_periodic_damage_ability();
-  }
-
-  virtual bool is_direct_damage_ability() const
-  {
-    return this->harmful && (
-        this->base_dd_min > 0 ||
-        this->spell_power_mod.direct > 0 ||
-        this->attack_power_mod.direct > 0
-    );
-  }
-
-  virtual bool is_periodic_damage_ability() const
-  {
-    return this->harmful && (
-        this->base_td > 0 ||
-        this->spell_power_mod.tick > 0 ||
-        this->attack_power_mod.tick > 0
-    );
-  }
-
   double execute_time_pct_multiplier() const override
   {
     auto mul = ab::execute_time_pct_multiplier();
@@ -2456,6 +2558,11 @@ public:
     if ( affected_by_storm_frenzy && p()->buff.storm_frenzy->check() && !ab::background)
     {
       mul *= 1.0 + p()->buff.storm_frenzy->value();
+    }
+
+    if ( affected_by_maelstrom_weapon )
+    {
+      mul *= 1.0 + this->p()->spell.maelstrom_weapon->effectN( 1 ).percent() * this->maelstrom_weapon_stacks();
     }
 
     return mul;
@@ -2499,6 +2606,25 @@ public:
   {
     ab::execute();
 
+    // Main hand swing timer resets if the MW-affected spell is not instant cast
+    // Need to check this before spending the MW or autos will be lost.
+    if ( affected_by_maelstrom_weapon && mw_affected_stacks < 5 )
+    {
+      if ( this->p()->main_hand_attack && this->p()->main_hand_attack->execute_event &&
+           !this->background )
+      {
+        if ( this->sim->debug )
+        {
+          this->sim->out_debug.print( "{} resetting {} due to MW spell cast of {}",
+                                     this->p()->name(), this->p()->main_hand_attack->name(),
+                                     this->name() );
+        }
+        event_t::cancel( this->p()->main_hand_attack->execute_event );
+        this->p()->main_hand_attack->schedule_execute();
+        this->p()->proc.reset_swing_mw->occur();
+      }
+    }
+
     if ( p()->specialization() == SHAMAN_ELEMENTAL )
     {
       trigger_maelstrom_gain( ab::execute_state );
@@ -2524,6 +2650,8 @@ public:
     {
       this->p()->buff.storm_frenzy->decrement();
     }
+
+    this->p()->consume_maelstrom_weapon( this->execute_state, mw_consumed_stacks );
   }
 
   void impact( action_state_t* state ) override
@@ -2565,22 +2693,6 @@ public:
     return ab::create_expression( name );
   }
 
-  virtual void trigger_maelstrom_gain( const action_state_t* state )
-  {
-    if ( maelstrom_gain == 0 )
-    {
-      return;
-    }
-
-    double g = maelstrom_gain;
-    g *= composite_maelstrom_gain_coefficient( state );
-
-    if ( maelstrom_gain_per_target ) {
-      g *= state->n_targets;
-    }
-
-    ab::player->resource_gain( RESOURCE_MAELSTROM, g, gain, this );
-  }
 };
 
 // ==========================================================================
@@ -2719,39 +2831,6 @@ public:
 // Shaman Base Spell
 // ==========================================================================
 
-struct shaman_spell_base_state_t : public shaman_action_state_t
-{
-  double mw_mul;
-
-  shaman_spell_base_state_t( action_t* action_, player_t* target_ ) :
-    shaman_action_state_t( action_, target_ ), mw_mul( 0.0 )
-  { }
-
-  void initialize() override
-  {
-    shaman_action_state_t::initialize();
-
-    mw_mul = 0.0;
-  }
-
-  void copy_state( const action_state_t* s ) override
-  {
-    shaman_action_state_t::copy_state( s );
-
-    auto lbs = debug_cast<const shaman_spell_base_state_t*>( s );
-    mw_mul = lbs->mw_mul;
-  }
-
-  std::ostringstream& debug_str( std::ostringstream& s ) override
-  {
-    shaman_action_state_t::debug_str( s );
-
-    s << " mw_mul=" << mw_mul;
-
-    return s;
-  }
-};
-
 template <class Base>
 struct shaman_spell_base_t : public shaman_action_t<Base>
 {
@@ -2761,121 +2840,13 @@ private:
 public:
   using base_t = shaman_spell_base_t<Base>;
 
-  bool affected_by_maelstrom_weapon = false;
-
-  int mw_consume_max_stack, mw_consumed_stacks, mw_affected_stacks;
-
   ancestor_cast ancestor_trigger;
-
-  // Maelstrom-consuming parent spell to inherit stacks from its cast
-  action_t* mw_parent;
 
   shaman_spell_base_t( util::string_view n, shaman_t* player,
                        const spell_data_t* s = spell_data_t::nil(),
                        spell_variant type_ = spell_variant::NORMAL )
-    : ab( n, player, s, type_ ), mw_consume_max_stack( 0 ), mw_consumed_stacks( 0 ),
-      mw_affected_stacks( 0 ), ancestor_trigger( ancestor_cast::DISABLED ),
-      mw_parent( nullptr )
-  {
-    if ( this->data().affected_by( player->spell.maelstrom_weapon->effectN( 1 ) ) )
-    {
-      affected_by_maelstrom_weapon = true;
-    }
-
-    mw_consume_max_stack = std::max(
-        as<int>( this->p()->buff.maelstrom_weapon->data().max_stacks() ),
-        as<int>( this->p()->talent.overflowing_maelstrom->effectN( 1 ).base_value() )
-    );
-  }
-
-  virtual bool benefit_from_maelstrom_weapon() const
-  {
-    return affected_by_maelstrom_weapon && this->p()->buff.maelstrom_weapon->up();
-  }
-
-  // Some spells do not consume Maelstrom Weapon stacks always, so need to control this on
-  // a spell to spell level
-  virtual bool consume_maelstrom_weapon() const
-  {
-    if ( this->exec_type == spell_variant::THORIMS_INVOCATION )
-    {
-      return true;
-    }
-
-    // Don't consume MW stacks if the spell inherits MW stacks from a parent MW-consuming spell
-    if ( this->mw_parent != nullptr )
-    {
-      return false;
-    }
-
-    return benefit_from_maelstrom_weapon() && !this->background;
-  }
-
-  virtual int maelstrom_weapon_stacks() const
-  {
-    if ( !benefit_from_maelstrom_weapon() )
-    {
-      return 0;
-    }
-
-    auto mw_stacks = std::min( mw_consume_max_stack, this->p()->buff.maelstrom_weapon->check() );
-
-    if ( this->exec_type == spell_variant::THORIMS_INVOCATION )
-    {
-      mw_stacks = std::min( mw_stacks,
-                            as<int>( this->p()->talent.thorims_invocation->effectN( 1 ).base_value() ) );
-    }
-
-    return mw_stacks;
-  }
-
-  static shaman_spell_base_state_t* spell_base_state( action_state_t* s )
-  { return debug_cast<shaman_spell_base_state_t*>( s ); }
-
-  static const shaman_spell_base_state_t* spell_base_state( const action_state_t* s )
-  { return debug_cast<const shaman_spell_base_state_t*>( s ); }
-
-  action_state_t* new_state() override
-  { return new shaman_spell_base_state_t( this, this->target ); }
-
-  void snapshot_state( action_state_t* s, result_amount_type rt ) override
-  {
-    // Inherit Maelstrom Weapon multiplier from the parent. Presumes that the parent always executes
-    // before this action.
-    if ( mw_parent )
-    {
-        spell_base_state( s )->mw_mul = spell_base_state( mw_parent->execute_state )->mw_mul;
-    }
-    // Compute and cache Maelstrom Weapon multiplier before executing the spell. MW multiplier is
-    // used to compute the damage of the spell, either during execute or during impact (Lava Burst).
-    else
-    {
-      if ( affected_by_maelstrom_weapon )
-      {
-        spell_base_state( s )->mw_mul = compute_mw_multiplier();
-      }
-    }
-
-    ab::snapshot_state( s, rt );
-  }
-
-  double composite_da_multiplier( const action_state_t* state ) const override
-  {
-    auto m = ab::composite_da_multiplier( state );
-
-    m *= 1.0 + spell_base_state( state )->mw_mul;
-
-    return m;
-  }
-
-  double execute_time_pct_multiplier() const override
-  {
-    auto mul = ab::execute_time_pct_multiplier();
-
-    mul *= 1.0 + this->p()->spell.maelstrom_weapon->effectN( 1 ).percent() * maelstrom_weapon_stacks();
-
-    return mul;
-  }
+    : ab( n, player, s, type_ ), ancestor_trigger( ancestor_cast::DISABLED )
+  { }
 
   double action_multiplier() const override
   {
@@ -2894,38 +2865,6 @@ public:
     return m;
   }
 
-  double compute_mw_multiplier()
-  {
-    if ( ( !this->p()->spec.maelstrom_weapon->ok() && !this->p()->talent.maelstrom_weapon.ok() ) ||
-      !affected_by_maelstrom_weapon )
-    {
-      return 0.0;
-    }
-
-    double mw_multiplier = 0.0;
-    mw_affected_stacks = maelstrom_weapon_stacks();
-    mw_consumed_stacks = consume_maelstrom_weapon() ? mw_affected_stacks : 0;
-
-    if ( mw_affected_stacks && affected_by_maelstrom_weapon )
-    {
-      double stack_value = this->p()->talent.improved_maelstrom_weapon->effectN( 1 ).percent() +
-                           this->p()->talent.raging_maelstrom->effectN( 2 ).percent();
-
-      mw_multiplier = stack_value * mw_affected_stacks;
-    }
-
-    if ( this->sim->debug && mw_multiplier )
-    {
-      this->sim->out_debug.print(
-        "{} {} mw_affected={}, mw_benefit={}, mw_consumed={}, mw_stacks={}, mw_multiplier={}",
-        this->player->name(), this->name(), affected_by_maelstrom_weapon,
-        benefit_from_maelstrom_weapon(), mw_consumed_stacks,
-        mw_affected_stacks, mw_multiplier );
-    }
-
-    return mw_multiplier;
-  }
-
   void consume_resource() override
   {
     ab::consume_resource();
@@ -2940,25 +2879,6 @@ public:
   {
     ab::execute();
 
-    // Main hand swing timer resets if the MW-affected spell is not instant cast
-    // Need to check this before spending the MW or autos will be lost.
-    if ( affected_by_maelstrom_weapon && mw_affected_stacks < 5 )
-    {
-      if ( this->p()->main_hand_attack && this->p()->main_hand_attack->execute_event &&
-           !this->background )
-      {
-        if ( this->sim->debug )
-        {
-          this->sim->out_debug.print( "{} resetting {} due to MW spell cast of {}",
-                                     this->p()->name(), this->p()->main_hand_attack->name(),
-                                     this->name() );
-        }
-        event_t::cancel( this->p()->main_hand_attack->execute_event );
-        this->p()->main_hand_attack->schedule_execute();
-        this->p()->proc.reset_swing_mw->occur();
-      }
-    }
-
     // for benefit tracking purpose
     this->p()->buff.spiritwalkers_grace->up();
 
@@ -2971,8 +2891,6 @@ public:
           this->p()->gain.aftershock );
       this->p()->proc.aftershock->occur();
     }
-
-    this->p()->consume_maelstrom_weapon( this->execute_state, mw_consumed_stacks );
 
     if ( (this->execute_state->action->id == 188389) || (this->exec_type == spell_variant::NORMAL && !this->background) )
     {
@@ -6791,10 +6709,10 @@ struct erupting_lava_t : public shaman_spell_t
 
 // Lava Burst Spell =========================================================
 
-struct lava_burst_state_t : public shaman_spell_base_state_t
+struct lava_burst_state_t : public shaman_action_state_t
 {
   lava_burst_state_t( action_t* action_, player_t* target_ ) :
-    shaman_spell_base_state_t( action_, target_ )
+    shaman_action_state_t( action_, target_ )
   { }
 };
 
