@@ -6447,6 +6447,9 @@ void flarendos_pilot_light( special_effect_t& effect )
 
   auto effect_driver = effect.player->find_spell( 471057 );
 
+  if ( !effect_driver->ok() )
+    return;
+
   auto damage_spell = effect.player->find_spell( 473219 );
 
   auto int_buff = create_buff<stat_buff_t>( effect.player, effect.driver() )
