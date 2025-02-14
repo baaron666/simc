@@ -6044,6 +6044,19 @@ struct crash_lightning_t : public shaman_attack_t
     return m;
   }
 
+  double composite_da_multiplier( const action_state_t* state ) const override
+  {
+    double m = shaman_attack_t::composite_da_multiplier( state );
+
+    if ( state->chain_target == 0 &&
+         p()->sets->has_set_bonus( SHAMAN_ENHANCEMENT, TWW2, B4 ) )
+    {
+      m *= 1.0 + p()->sets->set( SHAMAN_ENHANCEMENT, TWW2, B4 )->effectN( 2 ).percent();
+    }
+
+    return m;
+  }
+
   void execute() override
   {
     shaman_attack_t::execute();
