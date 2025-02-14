@@ -500,8 +500,8 @@ public:
     buff_t* harmonize; // BM 4pc
     // TWW - S2
     buff_t* jackpot; // MM 2pc
-    buff_t* winning_streak;  // SV 2pc - Wildfire Bomb damage stacking buff
-    buff_t* strike_it_rich;  // SV 4pc - Mongoose Bite damage buff, consuming it reduces Wildfire Bomb cooldown
+    buff_t* winning_streak; // SV 2pc - Wildfire Bomb damage stacking buff
+    buff_t* strike_it_rich; // SV 4pc - Mongoose Bite damage buff, consuming it reduces Wildfire Bomb cooldown
 
     // Hero Talents 
 
@@ -3757,22 +3757,17 @@ void hunter_t::trigger_spotters_mark( player_t* target, bool force )
   }
 }
 
-double hunter_t::calculate_tip_of_the_spear_value( double base_value ) const
+double hunter_t::calculate_tip_of_the_spear_value( double tip_bonus ) const
 {
-  double tip_bonus = base_value;
-
   if ( talents.flankers_advantage.ok() )
   {
-    double max_bonus = talents.flankers_advantage->effectN( 6 ).percent() - tip_bonus;
-
-    // Seems that the amount of the 15% bonus given is based on the ratio of player crit % out of a cap of 50% from effect 5.
-    double crit_chance = std::min( cache.attack_crit_chance(), talents.flankers_advantage->effectN( 5 ).percent() );
-
-    tip_bonus += max_bonus * crit_chance / talents.flankers_advantage->effectN( 5 ).percent();
+    // Seems that the amount of the bonus given is based on the ratio of player crit % out of a cap of 50% from effect 5.
+    double ratio = std::min( cache.attack_crit_chance(), talents.flankers_advantage->effectN( 5 ).percent() ) / talents.flankers_advantage->effectN( 5 ).percent();
+    tip_bonus += tip_bonus * ratio;
   }
 
   if ( buffs.relentless_primal_ferocity->check() )
-    tip_bonus += talents.relentless_primal_ferocity_buff->effectN( 2 ).percent();
+    tip_bonus *= 1 + talents.relentless_primal_ferocity_buff->effectN( 2 ).percent();
 
   return tip_bonus;
 }
@@ -6602,8 +6597,8 @@ struct fury_of_the_eagle_t : public hunter_melee_attack_t
     {
       double m = hunter_melee_attack_t::composite_da_multiplier( s );
     
-      // Casting Fury of the Eagle with more than one stack of Tip of the Spear will
-      // result in a double application of the bonus damage, from both the generic buff
+      // TODO 13/2/25: Casting Fury of the Eagle with more than one stack of Tip of the Spear 
+      // will result in a double application of the bonus damage, from both the generic buff
       // and the new FotE specific hidden buff.
       if ( p()->buffs.tip_of_the_spear_fote->check() )
         m *= 1.0 + p()->calculate_tip_of_the_spear_value( p()->talents.tip_of_the_spear->effectN( 1 ).percent() );
