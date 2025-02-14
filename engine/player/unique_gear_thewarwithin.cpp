@@ -6410,6 +6410,86 @@ void mugs_moxie_jug( special_effect_t& effect )
   effect.custom_buff   = crit_buff;
   auto main_proc = new dbc_proc_callback_t( effect.player, effect );
 }
+
+// Flarendo's Pilot Light
+// 471057 Effect Driver (Disabled)
+//  Effect 1 - Int
+//  Effect 2 - Damage
+//  Effect 3 - Cleave Target Multiplier
+//  Effect 4 - Cleave Targets Hit
+// 471142 Use Driver & Buff
+// 473147 Charging Buff
+// 473219 Damage
+void flarendos_pilot_light( special_effect_t& effect )
+{
+  struct blastburn_roarcannon_t : spell_t
+  {
+    double secondary_target_multiplier;
+    blastburn_roarcannon_t( special_effect_t& effect, const spell_data_t* damage_spell,
+                            const spell_data_t* driver_spell )
+      : spell_t( util::tokenize_fn( damage_spell->name_cstr() ), effect.player, damage_spell ),
+        secondary_target_multiplier( driver_spell->effectN( 3 ).percent() )
+    {
+      aoe         = as<int>( driver_spell->effectN( 2 ).base_value() );
+      base_dd_min = base_dd_max = driver_spell->effectN( 2 ).average( effect );
+    }
+
+    double composite_da_multiplier( const action_state_t* s ) const override
+    {
+      auto m = spell_t::composite_da_multiplier( s );
+
+      if ( s->chain_target > 0 )
+        m *= secondary_target_multiplier;
+
+      return m;
+    }
+  };
+
+  auto effect_driver = effect.player->find_spell( 471057 );
+
+  auto damage_spell = effect.player->find_spell( 473219 );
+
+  auto int_buff = create_buff<stat_buff_t>( effect.player, effect.driver() )
+                      ->add_stat_from_effect( 1, effect_driver->effectN( 1 ).average( effect ) );
+
+  auto charging_buff = create_buff<buff_t>( effect.player, effect.driver()->effectN( 2 ).trigger() )
+                           ->set_reverse( true )
+                           ->set_cooldown( 0_s );
+
+  auto charging_buff_effect = new special_effect_t( effect.player );
+
+  charging_buff_effect->name_str     = util::tokenize_fn( effect.driver()->effectN( 2 ).trigger()->name_cstr() );
+  charging_buff_effect->spell_id     = effect.driver()->effectN( 2 ).trigger_spell_id();
+  charging_buff_effect->proc_flags2_ = PF2_ALL_HIT;
+  charging_buff_effect->cooldown_    = 0_s;
+  effect.player->special_effects.push_back( charging_buff_effect );
+
+  auto cb = new dbc_proc_callback_t( effect.player, *charging_buff_effect );
+  cb->activate_with_buff( charging_buff, true );
+
+  int_buff->set_stack_change_callback( [ charging_buff ]( buff_t*, int _old, int _new ) {
+    if ( _new > _old )
+      charging_buff->trigger();
+  } );
+
+  auto damage_action = new blastburn_roarcannon_t( effect, damage_spell, effect_driver );
+
+  effect.player->callbacks.register_callback_execute_function(
+      effect.driver()->effectN( 2 ).trigger_spell_id(),
+      [ charging_buff, damage_action ]( const dbc_proc_callback_t*, action_t*, action_state_t* s ) {
+        if ( charging_buff->check() )
+          charging_buff->decrement();
+
+        if ( !charging_buff->check() )
+        {
+          damage_action->execute_on_target( s->target );
+        }
+      } );
+
+  effect.custom_buff = int_buff;
+  new dbc_proc_callback_t( effect.player, effect );
+}
+
 // Amorphous Relic
 // 472120 Driver
 // 472195 Periodic Trigger
@@ -9569,6 +9649,8 @@ void register_special_effects()
   register_special_effect( 467469, items::mister_locknstalk );
   register_special_effect( 467485, DISABLED_EFFECT );
   register_special_effect( 471548, items::mugs_moxie_jug );
+  register_special_effect( 471057, DISABLED_EFFECT ); // Effect Amount for Flarendo's Pilot Light
+  register_special_effect( 471142, items::flarendos_pilot_light );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
