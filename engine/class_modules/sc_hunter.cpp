@@ -1794,27 +1794,6 @@ struct dire_beast_t final : public dire_critter_t
 
     o()->buffs.dire_beast->trigger( duration );
     o()->resource_gain( RESOURCE_FOCUS, energize->effectN( 2 ).base_value(), o()->gains.dire_beast );
-
-    if ( o()->talents.huntmasters_call.ok() )
-    {
-      o()->buffs.huntmasters_call->trigger();
-      if ( o()->buffs.huntmasters_call->at_max_stacks() )
-      {
-        if ( rng().roll( 0.5 ) )
-        {
-          o()->buffs.summon_fenryr->trigger();
-          o()->pets.fenryr.despawn();
-          o()->pets.fenryr.spawn( o()->buffs.summon_fenryr->buff_duration() );
-        }
-        else
-        {
-          o()->buffs.summon_hati->trigger();
-          o()->pets.hati.despawn();
-          o()->pets.hati.spawn( o()->buffs.summon_hati->buff_duration() );
-        }
-        o()->buffs.huntmasters_call->expire();
-      }
-    }
   }
 };
 
@@ -7078,6 +7057,26 @@ struct dire_beast_t: public hunter_spell_t
       if ( !p()->pets.dark_hound.active_pets().empty() )
       {
         p()->pets.dark_hound.active_pets().back()->buffs.beast_cleave->trigger( shadow_hounds.duration );
+      }
+    }
+    if ( p()->talents.huntmasters_call.ok() )
+    {
+      p()->buffs.huntmasters_call->trigger();
+      if ( p()->buffs.huntmasters_call->at_max_stacks() )
+      {
+        if ( rng().roll( 0.5 ) )
+        {
+          p()->buffs.summon_fenryr->trigger();
+          p()->pets.fenryr.despawn();
+          p()->pets.fenryr.spawn( p()->buffs.summon_fenryr->buff_duration() );
+        }
+        else
+        {
+          p()->buffs.summon_hati->trigger();
+          p()->pets.hati.despawn();
+          p()->pets.hati.spawn( p()->buffs.summon_hati->buff_duration() );
+        }
+        p()->buffs.huntmasters_call->expire();
       }
     }
   }
