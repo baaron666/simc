@@ -333,7 +333,6 @@ struct hati_t;
 struct bear_t;
 struct stable_pet_t;
 struct call_of_the_wild_pet_t;
-struct beast_of_opportunity_pet_t;
 struct hunter_main_pet_base_t;
 struct animal_companion_t;
 struct hunter_main_pet_t;
@@ -407,7 +406,6 @@ public:
     spawner::pet_spawner_t<pets::hati_t, hunter_t> hati;
     spawner::pet_spawner_t<pets::bear_t, hunter_t> bear;
     spawner::pet_spawner_t<pets::call_of_the_wild_pet_t, hunter_t> cotw_stable_pet;
-    spawner::pet_spawner_t<pets::beast_of_opportunity_pet_t, hunter_t> boo_stable_pet;
 
     pets_t( hunter_t* p ) : 
       dire_beast( "dire_beast", p ),
@@ -415,8 +413,7 @@ public:
       fenryr( "fenryr", p ),
       hati( "hati", p ),
       bear( "bear", p ),
-      cotw_stable_pet( "call_of_the_wild_pet", p ), 
-      boo_stable_pet( "beast_of_opportunity_pet", p )
+      cotw_stable_pet( "call_of_the_wild_pet", p )
     {
     }
   } pets;
@@ -515,11 +512,6 @@ public:
     buff_t* wyverns_cry;
     buff_t* hogstrider;
     buff_t* lead_from_the_front;
-
-    buff_t* howl_of_the_pack;
-    buff_t* frenzied_tear; 
-    buff_t* scattered_prey;
-    buff_t* beast_of_opportunity;
 
     // Sentinel
     buff_t* eyes_closed;
@@ -915,21 +907,6 @@ public:
     spell_data_ptr_t lead_from_the_front;
     spell_data_ptr_t lead_from_the_front_buff;
 
-    spell_data_ptr_t pack_coordination;
-    spell_data_ptr_t howl_of_the_pack;
-    spell_data_ptr_t wild_attacks;
-
-    spell_data_ptr_t den_recovery;  // TODO defensive
-    spell_data_ptr_t tireless_hunt; // TODO utility
-    spell_data_ptr_t cornered_prey; // TODO utility
-    spell_data_ptr_t frenzied_tear;
-
-    spell_data_ptr_t scattered_prey;
-    spell_data_ptr_t covering_fire;
-    spell_data_ptr_t beast_of_opportunity;
-
-    spell_data_ptr_t pack_assault;
-
     // Sentinel
     // TODO chance to stack and chance to implode were and are still pretty rough estimates
     spell_data_ptr_t sentinel;
@@ -1320,7 +1297,6 @@ public:
 
     // Hero Tree passives
     ab::apply_affecting_aura( p->talents.sentinel_precision );
-    ab::apply_affecting_aura( p->talents.howl_of_the_pack );
     ab::apply_affecting_aura( p->talents.black_arrow );
     ab::apply_affecting_aura( p->talents.banshees_mark );
   }
@@ -1688,30 +1664,6 @@ struct hunter_pet_t: public pet_t
     pet_t::schedule_ready( delta_time, waiting );
   }
 
-  double composite_player_multiplier( school_e school ) const override
-  {
-    double m = pet_t::composite_player_multiplier( school );
-
-    return m;
-  }
-
-  double composite_player_critical_damage_multiplier( const action_state_t* s ) const override
-  {
-    double m = pet_t::composite_player_critical_damage_multiplier( s );
-
-    if ( o() -> buffs.howl_of_the_pack -> check() )
-      m *= 1 + o() -> buffs.howl_of_the_pack -> check_value();
-
-    return m;
-  }
-
-  double composite_player_target_multiplier( player_t* target, school_e school ) const override
-  {
-    double m = pet_t::composite_player_target_multiplier( target, school );
-
-    return m;
-  }
-
   double composite_melee_attack_power() const
   {
     double ap = pet_t::composite_melee_attack_power();
@@ -2029,26 +1981,6 @@ struct stable_pet_t : public hunter_pet_t
 struct call_of_the_wild_pet_t final : public stable_pet_t
 {
   call_of_the_wild_pet_t( hunter_t* owner ) : stable_pet_t( owner, "call_of_the_wild_pet", PET_HUNTER )
-  {
-    resource_regeneration = regen_type::DISABLED;
-  }
-
-  void summon( timespan_t duration = 0_ms ) override
-  {
-    stable_pet_t::summon( duration );
-
-    if ( main_hand_attack )
-      main_hand_attack->execute();
-  }
-};
-
-// ==========================================================================
-// Beast of Opportunity
-// ==========================================================================
-
-struct beast_of_opportunity_pet_t final : public stable_pet_t
-{
-  beast_of_opportunity_pet_t( hunter_t* owner ) : stable_pet_t( owner, "beast_of_opportunity_pet", PET_HUNTER )
   {
     resource_regeneration = regen_type::DISABLED;
   }
@@ -2818,12 +2750,6 @@ struct kill_command_bm_t: public hunter_pet_attack_t<hunter_main_pet_base_t>
       o() -> get_target_data( s -> target ) -> debuffs.wild_instincts -> trigger();
     }
 
-    if ( o()->buffs.frenzied_tear->check() && p()==o()->pets.main )
-    {
-      double amount = s -> result_mitigated * o() -> talents.frenzied_tear -> effectN( 2 ).percent() / (1 + s->result_crit_bonus);
-      o()->buffs.frenzied_tear->decrement();
-    }
-
     if ( o()->talents.phantom_pain.ok() )
     {
       double replicate_amount = o()->talents.phantom_pain->effectN( 1 ).percent();
@@ -2900,12 +2826,6 @@ struct kill_command_sv_t : public hunter_pet_attack_t<hunter_main_pet_t>
   void impact( action_state_t* s ) override
   {
     hunter_pet_attack_t::impact( s );
-
-    if ( o()->buffs.frenzied_tear->check() && p()==o()->pets.main )
-    {
-      double amount = s->result_mitigated * o()->talents.frenzied_tear->effectN( 2 ).percent() / (1 + s->result_crit_bonus);
-      o()->buffs.frenzied_tear->decrement();
-    }
 
     if ( o()->talents.sentinel.ok() )
       o()->trigger_sentinel( s->target, false, o()->procs.sentinel_stacks );
@@ -3065,9 +2985,6 @@ struct basic_attack_base_t : public hunter_pet_attack_t<hunter_main_pet_t>
     hunter_pet_attack_t( fmt::format("{}{}", n, suffix), p, p->find_pet_spell( n ) )
   {
     school = SCHOOL_PHYSICAL;
-
-    if ( o()->talents.frenzied_tear.ok() )
-      frenzied_tear.chance = o()->talents.frenzied_tear->effectN( 1 ).percent() + o()->specs.survival_hunter->effectN( 18 ).percent();
   }
 
   void impact( action_state_t* s ) override
@@ -3076,17 +2993,6 @@ struct basic_attack_base_t : public hunter_pet_attack_t<hunter_main_pet_t>
 
     if ( result_is_hit( s -> result ) )
       trigger_beast_cleave( s );
-
-    if ( o() -> talents.howl_of_the_pack.ok() && s -> result == RESULT_CRIT )
-    {
-      o() -> buffs.howl_of_the_pack -> trigger();
-    }
-
-    if ( rng().roll( frenzied_tear.chance ) )
-    {
-      o()->cooldowns.kill_command->reset( true ); 
-      o()->buffs.frenzied_tear->trigger(); 
-    }
   }
 };
 
@@ -4581,7 +4487,6 @@ struct kill_shot_base_t : hunter_ranged_attack_t
         active += pet->is_active();
       
       active += as<int>( p()->pets.cotw_stable_pet.n_active_pets() );
-      active += as<int>( p()->pets.boo_stable_pet.n_active_pets() );
 
       return 1 + std::min( active, as<int>( p()->talents.hunters_prey_hidden_buff->max_stacks() ) );
     }
@@ -4608,7 +4513,6 @@ struct kill_shot_base_t : hunter_ranged_attack_t
         active += pet->is_active();
       
       active += as<int>( p()->pets.cotw_stable_pet.n_active_pets() );
-      active += as<int>( p()->pets.boo_stable_pet.n_active_pets() );
 
       am *= 1 + p()->talents.hunters_prey_hidden_buff->effectN( 3 ).percent() * std::min( active, as<int>( p()->talents.hunters_prey_hidden_buff->max_stacks() ) );
     }
@@ -5098,27 +5002,6 @@ struct multishot_bm_t: public hunter_ranged_attack_t
       for ( auto pet : pets::active<pets::hunter_pet_t>( p() -> pets.main, p() -> pets.animal_companion ) )
         pet -> buffs.beast_cleave -> trigger();
     }
-
-    if ( p() -> talents.scattered_prey.ok() ) 
-    {
-      if ( p() -> buffs.scattered_prey -> up() ) 
-      {
-        p() -> buffs.scattered_prey -> decrement();
-      }
-      else
-      {
-        p() -> buffs.scattered_prey -> trigger();
-      }
-    }
-  }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double m = hunter_ranged_attack_t::composite_da_multiplier( s );
-    
-    m *= 1.0 + p() -> buffs.scattered_prey -> value();
-
-    return m;
   }
 };
 
@@ -6221,16 +6104,6 @@ struct melee_focus_spender_t: hunter_melee_attack_t
     return am;
   }
 
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double m = hunter_melee_attack_t::composite_da_multiplier( s );
-
-    if ( p()->talents.wild_attacks.ok() )
-      m *= 1 + p()->talents.wild_attacks->effectN( 2 ).percent();
-
-    return m;
-  }
-
   double composite_target_da_multiplier( player_t* t ) const override
   {
     double m = hunter_melee_attack_t::composite_target_da_multiplier( t );
@@ -6514,9 +6387,6 @@ struct butchery_t : public hunter_melee_attack_t
 
     if ( p()->talents.frenzy_strikes.ok() )
       p()->cooldowns.wildfire_bomb->adjust( -frenzy_strikes.reduction * std::min( num_targets_hit, frenzy_strikes.cap ) );
-
-    if ( p()->talents.scattered_prey.ok() ) 
-      p() -> buffs.scattered_prey -> trigger();
   }
 
   void impact( action_state_t* s ) override
@@ -6525,15 +6395,6 @@ struct butchery_t : public hunter_melee_attack_t
 
     if ( merciless_blow && s->chain_target < p()->talents.merciless_blow->effectN( 1 ).base_value() )
       merciless_blow->execute_on_target( s->target );
-  }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double m = hunter_melee_attack_t::composite_da_multiplier( s );
-    
-    m *= 1.0 + p() -> buffs.scattered_prey -> value();
-
-    return m;
   }
 };
 
@@ -6700,9 +6561,6 @@ struct coordinated_assault_t: public hunter_melee_attack_t
     
     if ( p()->talents.bombardier.ok() )
       p()->cooldowns.wildfire_bomb->reset( false, as<int>( p()->talents.bombardier->effectN( 1 ).base_value() ) );
-
-    if ( p()->talents.beast_of_opportunity.ok() )
-      p()->pets.boo_stable_pet.spawn( p()->buffs.beast_of_opportunity->buff_duration(), as<int>( p()->buffs.beast_of_opportunity->data().effectN( 1 ).base_value() ) );
 
     p()->buffs.wildfire_arsenal->trigger( p()->buffs.wildfire_arsenal->max_stack() );
 
@@ -7116,19 +6974,6 @@ struct kill_command_t: public hunter_spell_t
     p()->cooldowns.wildfire_bomb->adjust( -wildfire_infusion_reduction );
     p()->buffs.mongoose_fury->extend_duration( p(), bloody_claws_extension );
 
-    if ( p()->talents.covering_fire.ok() )
-    {
-      timespan_t duration = timespan_t::from_seconds( p()->talents.covering_fire->effectN( 1 ).base_value() );
-      if ( p()->buffs.beast_cleave->check() )
-        p()->buffs.beast_cleave->extend_duration( p(), duration );
-
-      for ( auto pet : pets::active<pets::hunter_pet_t>( p() -> pets.main, p() -> pets.animal_companion ) )
-      {
-        if ( pet->buffs.beast_cleave->check() ) 
-          pet->buffs.beast_cleave->extend_duration( p(), duration );
-      }
-    }
-
     p()->buffs.howl_of_the_pack_leader_cooldown->extend_duration( p(), -p()->talents.dire_summons->effectN( p()->specialization() == HUNTER_BEAST_MASTERY ? 1 : 2 ).time_value() );
     
     if ( p()->state.fury_of_the_wyvern_extension < fury_of_the_wyvern.cap )
@@ -7326,9 +7171,6 @@ struct bestial_wrath_t: public hunter_spell_t
 
     if ( p() -> talents.scent_of_blood.ok() )
       p() -> cooldowns.barbed_shot -> reset( true, as<int>( p() -> talents.scent_of_blood -> effectN( 1 ).base_value() ) );
-
-    if ( p()->talents.beast_of_opportunity.ok() )
-      p()->pets.boo_stable_pet.spawn( p()->buffs.beast_of_opportunity->buff_duration(), as<int>( p()->buffs.beast_of_opportunity->data().effectN( 1 ).base_value() ) );
 
     if ( p()->talents.lead_from_the_front->ok() )
     {
@@ -7817,16 +7659,6 @@ struct wildfire_bomb_base_t: public hunter_spell_t
     school = SCHOOL_FIRE; // for report coloring
 
     impact_action = p->get_background_action<bomb_damage_t>( "wildfire_bomb_damage", this );
-  }
-
-  void execute() override
-  {
-    hunter_spell_t::execute();
-
-    if ( p()->talents.covering_fire.ok() )
-    {
-      p()->cooldowns.butchery->adjust( -timespan_t::from_seconds( p()->talents.covering_fire->effectN( 2 ).base_value() ) );
-    }
   }
 };
 
@@ -8520,22 +8352,6 @@ void hunter_t::init_spells()
 
     talents.lead_from_the_front = find_talent_spell( talent_tree::HERO, "Lead From the Front" );
     talents.lead_from_the_front_buff = talents.lead_from_the_front.ok() ? find_spell( 472743 ) : spell_data_t::not_found();
-
-    talents.pack_coordination = find_talent_spell( talent_tree::HERO, "Pack Coordination" );
-    talents.howl_of_the_pack  = find_talent_spell( talent_tree::HERO, "Howl of the Pack" );
-    talents.wild_attacks      = find_talent_spell( talent_tree::HERO, "Wild Attacks" );
-
-    talents.den_recovery  = find_talent_spell( talent_tree::HERO, "Den Recovery" );
-    talents.tireless_hunt = find_talent_spell( talent_tree::HERO, "Tireless Hunt" );
-    talents.cornered_prey = find_talent_spell( talent_tree::HERO, "Cornered Prey" );
-    talents.frenzied_tear = find_talent_spell( talent_tree::HERO, "Frenzied Tear" );
-
-    talents.scattered_prey       = find_talent_spell( talent_tree::HERO, "Scattered Prey" );
-    talents.covering_fire        = find_talent_spell( talent_tree::HERO, "Covering Fire" );
-    talents.cull_the_herd        = find_talent_spell( talent_tree::HERO, "Cull the Herd" );
-    talents.beast_of_opportunity = find_talent_spell( talent_tree::HERO, "Beast of Opportunity" );
-
-    talents.pack_assault = find_talent_spell( talent_tree::HERO, "Pack Assault" );
   }
 
   if ( specialization() == HUNTER_MARKSMANSHIP || specialization() == HUNTER_SURVIVAL )
@@ -9051,24 +8867,6 @@ void hunter_t::create_buffs()
     make_buff( this, "lead_from_the_front", talents.lead_from_the_front_buff )
       ->set_default_value_from_effect( specialization() == HUNTER_BEAST_MASTERY ? 4 : 5 );
 
-  buffs.howl_of_the_pack
-    = make_buff( this, "howl_of_the_pack", find_spell( 462515 ) )
-      -> set_default_value_from_effect( 1 )
-      -> apply_affecting_aura( specs.survival_hunter );
-
-  buffs.frenzied_tear 
-    = make_buff( this, "frenzied_tear", find_spell( 447262 ) )
-      -> set_default_value_from_effect( 1 );
-
-  buffs.scattered_prey
-    = make_buff( this, "scattered_prey", find_spell( 461866 ) )
-      -> set_default_value_from_effect( 1 )
-      -> apply_affecting_aura( specs.survival_hunter);
-
-  buffs.beast_of_opportunity
-    = make_buff( this, "beast_of_opportunity", find_spell( 450143 ) )
-      -> set_default_value_from_effect( 1 );
-
   buffs.eyes_closed = make_buff( this, "eyes_closed", talents.eyes_closed->effectN( 1 ).trigger() );
 
   buffs.lunar_storm_ready = make_buff( this, "lunar_storm_ready", talents.lunar_storm_ready_buff );
@@ -9574,11 +9372,6 @@ double hunter_t::composite_player_critical_damage_multiplier( const action_state
 
   if ( talents.penetrating_shots -> effectN( 1 ).has_common_school( s -> action -> school ) )
     m *= 1.0 + talents.penetrating_shots -> effectN( 2 ).percent() * cache.attack_crit_chance();
-
-  if ( buffs.howl_of_the_pack -> check() )
-  {
-    m *= 1.0 + buffs.howl_of_the_pack -> check_stack_value();
-  }
 
   return m;
 }
