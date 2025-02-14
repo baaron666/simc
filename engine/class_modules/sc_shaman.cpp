@@ -10577,10 +10577,10 @@ struct primordial_wave_t : public shaman_spell_t
 
 struct primordial_storm_t : public shaman_spell_t
 {
-  struct primordial_damage_t : public shaman_spell_t
+  struct primordial_damage_t : public shaman_attack_t
   {
     primordial_damage_t( primordial_storm_t* parent, util::string_view name, const spell_data_t* s ) :
-      shaman_spell_t( name, parent->p(), s )
+      shaman_attack_t( name, parent->p(), s )
     {
       // Inherit Maelstrom Weapon stacks from the parent cast
       mw_parent = parent;
@@ -10592,7 +10592,7 @@ struct primordial_storm_t : public shaman_spell_t
 
     double action_multiplier() const override
     {
-      double m = shaman_spell_t::action_multiplier();
+      double m = shaman_attack_t::action_multiplier();
 
       // 2025-01-27 Primordial Frost apparently double-dips on Legacy of the Frost Witch buff due to
       // being flagged with families 24 and 58.
