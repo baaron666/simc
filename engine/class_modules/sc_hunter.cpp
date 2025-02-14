@@ -6724,7 +6724,10 @@ struct coordinated_assault_t: public hunter_melee_attack_t
     p()->buffs.wildfire_arsenal->trigger( p()->buffs.wildfire_arsenal->max_stack() );
 
     if ( p()->talents.lead_from_the_front->ok() )
+    {
+      p()->buffs.lead_from_the_front->trigger();
       p()->trigger_howl_of_the_pack_leader_ready();
+    }
   }
 };
 
@@ -7386,7 +7389,10 @@ struct bestial_wrath_t: public hunter_spell_t
     }
 
     if ( p()->talents.lead_from_the_front->ok() )
+    {
+      p()->buffs.lead_from_the_front->trigger();
       p()->trigger_howl_of_the_pack_leader_ready();
+    }
 
     if ( !is_precombat )
     {
