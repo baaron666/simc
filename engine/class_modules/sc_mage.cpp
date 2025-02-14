@@ -5684,7 +5684,7 @@ struct ice_nova_t final : public frost_mage_spell_t
     if ( excess )
     {
       trigger_frostfire_mastery();
-      timespan_t t = -1000 * p()->talents.excess_frost->effectN( 2 ).time_value();
+      timespan_t t = -1000 * ( p()->talents.excess_frost->effectN( 2 ).time_value() + p()->spec.fire_mage->effectN( 19 ).time_value() );
       p()->cooldowns.comet_storm->adjust( t );
       p()->cooldowns.meteor->adjust( t );
     }
