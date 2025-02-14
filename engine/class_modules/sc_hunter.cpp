@@ -528,8 +528,6 @@ public:
 
     // Dark Ranger
     buff_t* withering_fire;
-    buff_t* withering_fire_build_up;
-    buff_t* withering_fire_ready;
   } buffs;
 
   struct cooldowns_t
@@ -883,8 +881,6 @@ public:
     spell_data_ptr_t withering_fire;
     spell_data_ptr_t withering_fire_black_arrow;
     spell_data_ptr_t withering_fire_buff;
-    spell_data_ptr_t withering_fire_build_up;
-    spell_data_ptr_t withering_fire_ready;
 
 
     // Pack Leader
@@ -7334,17 +7330,6 @@ struct bestial_wrath_t: public hunter_spell_t
     if ( p()->talents.beast_of_opportunity.ok() )
       p()->pets.boo_stable_pet.spawn( p()->buffs.beast_of_opportunity->buff_duration(), as<int>( p()->buffs.beast_of_opportunity->data().effectN( 1 ).base_value() ) );
 
-    if ( p()->talents.withering_fire.ok() && !is_precombat )
-    {
-      p()->buffs.withering_fire_build_up->trigger();
-      if ( p()->buffs.withering_fire_build_up->at_max_stacks() )
-      {
-        p()->buffs.withering_fire->trigger();
-        p()->trigger_deathblow();
-        p()->buffs.withering_fire_build_up->expire();
-      }
-    }
-
     if ( p()->talents.lead_from_the_front->ok() )
     {
       p()->buffs.lead_from_the_front->trigger();
@@ -7408,6 +7393,8 @@ struct call_of_the_wild_t: public hunter_spell_t
       for ( auto pet : p() -> pets.cotw_stable_pet.active_pets() )
         pet -> buffs.beast_cleave -> trigger( duration );
     }
+
+    p()->buffs.withering_fire->trigger( p()->buffs.call_of_the_wild->buff_duration() );
   }
 };
 
@@ -8498,8 +8485,6 @@ void hunter_t::init_spells()
     talents.withering_fire = find_talent_spell( talent_tree::HERO, "Withering Fire" );
     talents.withering_fire_black_arrow = talents.withering_fire.ok() ? find_spell( 468037 ) : spell_data_t::not_found();
     talents.withering_fire_buff = talents.withering_fire.ok() ? find_spell( 466991 ) : spell_data_t::not_found();
-    talents.withering_fire_build_up = talents.withering_fire.ok() ? find_spell( 468074 ) : spell_data_t::not_found();
-    talents.withering_fire_ready = talents.withering_fire.ok() ? find_spell( 468075 ) : spell_data_t::not_found();
   }
 
   if ( specialization() == HUNTER_BEAST_MASTERY || specialization() == HUNTER_SURVIVAL )
@@ -9098,11 +9083,8 @@ void hunter_t::create_buffs()
   buffs.withering_fire =
     make_buff( this, "withering_fire", talents.withering_fire_buff );
 
-  buffs.withering_fire_build_up =
-    make_buff( this, "withering_fire_build_up", talents.withering_fire_build_up );
-
-  buffs.withering_fire_ready =
-    make_buff( this, "withering_fire_ready", talents.withering_fire_ready );
+  if ( specialization() == HUNTER_BEAST_MASTERY )
+    buffs.withering_fire->set_tick_callback( [ this ]( buff_t*, int, timespan_t ) { trigger_deathblow(); } );
 }
 
 void hunter_t::init_gains()
