@@ -456,15 +456,14 @@ void survival_ptr( player_t* p )
   action_priority_list_t* sentcleave = p->get_action_priority_list( "sentcleave" );
 
   precombat->add_action( "summon_pet" );
-  precombat->add_action( "use_item,name=imperfect_ascendancy_serum" );
   precombat->add_action( "snapshot_stats", "Snapshot raid buffed stats before combat begins and pre-potting is done." );
 
   default_->add_action( "auto_attack" );
   default_->add_action( "call_action_list,name=cds" );
-  default_->add_action( "call_action_list,name=plst,if=active_enemies<3&talent.vicious_hunt" );
-  default_->add_action( "call_action_list,name=plcleave,if=active_enemies>2&talent.vicious_hunt" );
-  default_->add_action( "call_action_list,name=sentst,if=active_enemies<3&!talent.vicious_hunt" );
-  default_->add_action( "call_action_list,name=sentcleave,if=active_enemies>2&!talent.vicious_hunt" );
+  default_->add_action( "call_action_list,name=plst,if=active_enemies<3&talent.howl_of_the_pack_leader" );
+  default_->add_action( "call_action_list,name=plcleave,if=active_enemies>2&talent.howl_of_the_pack_leader" );
+  default_->add_action( "call_action_list,name=sentst,if=active_enemies<3&!talent.howl_of_the_pack_leader" );
+  default_->add_action( "call_action_list,name=sentcleave,if=active_enemies>2&!talent.howl_of_the_pack_leader" );
   default_->add_action( "arcane_torrent", "simply fires off if there is absolutely nothing else to press." );
   default_->add_action( "bag_of_tricks" );
   default_->add_action( "lights_judgment" );
@@ -477,14 +476,12 @@ void survival_ptr( player_t* p )
   cds->add_action( "berserking,if=buff.coordinated_assault.up|!talent.coordinated_assault&cooldown.spearhead.remains|!talent.spearhead&!talent.coordinated_assault|time_to_die<13" );
   cds->add_action( "muzzle" );
   cds->add_action( "potion,if=target.time_to_die<25|buff.coordinated_assault.up|!talent.coordinated_assault&cooldown.spearhead.remains|!talent.spearhead&!talent.coordinated_assault" );
-  cds->add_action( "use_item,name=imperfect_ascendancy_serum,use_off_gcd=1,if=gcd.remains>gcd.max-0.1" );
-  cds->add_action( "use_item,name=mad_queens_mandate,if=(time_to_die<10|time_to_die>120)&(trinket.skardyns_grace.cooldown.remains|!equipped.skardyns_grace)|time_to_die<10" );
-  cds->add_action( "use_items,if=cooldown.coordinated_assault.remains|cooldown.spearhead.remains" );
-  cds->add_action( "aspect_of_the_eagle,if=target.distance>=6" );
+  cds->add_action( "use_item,name=mad_queens_mandate,if=gcd.remains>gcd.max-0.1&(time_to_die<10|time_to_die>120)&(trinket.skardyns_grace.cooldown.remains|!equipped.skardyns_grace)|time_to_die<10" );
+  cds->add_action( "use_item,use_off_gcd=1,slot=trinket1,if=buff.coordinated_assault.up&trinket.1.has_use_buff|cooldown.coordinated_assault.remains>31|!trinket.1.has_use_buff&cooldown.coordinated_assault.remains>20|time_to_die<cooldown.coordinated_assault.remains" );
+  cds->add_action( "use_item,use_off_gcd=1,slot=trinket2,if=buff.coordinated_assault.up&trinket.2.has_use_buff|cooldown.coordinated_assault.remains>31|!trinket.2.has_use_buff&cooldown.coordinated_assault.remains>20|time_to_die<cooldown.coordinated_assault.remains" );
+  cds->add_action( "aspect_of_the_eagle,if=target.distance>=6", "actions.cds+=/use_items,if=cooldown.coordinated_assault.up|cooldown.coordinated_assault.remains>31|!has_use_buff&(cooldown.coordinated_assault.remains" );
 
-  plst->add_action( "raptor_bite,target_if=max:dot.serpent_sting.remains,if=buff.howl_of_the_pack.up&pet.main.buff.pack_coordination.up&buff.howl_of_the_pack.remains<gcd", "PL PACK LEADER SINGLE TARGET ACTIONLIST." );
-  plst->add_action( "kill_command,target_if=min:bloodseeker.remains,if=(buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1)" );
-  plst->add_action( "butchery,if=buff.scattered_prey.up&buff.scattered_prey.remains<gcd" );
+  plst->add_action( "kill_command,target_if=min:bloodseeker.remains,if=(buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1)", "PL revisit entirely for new PL talent tree PACK LEADER SINGLE TARGET ACTIONLIST." );
   plst->add_action( "spearhead,if=cooldown.coordinated_assault.remains" );
   plst->add_action( "raptor_bite,target_if=min:dot.serpent_sting.remains,if=!dot.serpent_sting.ticking&target.time_to_die>12&(!talent.contagious_reagents|active_dot.serpent_sting=0)" );
   plst->add_action( "raptor_bite,target_if=max:dot.serpent_sting.remains,if=talent.contagious_reagents&active_dot.serpent_sting<active_enemies&dot.serpent_sting.remains" );
@@ -495,7 +492,6 @@ void survival_ptr( player_t* p )
   plst->add_action( "explosive_shot" );
   plst->add_action( "coordinated_assault,if=!talent.bombardier|talent.bombardier&cooldown.wildfire_bomb.charges_fractional<1" );
   plst->add_action( "fury_of_the_eagle,if=buff.tip_of_the_spear.stack>0&(!raid_event.adds.exists|raid_event.adds.exists&raid_event.adds.in>40)" );
-  plst->add_action( "raptor_bite,if=buff.furious_assault.up" );
   plst->add_action( "kill_command,target_if=min:bloodseeker.remains,if=focus+cast_regen<focus.max&(!buff.relentless_primal_ferocity.up|(buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1|focus<30))" );
   plst->add_action( "wildfire_bomb,if=buff.tip_of_the_spear.stack>0&(!raid_event.adds.exists|raid_event.adds.exists&raid_event.adds.in>15)" );
   plst->add_action( "raptor_bite,target_if=min:dot.serpent_sting.remains,if=!talent.contagious_reagents" );
@@ -516,25 +512,28 @@ void survival_ptr( player_t* p )
   plcleave->add_action( "kill_command,target_if=min:bloodseeker.remains" );
   plcleave->add_action( "raptor_bite" );
 
-  sentst->add_action( "wildfire_bomb,if=!cooldown.lunar_storm.remains", "SENT SENTINEL | DEFAULT SINGLE TARGET ACTIONLIST." );
+  sentst->add_action( "wildfire_bomb,if=!buff.lunar_storm_cooldown.remains", "SENTINEL | DEFAULT SINGLE TARGET ACTIONLIST." );
   sentst->add_action( "kill_command,target_if=min:bloodseeker.remains,if=(buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1)" );
   sentst->add_action( "spearhead,if=cooldown.coordinated_assault.remains" );
-  sentst->add_action( "raptor_bite,target_if=min:dot.serpent_sting.remains,if=!dot.serpent_sting.ticking&target.time_to_die>12&(!talent.contagious_reagents|active_dot.serpent_sting=0)" );
-  sentst->add_action( "raptor_bite,target_if=max:dot.serpent_sting.remains,if=talent.contagious_reagents&active_dot.serpent_sting<active_enemies&dot.serpent_sting.remains" );
-  sentst->add_action( "flanking_strike,if=buff.tip_of_the_spear.stack=2|buff.tip_of_the_spear.stack=1" );
-  sentst->add_action( "wildfire_bomb,if=(cooldown.lunar_storm.remains>full_recharge_time-gcd)&(buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9)|(talent.bombardier&cooldown.coordinated_assault.remains<2*gcd)" );
+  sentst->add_action( "flanking_strike,if=buff.tip_of_the_spear.stack>0", "apparently a gain to remove these now actions.sentst+=/raptor_bite,target_if=min:dot.serpent_sting.remains,if=!dot.serpent_sting.ticking&target.time_to_die>12&(!talent.contagious_reagents|active_dot.serpent_sting=0) actions.sentst+=/raptor_bite,target_if=max:dot.serpent_sting.remains,if=talent.contagious_reagents&active_dot.serpent_sting<active_enemies&dot.serpent_sting.remains a very minimal gain to let it overcap tip compared to casting at 1 or 2 tip stacks only" );
+  sentst->add_action( "kill_command,target_if=buff.strike_it_rich.remains&buff.tip_of_the_spear.stack<1" );
+  sentst->add_action( "mongoose_bite,if=buff.strike_it_rich.remains&buff.coordinated_assault.up" );
+  sentst->add_action( "wildfire_bomb,if=(buff.lunar_storm_cooldown.remains>full_recharge_time-gcd)&(buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9)|(talent.bombardier&cooldown.coordinated_assault.remains<2*gcd)" );
   sentst->add_action( "butchery" );
   sentst->add_action( "coordinated_assault,if=!talent.bombardier|talent.bombardier&cooldown.wildfire_bomb.charges_fractional<1" );
-  sentst->add_action( "explosive_shot" );
-  sentst->add_action( "fury_of_the_eagle,if=buff.tip_of_the_spear.stack>0" );
-  sentst->add_action( "kill_shot" );
+  sentst->add_action( "fury_of_the_eagle,if=buff.tip_of_the_spear.stack>0", "have not looked into fote" );
   sentst->add_action( "kill_command,target_if=min:bloodseeker.remains,if=buff.tip_of_the_spear.stack<1&cooldown.flanking_strike.remains<gcd" );
   sentst->add_action( "kill_command,target_if=min:bloodseeker.remains,if=focus+cast_regen<focus.max&(!buff.relentless_primal_ferocity.up|(buff.relentless_primal_ferocity.up&(buff.tip_of_the_spear.stack<2|focus<30)))" );
-  sentst->add_action( "wildfire_bomb,if=buff.tip_of_the_spear.stack>0&cooldown.lunar_storm.remains>full_recharge_time&(!raid_event.adds.exists|raid_event.adds.exists&raid_event.adds.in>15)" );
+  sentst->add_action( "mongoose_bite,if=buff.mongoose_fury.remains<gcd&buff.mongoose_fury.stack>0" );
+  sentst->add_action( "wildfire_bomb,if=buff.tip_of_the_spear.stack>0&buff.lunar_storm_cooldown.remains>full_recharge_time&(!raid_event.adds.exists|raid_event.adds.exists&raid_event.adds.in>15)" );
+  sentst->add_action( "explosive_shot,if=buff.mongoose_fury.stack=0" );
+  sentst->add_action( "kill_shot,if=buff.mongoose_fury.stack=0", "marginal gain over removing ks entirely" );
   sentst->add_action( "raptor_bite,target_if=min:dot.serpent_sting.remains,if=!talent.contagious_reagents" );
   sentst->add_action( "raptor_bite,target_if=max:dot.serpent_sting.remains" );
+  sentst->add_action( "kill_shot" );
 
-  sentcleave->add_action( "wildfire_bomb,if=!cooldown.lunar_storm.remains", "SENTINEL | DEFAULT AOE ACTIONLIST" );
+  sentcleave->add_action( "wildfire_bomb,if=!buff.lunar_storm_cooldown.remains", "SENTINEL | DEFAULT AOE ACTIONLIST" );
+  sentcleave->add_action( "raptor_bite,target_if=max:dot.serpent_sting.remains,if=buff.strike_it_rich.up&buff.strike_it_rich.remains<gcd" );
   sentcleave->add_action( "kill_command,target_if=min:bloodseeker.remains,if=buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1" );
   sentcleave->add_action( "wildfire_bomb,if=buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9|(talent.bombardier&cooldown.coordinated_assault.remains<2*gcd)|talent.butchery&cooldown.butchery.remains<gcd" );
   sentcleave->add_action( "butchery" );
