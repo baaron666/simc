@@ -6264,29 +6264,29 @@ void garbagemancers_last_resort( special_effect_t& effect )
 
   struct garbagemancers_last_resort_t : public generic_proc_t
   {
-    ground_aoe_params_t params;
+    timespan_t pulse_time;
+    action_t* damage_action;
+
     garbagemancers_last_resort_t( const special_effect_t& e, std::string_view n, const spell_data_t* s )
       : generic_proc_t( e, n, s )
     {
-      auto value_spell    = e.player->find_spell( 1219296 );
-      auto damage         = create_proc_action<generic_aoe_proc_t>( "garbocalypse", e, 1219299, true );
-      damage->base_dd_min = damage->base_dd_max = value_spell->effectN( 1 ).average( e );
-
-      auto ground_aoe = create_proc_action<generic_aoe_proc_t>( "garbagemancers_last_resort_ground", e, 1219314 );
-
-      // TODO: probably better ground targeting emulation for the damage, unlikely targets in a place will still be
-      // there after 10s
-      params.pulse_time( ground_aoe->data().duration() )
-          .duration( timespan_t::from_seconds( value_spell->effectN( 2 ).base_value() ) )
-          .action( ground_aoe )
-          .expiration_callback( [ damage ]( const action_state_t* ) { damage->execute(); } );
+      auto value_spell = e.player->find_spell( 1219296 );
+      pulse_time       = timespan_t::from_seconds( value_spell->effectN( 2 ).base_value() );
+      damage_action    = create_proc_action<generic_aoe_proc_t>( "garbocalypse", e, 1219299, true );
+      damage_action->base_dd_min = damage_action->base_dd_max = value_spell->effectN( 1 ).average( e );
     }
 
     void impact( action_state_t* s ) override
     {
       generic_proc_t::impact( s );
-      params.start_time( timespan_t::min() ).target( target );  // reset start time
-      make_event<ground_aoe_event_t>( *sim, player, params );
+      // TODO: probably better ground targeting emulation for the damage, unlikely targets in a place will still be
+      // there after 10s
+      make_event<ground_aoe_event_t>( *sim, player,
+                                      ground_aoe_params_t()
+                                        .target( s->target )
+                                        .pulse_time( pulse_time )
+                                        .n_pulses( 1 )
+                                        .action( damage_action ) );
     }
   };
 
