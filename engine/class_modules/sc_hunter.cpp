@@ -1198,6 +1198,7 @@ public:
   maybe_bool decrements_tip_of_the_spear;
 
   struct {
+    // Hunter
     // TODO 7/2/25:
     // - seems to work off a target debuff 459529 applied after hitting a target for the first time; occasionally 
     //   you can notice a lack of bonus damage from abilities that are modified by his on its first occurance on a new target
@@ -1210,29 +1211,28 @@ public:
     //   or the debuff (yet still with the wrong % somehow)
     // - for our implementation, assume the passive talent aura gives everything the baseline 10%, then apply an extra 4% execute mod for 
     //   residual bleeds separately
-    bool unnatural_causes_debuff; // 10-15% dmg taken from caster spells from 459529 effect 1
-    bool unnatural_causes_debuff_label; // 10-15% dmg taken from caster spells (label) from 459529 effect 2
+    bool unnatural_causes_debuff = false; // 10-15% dmg taken from caster spells from 459529 effect 1
+    bool unnatural_causes_debuff_label = false; // 10-15% dmg taken from caster spells (label) from 459529 effect 2
 
-    // BM
+    // Beast Mastery
     bool thrill_of_the_hunt = false;
     damage_affected_by bestial_wrath;
     damage_affected_by master_of_beasts;
 
-    // MM
+    // Marksmanship
     bool trueshot_crit_damage_bonus = false;
-
     bool bullseye_crit_chance = false;
     damage_affected_by lone_wolf;
     damage_affected_by sniper_training;
 
-    // SV
-    damage_affected_by spirit_bond;
-    damage_affected_by tip_of_the_spear;
+    // Survival
     bool cull_the_herd = false;
     bool outland_venom = false;
-    damage_affected_by coordinated_assault;
     bool spearhead = false;
     bool deadly_duo = false;
+    damage_affected_by spirit_bond;
+    damage_affected_by tip_of_the_spear;
+    damage_affected_by coordinated_assault;
 
     // Pack Leader
     damage_affected_by wyverns_cry;
@@ -1251,10 +1251,8 @@ public:
     ab::special = true;
 
     for ( size_t i = 1; i <= ab::data().effect_count(); i++ )
-    {
       if ( ab::data().mechanic() == MECHANIC_BLEED || ab::data().effectN( i ).mechanic() == MECHANIC_BLEED )
         affected_by.cull_the_herd = true;
-    }
 
     if ( p->talents.unnatural_causes.ok() )
     {
@@ -1262,15 +1260,15 @@ public:
       affected_by.unnatural_causes_debuff_label = check_affected_by( this, p->talents.unnatural_causes_debuff->effectN( 2 ) );
     }
     
-    affected_by.sniper_training       = parse_damage_affecting_aura( this, p -> mastery.sniper_training );
-    affected_by.trueshot_crit_damage_bonus = check_affected_by( this, p -> talents.trueshot -> effectN( 5 ) );
-    affected_by.bullseye_crit_chance  = check_affected_by( this, p -> talents.bullseye -> effectN( 1 ).trigger() -> effectN( 1 ) );
+    affected_by.sniper_training = parse_damage_affecting_aura( this, p->mastery.sniper_training );
+    affected_by.trueshot_crit_damage_bonus = check_affected_by( this, p->talents.trueshot->effectN( 5 ) );
+    affected_by.bullseye_crit_chance = check_affected_by( this, p->talents.bullseye->effectN( 1 ).trigger()->effectN( 1 ) );
 
-    affected_by.thrill_of_the_hunt    = check_affected_by( this, p -> talents.thrill_of_the_hunt -> effectN( 1 ).trigger() -> effectN( 1 ) );
-    affected_by.bestial_wrath         = parse_damage_affecting_aura( this, p -> talents.bestial_wrath );
-    affected_by.master_of_beasts      = parse_damage_affecting_aura( this, p -> mastery.master_of_beasts );
+    affected_by.thrill_of_the_hunt = check_affected_by( this, p->talents.thrill_of_the_hunt->effectN( 1 ).trigger()->effectN( 1 ) );
+    affected_by.bestial_wrath = parse_damage_affecting_aura( this, p->talents.bestial_wrath );
+    affected_by.master_of_beasts = parse_damage_affecting_aura( this, p->mastery.master_of_beasts );
 
-    affected_by.spirit_bond = parse_damage_affecting_aura( this, p -> mastery.spirit_bond );
+    affected_by.spirit_bond = parse_damage_affecting_aura( this, p->mastery.spirit_bond );
     affected_by.tip_of_the_spear = parse_damage_affecting_aura( this, p->talents.tip_of_the_spear_buff );
     affected_by.outland_venom = check_affected_by( this, p->talents.outland_venom_debuff->effectN( 1 ) );
     affected_by.coordinated_assault = parse_damage_affecting_aura( this, p->talents.coordinated_assault );
@@ -1280,50 +1278,50 @@ public:
     affected_by.wyverns_cry = parse_damage_affecting_aura( this, p->talents.howl_of_the_pack_leader_wyvern_buff );
     affected_by.lead_from_the_front = parse_damage_affecting_aura( this, p->talents.lead_from_the_front_buff );
 
-    affected_by.tww_s2_mm_2pc = parse_damage_affecting_aura( this, p -> tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() );
+    affected_by.tww_s2_mm_2pc = parse_damage_affecting_aura( this, p->tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() );
 
     // Hunter Tree passives
-    ab::apply_affecting_aura( p -> talents.specialized_arsenal );
-    ab::apply_affecting_aura( p -> talents.improved_traps );
-    ab::apply_affecting_aura( p -> talents.born_to_be_wild );
-    ab::apply_affecting_aura( p -> talents.blackrock_munitions );
-    ab::apply_affecting_aura( p -> talents.lone_survivor );
-    ab::apply_affecting_aura( p -> talents.unnatural_causes );
+    ab::apply_affecting_aura( p->talents.specialized_arsenal );
+    ab::apply_affecting_aura( p->talents.improved_traps );
+    ab::apply_affecting_aura( p->talents.born_to_be_wild );
+    ab::apply_affecting_aura( p->talents.blackrock_munitions );
+    ab::apply_affecting_aura( p->talents.lone_survivor );
+    ab::apply_affecting_aura( p->talents.unnatural_causes );
 
     // Marksmanship Tree passives
-    ab::apply_affecting_aura( p -> talents.streamline );
-    ab::apply_affecting_aura( p -> talents.ammo_conservation );
-    ab::apply_affecting_aura( p -> talents.surging_shots );
-    ab::apply_affecting_aura( p -> talents.improved_deathblow );
-    ab::apply_affecting_aura( p -> talents.obsidian_arrowhead );
-    ab::apply_affecting_aura( p -> talents.deadeye );
-    ab::apply_affecting_aura( p -> talents.eagles_accuracy );
-    ab::apply_affecting_aura( p -> talents.small_game_hunter );
+    ab::apply_affecting_aura( p->talents.streamline );
+    ab::apply_affecting_aura( p->talents.ammo_conservation );
+    ab::apply_affecting_aura( p->talents.surging_shots );
+    ab::apply_affecting_aura( p->talents.improved_deathblow );
+    ab::apply_affecting_aura( p->talents.obsidian_arrowhead );
+    ab::apply_affecting_aura( p->talents.deadeye );
+    ab::apply_affecting_aura( p->talents.eagles_accuracy );
+    ab::apply_affecting_aura( p->talents.small_game_hunter );
 
     // Beast Mastery Tree passives
-    ab::apply_affecting_aura( p -> talents.aspect_of_the_beast );
-    ab::apply_affecting_aura( p -> talents.war_orders );
-    ab::apply_affecting_aura( p -> talents.cobra_senses );
-    ab::apply_affecting_aura( p -> talents.savagery );
+    ab::apply_affecting_aura( p->talents.aspect_of_the_beast );
+    ab::apply_affecting_aura( p->talents.war_orders );
+    ab::apply_affecting_aura( p->talents.cobra_senses );
+    ab::apply_affecting_aura( p->talents.savagery );
 
     // Survival Tree passives
-    ab::apply_affecting_aura( p -> talents.guerrilla_tactics );
-    ab::apply_affecting_aura( p -> talents.ranger );
-    ab::apply_affecting_aura( p -> talents.grenade_juggler );
-    ab::apply_affecting_aura( p -> talents.frenzy_strikes );
-    ab::apply_affecting_aura( p -> talents.vipers_venom );
-    ab::apply_affecting_aura( p -> talents.terms_of_engagement );
-    ab::apply_affecting_aura( p -> talents.tactical_advantage );
-    ab::apply_affecting_aura( p -> talents.explosives_expert );
-    ab::apply_affecting_aura( p -> talents.sweeping_spear );
-    ab::apply_affecting_aura( p -> talents.ruthless_marauder );
-    ab::apply_affecting_aura( p -> talents.symbiotic_adrenaline );
-    ab::apply_affecting_aura( p -> talents.deadly_duo );
+    ab::apply_affecting_aura( p->talents.guerrilla_tactics );
+    ab::apply_affecting_aura( p->talents.ranger );
+    ab::apply_affecting_aura( p->talents.grenade_juggler );
+    ab::apply_affecting_aura( p->talents.frenzy_strikes );
+    ab::apply_affecting_aura( p->talents.vipers_venom );
+    ab::apply_affecting_aura( p->talents.terms_of_engagement );
+    ab::apply_affecting_aura( p->talents.tactical_advantage );
+    ab::apply_affecting_aura( p->talents.explosives_expert );
+    ab::apply_affecting_aura( p->talents.sweeping_spear );
+    ab::apply_affecting_aura( p->talents.ruthless_marauder );
+    ab::apply_affecting_aura( p->talents.symbiotic_adrenaline );
+    ab::apply_affecting_aura( p->talents.deadly_duo );
 
     // Set Bonus passives
-    ab::apply_affecting_aura( p -> tier_set.tww_s1_mm_2pc );
-    ab::apply_affecting_aura( p -> tier_set.tww_s1_mm_4pc );
-    ab::apply_affecting_aura( p -> tier_set.tww_s1_sv_2pc );
+    ab::apply_affecting_aura( p->tier_set.tww_s1_mm_2pc );
+    ab::apply_affecting_aura( p->tier_set.tww_s1_mm_4pc );
+    ab::apply_affecting_aura( p->tier_set.tww_s1_sv_2pc );
 
     // Hero Tree passives
     ab::apply_affecting_aura( p->talents.sentinel_precision );
@@ -1391,19 +1389,18 @@ public:
     double am = ab::composite_da_multiplier( s );
 
     if ( affected_by.bestial_wrath.direct )
-      am *= 1 + p() -> buffs.bestial_wrath -> check_value();
+      am *= 1 + p()->buffs.bestial_wrath->check_value();
 
     if ( affected_by.master_of_beasts.direct )
-      am *= 1 + p() -> cache.mastery() * p() -> mastery.master_of_beasts -> effectN( affected_by.master_of_beasts.direct ).mastery_value();
+      am *= 1 + p()->cache.mastery() * p()->mastery.master_of_beasts->effectN( affected_by.master_of_beasts.direct ).mastery_value();
 
     if ( affected_by.sniper_training.direct )
-      am *= 1 + p() -> cache.mastery() * p() -> mastery.sniper_training -> effectN( affected_by.sniper_training.direct ).mastery_value();
+      am *= 1 + p()->cache.mastery() * p()->mastery.sniper_training->effectN( affected_by.sniper_training.direct ).mastery_value();
 
     if ( affected_by.spirit_bond.direct )
     {
-      double bonus = p() -> cache.mastery() * p() -> mastery.spirit_bond -> effectN( affected_by.spirit_bond.direct ).mastery_value();
+      double bonus = p()->cache.mastery() * p()->mastery.spirit_bond->effectN( affected_by.spirit_bond.direct ).mastery_value();
       bonus *= 1 + p()->mastery.spirit_bond_buff->effectN( 1 ).percent();
-      
       am *= 1 + bonus;
     }
 
@@ -1430,16 +1427,15 @@ public:
     double am = ab::composite_ta_multiplier( s );
 
     if ( affected_by.bestial_wrath.tick )
-      am *= 1 + p() -> buffs.bestial_wrath -> check_value();
+      am *= 1 + p()->buffs.bestial_wrath->check_value();
 
     if ( affected_by.sniper_training.tick )
-      am *= 1 + p() -> cache.mastery() * p() -> mastery.sniper_training -> effectN( affected_by.sniper_training.tick ).mastery_value();
+      am *= 1 + p()->cache.mastery() * p()->mastery.sniper_training->effectN( affected_by.sniper_training.tick ).mastery_value();
 
     if ( affected_by.spirit_bond.tick )
-      {
-      double bonus = p() -> cache.mastery() * p() -> mastery.spirit_bond -> effectN( affected_by.spirit_bond.tick ).mastery_value();
+    {
+      double bonus = p()->cache.mastery() * p()->mastery.spirit_bond->effectN( affected_by.spirit_bond.tick ).mastery_value();
       bonus *= 1 + p()->mastery.spirit_bond_buff->effectN( 3 ).percent();
-      
       am *= 1 + bonus;
     }
 
@@ -1460,10 +1456,10 @@ public:
     double cc = ab::composite_crit_chance();
 
     if ( affected_by.thrill_of_the_hunt )
-      cc += p() -> buffs.thrill_of_the_hunt -> check_stack_value();
+      cc += p()->buffs.thrill_of_the_hunt->check_stack_value();
 
     if ( affected_by.bullseye_crit_chance )
-      cc += p() -> buffs.bullseye -> check_stack_value();
+      cc += p()->buffs.bullseye->check_stack_value();
 
     return cc;
   }
@@ -2545,11 +2541,31 @@ static void trigger_beast_cleave( const action_state_t* s )
 
 // Template for common hunter pet action code.
 template <class T_PET, class Base>
-struct hunter_pet_action_t: public Base
+struct hunter_pet_action_t : public Base
 {
 private:
   using ab = Base;
 public:
+
+  struct {
+    // Hunter
+    bool unnatural_causes_debuff = false;
+    bool unnatural_causes_debuff_label = false;
+
+    // Beast Mastery
+    damage_affected_by bestial_wrath;
+    damage_affected_by master_of_beasts;
+
+    // Survival
+    bool cull_the_herd = false;
+    damage_affected_by spirit_bond;
+    damage_affected_by tip_of_the_spear;
+    damage_affected_by coordinated_assault;
+
+    // Pack Leader
+    damage_affected_by wyverns_cry;
+    damage_affected_by lead_from_the_front;
+  } affected_by;
 
   hunter_pet_action_t( util::string_view n, T_PET* p, const spell_data_t* s = spell_data_t::nil() ) :
     ab( n, p, s )
@@ -2569,6 +2585,143 @@ public:
         }
       }
     }
+
+    if ( o()->talents.cull_the_herd.ok() )
+      for ( size_t i = 1; i <= ab::data().effect_count(); i++ )
+        if ( ab::data().mechanic() == MECHANIC_BLEED || ab::data().effectN( i ).mechanic() == MECHANIC_BLEED )
+          affected_by.cull_the_herd = true;
+
+    if ( o()->talents.unnatural_causes.ok() )
+    {
+      affected_by.unnatural_causes_debuff = check_affected_by( this, o()->talents.unnatural_causes_debuff->effectN( 1 ) );
+      affected_by.unnatural_causes_debuff_label = check_affected_by( this, o()->talents.unnatural_causes_debuff->effectN( 2 ) );
+    }
+
+    affected_by.bestial_wrath = parse_damage_affecting_aura( this, o()->talents.bestial_wrath );
+    affected_by.master_of_beasts = parse_damage_affecting_aura( this, o()->mastery.master_of_beasts );
+
+    affected_by.spirit_bond = parse_damage_affecting_aura( this, o()->mastery.spirit_bond );
+    affected_by.tip_of_the_spear = parse_damage_affecting_aura( this, o()->talents.tip_of_the_spear_buff );
+    affected_by.coordinated_assault = parse_damage_affecting_aura( this, o()->talents.coordinated_assault );
+
+    affected_by.wyverns_cry = parse_damage_affecting_aura( this, o()->talents.howl_of_the_pack_leader_wyvern_buff );
+    affected_by.lead_from_the_front = parse_damage_affecting_aura( this, o()->talents.lead_from_the_front_buff );
+
+    // Hunter Tree passives
+    ab::apply_affecting_aura( o()->talents.specialized_arsenal );
+    ab::apply_affecting_aura( o()->talents.unnatural_causes );
+
+    // Beast Mastery Tree passives
+    ab::apply_affecting_aura( o()->talents.aspect_of_the_beast );
+    ab::apply_affecting_aura( o()->talents.savagery );
+
+    // Survival Tree passives
+    ab::apply_affecting_aura( o()->talents.frenzy_strikes );
+    ab::apply_affecting_aura( o()->talents.tactical_advantage );
+    ab::apply_affecting_aura( o()->talents.killer_companion );
+  }
+
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double am = ab::composite_da_multiplier( s );
+
+    if ( affected_by.bestial_wrath.direct )
+      am *= 1 + o()->buffs.bestial_wrath->check_value();
+
+    if ( affected_by.master_of_beasts.direct )
+      am *= 1 + o()->cache.mastery() * o()->mastery.master_of_beasts->effectN( affected_by.master_of_beasts.direct ).mastery_value();
+
+    if ( affected_by.spirit_bond.direct )
+    {
+      double bonus = o()->cache.mastery() * o()->mastery.spirit_bond->effectN( affected_by.spirit_bond.direct ).mastery_value();
+      bonus *= 1 + o()->mastery.spirit_bond_buff->effectN( 1 ).percent();
+      am *= 1 + bonus;
+    }
+
+    if ( affected_by.coordinated_assault.direct && o()->buffs.coordinated_assault->check() )
+      am *= 1 + o()->talents.coordinated_assault->effectN( affected_by.coordinated_assault.direct ).percent();
+
+    if ( affected_by.tip_of_the_spear.direct && o()->buffs.tip_of_the_spear->check() )
+      am *= 1 + o()->calculate_tip_of_the_spear_value( o()->talents.tip_of_the_spear->effectN( affected_by.tip_of_the_spear.direct ).percent() );
+
+    if ( affected_by.wyverns_cry.direct )
+      am *= 1 + o()->buffs.wyverns_cry->check_stack_value();
+
+    if ( affected_by.lead_from_the_front.direct && o()->buffs.lead_from_the_front->check() )
+      am *= 1 + o()->talents.lead_from_the_front_buff->effectN( affected_by.lead_from_the_front.direct ).percent();
+
+    return am;
+  }
+
+  double composite_ta_multiplier( const action_state_t* s ) const override
+  {
+    double am = ab::composite_ta_multiplier( s );
+
+    if ( affected_by.bestial_wrath.tick )
+      am *= 1 + o()->buffs.bestial_wrath->check_value();
+
+    if ( affected_by.spirit_bond.tick )
+    {
+      double bonus = o()->cache.mastery() * o()->mastery.spirit_bond->effectN( affected_by.spirit_bond.tick ).mastery_value();
+      bonus *= 1 + o()->mastery.spirit_bond_buff->effectN( 3 ).percent();
+      am *= 1 + bonus;
+    }
+
+    if ( affected_by.coordinated_assault.tick && o()->buffs.coordinated_assault->check() )
+      am *= 1 + o()->talents.coordinated_assault->effectN( affected_by.coordinated_assault.tick ).percent();
+
+    if ( affected_by.wyverns_cry.tick )
+      am *= 1 + o()->buffs.wyverns_cry->check_stack_value();
+
+    if ( affected_by.lead_from_the_front.tick && o()->buffs.lead_from_the_front->check() )
+      am *= 1 + o()->talents.lead_from_the_front_buff->effectN( affected_by.lead_from_the_front.tick ).percent();
+
+    return am;
+  }
+
+  double composite_target_da_multiplier( player_t* target ) const override
+  {
+    double da = ab::composite_target_da_multiplier( target );
+
+    // Just assume the debuff will always be applied
+    if ( affected_by.unnatural_causes_debuff || affected_by.unnatural_causes_debuff_label )
+    {
+      double execute_mod = 0.0;
+      if ( target->health_percentage() < o()->talents.unnatural_causes->effectN( 3 ).base_value() )
+        execute_mod = o()->talents.unnatural_causes->effectN( 2 ).percent();
+
+      if ( affected_by.unnatural_causes_debuff )
+        da *= 1 + o()->talents.unnatural_causes_debuff->effectN( 1 ).percent() * ( 1 + execute_mod );
+
+      if ( affected_by.unnatural_causes_debuff_label )
+        da *= 1 + o()->talents.unnatural_causes_debuff->effectN( 2 ).percent() * ( 1 + execute_mod );
+    }
+
+    return da;
+  }
+
+  double composite_target_ta_multiplier( player_t* target ) const override
+  {
+    double ta = ab::composite_target_ta_multiplier( target );
+
+    if ( affected_by.cull_the_herd )
+      ta *= 1 + o()->get_target_data( target )->debuffs.cull_the_herd->check_value();
+
+    // Just assume the debuff will always be applied
+    if ( affected_by.unnatural_causes_debuff || affected_by.unnatural_causes_debuff_label )
+    {
+      double execute_mod = 0.0;
+      if ( target->health_percentage() < o()->talents.unnatural_causes->effectN( 3 ).base_value() )
+        execute_mod = o()->talents.unnatural_causes->effectN( 2 ).percent();
+
+      if ( affected_by.unnatural_causes_debuff )
+        ta *= 1 + o()->talents.unnatural_causes_debuff->effectN( 1 ).percent() * ( 1 + execute_mod );
+
+      if ( affected_by.unnatural_causes_debuff_label )
+        ta *= 1 + o()->talents.unnatural_causes_debuff->effectN( 2 ).percent() * ( 1 + execute_mod );
+    }
+
+    return ta;
   }
 
   T_PET* p() { return static_cast<T_PET*>( ab::player ); }
@@ -2578,6 +2731,16 @@ public:
   const hunter_t* o() const { return p()->o(); }
 
   bool usable_moving() const override { return true; }
+};
+
+template <typename Pet>
+struct hunter_pet_attack_t: public hunter_pet_action_t<Pet, melee_attack_t>
+{
+private:
+  using ab = hunter_pet_action_t<Pet, melee_attack_t>;
+public:
+
+  hunter_pet_attack_t( util::string_view n, Pet* p, const spell_data_t* s ) : ab( n, p, s ) {}
 };
 
 template <typename Pet>
@@ -2608,62 +2771,6 @@ public:
     if ( t < 0.25_s )
       t = 0.25_s;
     return t;
-  }
-};
-
-template <typename Pet>
-struct hunter_pet_attack_t: public hunter_pet_action_t<Pet, melee_attack_t>
-{
-private:
-  using ab = hunter_pet_action_t<Pet, melee_attack_t>;
-public:
-  // Used to pull player spell modifiers that affect pet spells
-  hunter_action_t<melee_attack_t>* player_action;
-
-  hunter_pet_attack_t( util::string_view n, Pet* p, const spell_data_t* s ) : 
-    ab( n, p, s ), player_action( new hunter_action_t<melee_attack_t>( fmt::format( "player_{}", n ), ab::o(), s ) ) {}
-
-  void init() override
-  {
-    ab::init();
-
-    player_action->init();
-  }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double am = ab::composite_da_multiplier( s );
-
-    am *= player_action->composite_da_multiplier( s );
-
-    return am;
-  }
-
-  double composite_ta_multiplier( const action_state_t* s ) const override
-  {
-    double am = ab::composite_ta_multiplier( s );
-    
-    am *= player_action->composite_ta_multiplier( s );
-
-    return am;
-  }
-
-  double composite_target_da_multiplier( player_t* target ) const override
-  {
-    double da = ab::composite_target_da_multiplier( target );
-
-    da *= player_action->composite_target_da_multiplier( target );
-
-    return da;
-  }
-
-  double composite_target_ta_multiplier( player_t* target ) const override
-  {
-    double ta = ab::composite_target_ta_multiplier( target );
-
-    ta *= player_action->composite_target_ta_multiplier( target );
-
-    return ta;
   }
 };
 
@@ -2833,10 +2940,8 @@ struct beast_cleave_attack_t: public hunter_pet_attack_t<hunter_pet_t>
   beast_cleave_attack_t( hunter_pet_t* p ) : hunter_pet_attack_t( "beast_cleave", p, p->find_spell( 118459 ) )
   {
     background = true;
-    callbacks = false;
-    may_miss = false;
-    may_crit = false;
-    proc = false;
+    callbacks = proc = false;
+    may_miss = may_crit = false;
     // The starting damage includes all the buffs
     base_dd_min = base_dd_max = 0;
     spell_power_mod.direct = attack_power_mod.direct = 0;
@@ -2872,10 +2977,8 @@ struct kill_cleave_t: public hunter_pet_attack_t<hunter_pet_t>
   kill_cleave_t( hunter_pet_t* p ) : hunter_pet_attack_t( "kill_cleave", p, p->find_spell( 389448 ) )
   {
     background = true;
-    callbacks = false;
-    may_miss = false;
-    may_crit = false;
-    proc = false;
+    callbacks = proc = false;
+    may_miss = may_crit = false;
     // The starting damage includes all the buffs
     base_dd_min = base_dd_max = 0;
     spell_power_mod.direct = attack_power_mod.direct = 0;
