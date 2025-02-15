@@ -10779,8 +10779,12 @@ struct tempest_t : public shaman_spell_t
     parse_options( options_str );
 
     aoe = -1;
-    reduced_aoe_targets = as<double>( data().effectN( 3 ).base_value() );
+    reduced_aoe_targets = data().effectN( 3 ).base_value();
     base_aoe_multiplier = data().effectN( 2 ).percent();
+    if ( player->dbc->ptr )
+    {
+      base_aoe_multiplier += player->spec.enhancement_shaman2->effectN( 10 ).percent();
+    }
 
     if ( player->mastery.elemental_overload->ok() )
     {
