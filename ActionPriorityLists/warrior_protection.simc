@@ -1,7 +1,8 @@
 actions+=/pummel
 actions+=/call_action_list,name=mitigation
 
-actions.mitigation+=/shield_block,use_off_gcd=1,if=tanking&buff.shield_block.remains<=2&(!talent.champions_bulwark.enabled|buff.shield_block.remains<=cooldown.shield_charge.remains&(cooldown.ravager.ready+cooldown.demoralizing_shout.ready&talent.booming_voice.enabled+cooldown.champions_spear.ready+cooldown.thunderous_roar.ready>1))
+# Not necessarily needed? The offensive rule already covers 98+% uptime
+# actions.mitigation+=/shield_block,use_off_gcd=1,if=tanking&buff.shield_block.remains<=2&(!talent.champions_bulwark.enabled|buff.shield_block.remains<=cooldown.shield_charge.remains&(cooldown.ravager.ready+cooldown.demoralizing_shout.ready&talent.booming_voice.enabled+cooldown.champions_spear.ready+cooldown.thunderous_roar.ready>1))
 actions.mitigation+=/ignore_pain,use_off_gcd=1,if=tanking&buff.ignore_pain.down
 actions.mitigation+=/spell_block,use_off_gcd=1,if=tanking&incoming_magic_damage_5s>spell_block_damage_taken&health.pct<=spell_block_health_pct&!(buff.spell_reflection_defense.up)
 actions.mitigation+=/shield_wall,use_off_gcd=1,if=tanking&incoming_damage_5s>shield_wall_damage_taken&health.pct<=shield_wall_health_pct&!(buff.shield_wall.up|buff.last_stand.up)
@@ -9,6 +10,8 @@ actions.mitigation+=/last_stand,use_off_gcd=1,if=tanking&incoming_damage_5s>last
 actions.mitigation+=/rallying_cry,if=tanking&incoming_damage_5s>rallying_cry_damage_taken&health.pct<=rallying_cry_health_pct&!(buff.shield_wall.up|buff.last_stand.up)
 actions.mitigation+=/victory_rush,if=health.pct<victory_rush_health_pct&talent.impending_victory.disabled
 actions.mitigation+=/impending_victory,if=health.pct<victory_rush_health_pct&talent.impending_victory.enabled
+
+actions+=/ravager,if=time=0
 
 ########################################
 
@@ -21,13 +24,18 @@ actions=auto_attack
 actions.precombat+=/battle_stance,toggle=on
 actions.precombat+=/battle_shout
 
-actions+=/variable,name=shield_slam_capping_rage,value=1,value_else=0,if=rage.deficit<(15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-actions+=/variable,name=thunder_clap_capping_rage,value=1,value_else=0,if=rage.deficit<(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-
-actions+=/ravager,if=time=0
 actions+=/charge,if=time=0|movement.distance>8
+
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.avatar.ready*10*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.ravager.ready*10*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.demoralizing_shout.ready*talent.booming_voice.enabled*30*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.champions_spear.ready*10*(1+talent.piercing_challenge.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.shield_charge.ready*(20+20*talent.champions_bulwark.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.thunder_clap.ready*(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.shield_slam.ready*(15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+
 actions+=/use_items
-actions+=/avatar,if=buff.thunder_blast.down&rage.deficit>10*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/avatar
 actions+=/blood_fury
 actions+=/berserking
 actions+=/arcane_torrent
@@ -35,24 +43,20 @@ actions+=/lights_judgment
 actions+=/fireblood
 actions+=/ancestral_call
 actions+=/bag_of_tricks
-# actions+=/potion,if=buff.avatar.up|buff.avatar.up&target.health.pct<=20
-actions+=/ravager,if=rage.deficit>(10+10*talent.storm_of_steel.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-actions+=/demoralizing_shout,if=talent.booming_voice.enabled&rage.deficit>30*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-actions+=/champions_spear,if=rage.deficit>10*(1+talent.piercing_challenge.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/potion,if=buff.avatar.up|target.health.pct<=20
+
+actions+=/ravager
+actions+=/demoralizing_shout,if=talent.booming_voice.enabled
+actions+=/champions_spear
 actions+=/thunder_blast,if=spell_targets.thunder_blast>=2&buff.thunder_blast.stack=2
 actions+=/demolish,if=buff.colossal_might.stack>=3
 actions+=/thunderous_roar
-# Dump rage before cd to not delay cd and then change priority because some cd needs larger room to not cap rage
-# actions+=/call_action_list,name=rage_dump,if=variable.shield_charge_capping_rage
-actions+=/shield_charge,if=rage.deficit>(20+20*talent.champions_bulwark.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/shield_charge
 # For offensive purpose (buffing shield slam damage)
 actions+=/shield_block,use_off_gcd=1,if=buff.shield_block.down&(!talent.champions_bulwark.enabled|!cooldown.shield_charge.ready)
-actions+=/run_action_list,name=aoe,strict=1,if=spell_targets.thunder_clap>=3
-actions+=/call_action_list,name=generic
 
-actions.rage_dump+=/ignore_pain
-actions.rage_dump+=/execute
-actions.rage_dump+=/revenge
+actions+=/run_action_list,name=aoe,if=spell_targets.thunder_clap>=3
+actions+=/run_action_list,name=generic
 
 actions.aoe+=/thunder_blast,if=dot.rend.remains<=1
 actions.aoe+=/thunder_clap,if=dot.rend.remains<=1
