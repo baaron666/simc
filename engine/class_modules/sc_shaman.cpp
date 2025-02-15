@@ -13352,7 +13352,7 @@ void shaman_t::trigger_awakening_storms( const action_state_t* state )
 
   buff.awakening_storms->trigger();
 
-  if ( buff.awakening_storms->stack() == talent.awakening_storms->effectN( 2 ).base_value() )
+  if ( buff.awakening_storms->stack() == buff.awakening_storms->max_stack() )
   {
     if ( buff.tempest->check() )
     {
@@ -13816,6 +13816,7 @@ void shaman_t::create_buffs()
       ->add_invalidate(CACHE_PLAYER_DAMAGE_MULTIPLIER);
 
   buff.awakening_storms = make_buff( this, "awakening_storms", find_spell( 462131 ) )
+    ->apply_affecting_aura( spec.enhancement_shaman2 )
     ->set_chance( talent.awakening_storms.ok() ? 1.0 : 0.0 );
 
   buff.totemic_rebound = make_buff( this, "totemic_rebound", find_spell( 458269 ) )
