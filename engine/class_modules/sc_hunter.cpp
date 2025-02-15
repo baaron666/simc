@@ -3099,7 +3099,7 @@ struct stomp_t : public hunter_pet_attack_t<hunter_pet_t>
   {
     background = true;
     aoe = -1;
-    base_dd_multiplier *= o() -> talents.stomp -> effectN( 1 ).base_value() * effectiveness;
+    base_dd_multiplier *= effectiveness;
   }
 };
 
