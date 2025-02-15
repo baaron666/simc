@@ -12239,11 +12239,18 @@ void shaman_t::init_spells()
 
   if ( talent.charged_conduit->ok() )
   {
-        constant.mul_lightning_rod *= ( 1.0 + talent.charged_conduit->effectN( 2 ).percent() );
+    constant.mul_lightning_rod *= ( 1.0 + talent.charged_conduit->effectN( 2 ).percent() );
   }
 
   // Add enhancement Lightning Rod modifier
-  constant.mul_lightning_rod += spec.enhancement_shaman->effectN( 27 ).percent();
+  if ( dbc->ptr )
+  {
+    constant.mul_lightning_rod += spec.enhancement_shaman2->effectN( 8 ).percent();
+  }
+  else
+  {
+    constant.mul_lightning_rod += spec.enhancement_shaman->effectN( 27 ).percent();
+  }
 
 
   parse_player_effects_t::init_spells();
