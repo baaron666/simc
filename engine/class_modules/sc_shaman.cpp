@@ -14313,7 +14313,6 @@ void shaman_t::apply_affecting_auras( action_t& action )
   action.apply_affecting_aura( talent.herald_of_the_storms );
 
   action.apply_affecting_aura( talent.stormcaller );
-  action.apply_affecting_aura( talent.voltaic_surge );
   action.apply_affecting_aura( talent.pulse_capacitor );
   action.apply_affecting_aura( talent.supportive_imbuements );
   action.apply_affecting_aura( talent.totemic_coordination );
@@ -14373,6 +14372,9 @@ void shaman_t::apply_player_effects()
 void shaman_t::apply_action_effects( parse_effects_t* a )
 {
   // Shared
+  eff::source_eff_builder_t( talent.voltaic_surge )
+    .add_affecting_spell( spec.enhancement_shaman2 )
+    .add_affecting_spell( spec.elemental_shaman ).build( a );
 
   // Enhancement
   eff::source_eff_builder_t( mastery.enhanced_elements )
