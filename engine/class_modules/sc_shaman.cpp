@@ -980,6 +980,9 @@ public:
 
     // Surging totem whiff
     double surging_totem_miss_chance = 0.1;
+
+    // 11.1 feral spirit cap
+    unsigned max_flowing_spirit_procs = 5U;
   } options;
 
   // Cooldowns
@@ -1840,9 +1843,9 @@ struct splintered_elements_buff_t : public buff_t
 // within the context of the system. Note that the overrides for value here alter how buffs
 // function, normally the x_value() methods return the current value only, not the stack-multiplied
 // one.
-struct elemental_spirit_buff_t : public buff_t
+struct feral_spirit_bufft : public buff_t
 {
-  elemental_spirit_buff_t( shaman_t* p, util::string_view name, const spell_data_t* spell ) :
+  feral_spirit_bufft( shaman_t* p, util::string_view name, const spell_data_t* spell ) :
     buff_t( p, name, spell )
   { }
 
@@ -4790,7 +4793,6 @@ struct sundering_reactivity_t : public shaman_attack_t
 
     may_proc_flametongue = may_proc_windfury = may_proc_stormsurge = player->dbc->ptr;
     may_proc_flowing_spirits = false;
-
     if ( ! p()->dbc->ptr )
     {
       p()->set_mw_proc_state( this, mw_proc_state::DISABLED );
@@ -11674,6 +11676,9 @@ void shaman_t::create_options()
       return true;
     }
   ) );
+
+  add_option( opt_uint( "shaman.max_flowing_spirit_procs",
+    options.max_flowing_spirit_procs , 0, std::numeric_limits<unsigned>::max() ) );
 }
 
 // shaman_t::create_profile ================================================
@@ -11724,6 +11729,8 @@ void shaman_t::copy_from( player_t* source )
   options.dre_enhancement_forced_failures = p->options.dre_enhancement_forced_failures;
 
   options.surging_totem_miss_chance = p->options.surging_totem_miss_chance;
+
+  options.max_flowing_spirit_procs = p->options.max_flowing_spirit_procs;
 }
 
 // shaman_t::create_special_effects ========================================
@@ -13005,7 +13012,11 @@ void shaman_t::trigger_windfury_weapon( const action_state_t* state, double over
       // Unruly Winds gets an additional proc chance, with half the proc chance
       if ( talent.flowing_spirits.ok() && !talent.elemental_spirits.ok() )
       {
-        trigger_flowing_spirits( state, true );
+        // Delay proc attempt to ensure ICD is elapsed
+        //make_event( sim, talent.flowing_spirits->internal_cooldown() + 1_ms,
+        //[ this, state ]() {
+          trigger_flowing_spirits( state, true );
+        //} );
       }
     }
 
@@ -13598,24 +13609,40 @@ void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfu
     return;
   }
 
-  if ( flowing_spirits_procs.size() <= pet.all_wolves.size() + 1 )
-  {
-    flowing_spirits_procs.resize( pet.all_wolves.size() + 1 );
-  }
-
-  if ( active_flowing_spirits_proc >= options.flowing_spirits_chances.size() )
-  {
-    return;
-  }
-
-  bool triggered = rng().roll( options.flowing_spirits_chances[ active_flowing_spirits_proc ] );
-
+  bool triggered = false;
+  double chance = 0.0;
   auto n_summons = 1U +
     as<unsigned>( sets->set( SHAMAN_ENHANCEMENT, TWW1, B4 )->effectN( 1 ).base_value() );
 
+  if ( dbc->ptr )
+  {
+    if ( active_flowing_spirits_proc == options.max_flowing_spirit_procs )
+    {
+      return;
+    }
+
+    chance = talent.flowing_spirits->effectN( 1 ).percent();
+  }
+  else
+  {
+    if ( active_flowing_spirits_proc >= options.flowing_spirits_chances.size() )
+    {
+      return;
+    }
+
+    chance = options.flowing_spirits_chances[ active_flowing_spirits_proc ];
+  }
+
+  triggered = rng().roll( chance );
+
   sim->print_debug( "{} attempts to proc flowing_spirits on {}, active_procs={}, chance={}: {}",
-    name(), windfurySourceTrigger ? "windfury_attack" : state->action->name(), active_flowing_spirits_proc,
-    options.flowing_spirits_chances[ active_flowing_spirits_proc ], triggered );
+    name(), windfurySourceTrigger ? "windfury_attack" : state->action->name(),
+    active_flowing_spirits_proc, chance, triggered );
+
+  if ( flowing_spirits_procs.size() <= active_flowing_spirits_proc * n_summons )
+  {
+    flowing_spirits_procs.resize( active_flowing_spirits_proc * n_summons + 1 );
+  }
 
   std::get<0>( flowing_spirits_procs[ active_flowing_spirits_proc * n_summons ] ).add( 1.0 );
 
@@ -13921,19 +13948,19 @@ void shaman_t::create_buffs()
                             ->set_refresh_behavior( buff_refresh_behavior::DISABLED )
                             ->set_default_value_from_effect_type( A_ADD_PCT_MODIFIER, P_GENERIC );
 
-  buff.icy_edge = make_buff<elemental_spirit_buff_t>( this, "icy_edge", find_spell( 224126 ) )
+  buff.icy_edge = make_buff<feral_spirit_bufft>( this, "icy_edge", find_spell( 224126 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
-  buff.molten_weapon = make_buff<elemental_spirit_buff_t>( this, "molten_weapon", find_spell( 224125 ) )
+  buff.molten_weapon = make_buff<feral_spirit_bufft>( this, "molten_weapon", find_spell( 224125 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
-  buff.crackling_surge  = make_buff<elemental_spirit_buff_t>( this, "crackling_surge", find_spell( 224127 ) )
+  buff.crackling_surge  = make_buff<feral_spirit_bufft>( this, "crackling_surge", find_spell( 224127 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
-  buff.earthen_weapon = make_buff<elemental_spirit_buff_t>( this, "earthen_weapon", find_spell( 392375 ) )
+  buff.earthen_weapon = make_buff<feral_spirit_bufft>( this, "earthen_weapon", find_spell( 392375 ) )
     ->set_max_stack( 30 )
     ->set_stack_behavior( buff_stack_behavior::ASYNCHRONOUS )
     ->set_default_value_from_effect( 1 );
@@ -15314,7 +15341,11 @@ public:
 
       os << fmt::format( "<tr class=\"{}\">\n", row++ & 1 ? "odd" : "even" );
       os << fmt::format( "<td class=\"left\">{}</td>", idx );
-      os << fmt::format( "<td class=\"left\">{:.3f}%</td>", 100.0 * p.options.flowing_spirits_chances[ active_proc ] );
+      os << fmt::format( "<td class=\"left\">{:.3f}%</td>",
+        100.0 * ( p.dbc->ptr
+          ? p.talent.flowing_spirits->effectN( 1 ).percent()
+          : p.options.flowing_spirits_chances[ active_proc ]
+      ) );
       os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>", attempts.count(),
         util::round( attempts.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>", procs.count(),
