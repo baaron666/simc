@@ -356,7 +356,6 @@ struct hunter_td_t: public actor_target_data_t
   struct debuffs_t
   {
     buff_t* cull_the_herd;
-    buff_t* shredded_armor;
     buff_t* wild_instincts;
     buff_t* outland_venom;
 
@@ -384,7 +383,6 @@ struct hunter_td_t: public actor_target_data_t
     dot_t* spearhead;
 
     dot_t* black_arrow;
-    dot_t* rend_flesh;
   } dots;
 
   hunter_td_t( player_t* target, hunter_t* p );
@@ -468,9 +466,9 @@ public:
     buff_t* serpentine_rhythm;
     buff_t* serpentine_blessing;
     buff_t* a_murder_of_crows;
-    buff_t* huntmasters_call; 
+    buff_t* huntmasters_call;
     buff_t* summon_fenryr;
-    buff_t* summon_hati;  
+    buff_t* summon_hati;
 
     // Survival Tree
     buff_t* tip_of_the_spear;
@@ -505,9 +503,9 @@ public:
     // Hero Talents 
 
     // Pack Leader
-    buff_t* howl_of_the_pack_leader_wyvern_ready;
-    buff_t* howl_of_the_pack_leader_boar_ready;
-    buff_t* howl_of_the_pack_leader_bear_ready;
+    buff_t* howl_of_the_pack_leader_wyvern;
+    buff_t* howl_of_the_pack_leader_boar;
+    buff_t* howl_of_the_pack_leader_bear;
     buff_t* howl_of_the_pack_leader_cooldown;
     buff_t* wyverns_cry;
     buff_t* hogstrider;
@@ -616,8 +614,6 @@ public:
     spell_data_ptr_t blackrock_munitions; 
     spell_data_ptr_t keen_eyesight;
 
-    spell_data_ptr_t quick_load; //NYI - When you fall below 40% heath, Bursting Shot's cooldown is immediately reset. This can only occur once every 25 sec.
-
     spell_data_ptr_t serrated_tips;
     spell_data_ptr_t born_to_be_wild;
     spell_data_ptr_t improved_traps;
@@ -629,7 +625,7 @@ public:
     spell_data_ptr_t unnatural_causes;
     spell_data_ptr_t unnatural_causes_debuff;
     
-    // BM + SV
+    // Beast Mastery/Survival
     spell_data_ptr_t kill_command;
     spell_data_ptr_t kill_command_pet;
     spell_data_ptr_t alpha_predator; //TDOO Alpha Predator now increase Kill Command’s damage multiplicatively rather than additively.
@@ -740,6 +736,8 @@ public:
     spell_data_ptr_t poisoned_barbs;
 
     spell_data_ptr_t stomp;
+    spell_data_ptr_t stomp_primary;
+    spell_data_ptr_t stomp_cleave;
     spell_data_ptr_t serpentine_rhythm;
     spell_data_ptr_t kill_cleave;
     spell_data_ptr_t training_expert;
@@ -757,7 +755,7 @@ public:
     spell_data_ptr_t killer_instinct;
     spell_data_ptr_t master_handler;
     spell_data_ptr_t barbed_wrath;
-    spell_data_ptr_t thundering_hooves; //TODO should this be done with effectiveness state flag like s2 mm tier?
+    spell_data_ptr_t thundering_hooves;
     spell_data_ptr_t dire_frenzy;
     
     spell_data_ptr_t call_of_the_wild;
@@ -1156,7 +1154,7 @@ public:
   void trigger_spotters_mark( player_t* target, bool force = false );
   double calculate_tip_of_the_spear_value( double base_value ) const;
   bool consume_howl_of_the_pack_leader( player_t* target );
-  void trigger_howl_of_the_pack_leader_ready();
+  void trigger_howl_of_the_pack_leader();
 };
 
 // Template for common hunter action code.
@@ -2745,9 +2743,12 @@ struct kill_command_bm_t: public hunter_pet_attack_t<hunter_main_pet_base_t>
     if ( o() -> talents.kill_cleave.ok() && s -> action -> result_is_hit( s -> result ) &&
       s -> action -> sim -> active_enemies > 1 && p() -> hunter_pet_t::buffs.beast_cleave -> up() )
     {
-      const double target_da_multiplier = ( 1.0 / s -> target_da_multiplier );
-      const double amount = s -> result_total * o() -> talents.kill_cleave -> effectN( 1 ).percent() * target_da_multiplier;
-      p() -> actions.kill_cleave -> execute_on_target( s -> target, amount );
+      // Target multipliers do not replicate to secondary targets
+      const double target_da_multiplier = ( 1.0 / s->target_da_multiplier );
+      const double target_pet_multiplier = ( 1.0 / s->target_pet_multiplier );
+
+      const double amount = s->result_total * o()->talents.kill_cleave->effectN( 1 ).percent() * target_da_multiplier * target_pet_multiplier;
+      p()->actions.kill_cleave->execute_on_target( s->target, amount );
     }
 
     auto pet = o() -> pets.main;
@@ -2779,9 +2780,9 @@ struct kill_command_bm_t: public hunter_pet_attack_t<hunter_main_pet_base_t>
     double da = hunter_pet_attack_t::composite_da_multiplier( s );
 
     if ( p() == o()->pets.main && 
-      ( o()->buffs.howl_of_the_pack_leader_wyvern_ready
-      || o()->buffs.howl_of_the_pack_leader_boar_ready
-      || o()->buffs.howl_of_the_pack_leader_bear_ready ) )
+      ( o()->buffs.howl_of_the_pack_leader_wyvern->check()
+      || o()->buffs.howl_of_the_pack_leader_boar->check()
+      || o()->buffs.howl_of_the_pack_leader_bear->check() ) )
     {
       da *= 1 + o()->talents.pack_mentality->effectN( 1 ).percent();
     }
@@ -2912,6 +2913,7 @@ struct kill_cleave_t: public hunter_pet_attack_t<hunter_pet_t>
     hunter_pet_attack_t::init();
 
     snapshot_flags |= STATE_TGT_MUL_DA;
+    snapshot_flags |= STATE_TGT_MUL_PET;
   }
 
   size_t available_targets( std::vector< player_t* >& tl ) const override
@@ -2922,28 +2924,6 @@ struct kill_cleave_t: public hunter_pet_attack_t<hunter_pet_t>
     range::erase_remove( tl, target );
 
     return tl.size();
-  }
-};
-
-// Frenzied Tear ==================================================================
-
-struct frenzied_tear_t: public hunter_pet_attack_t<hunter_pet_t>
-{
-  frenzied_tear_t( hunter_pet_t* p ) : hunter_pet_attack_t( "frenzied_tear", p, p->find_spell( 83381 ) )
-  {
-    background = true;
-    // The starting damage includes all the buffs
-    base_dd_min = base_dd_max = 0;
-    spell_power_mod.direct = attack_power_mod.direct = 0;
-    weapon_multiplier = 0;
-  }
-
-  void init() override
-  {
-    hunter_pet_attack_t::init();
-
-    snapshot_flags &= STATE_NO_MULTIPLIER;
-    snapshot_flags |= STATE_TGT_MUL_DA;
   }
 };
 
@@ -2983,10 +2963,6 @@ struct pet_melee_t : public hunter_pet_melee_t<hunter_pet_t>
 
 struct basic_attack_base_t : public hunter_pet_attack_t<hunter_main_pet_t>
 {
-  struct {
-    double chance = 0.0;
-  } frenzied_tear; 
-
   basic_attack_base_t( hunter_main_pet_t* p, util::string_view n, util::string_view suffix ) : 
     hunter_pet_attack_t( fmt::format("{}{}", n, suffix), p, p->find_pet_spell( n ) )
   {
@@ -3061,30 +3037,12 @@ struct no_mercy_ba_t : public basic_attack_base_t
   double cost() const override { return 0; }
 };
 
-struct pack_coordination_ba_t : public basic_attack_base_t
-{
-  pack_coordination_ba_t( hunter_main_pet_t* p, util::string_view n ) : basic_attack_base_t( p, n, "_pack_coordination" )
-  {
-    background = true;
-  }
-
-  double cost() const override
-  {
-    return 0;
-  }
-};
-
 struct brutal_companion_ba_t : public basic_attack_base_t
 {
   brutal_companion_ba_t( hunter_main_pet_t* p, util::string_view n ) : basic_attack_base_t( p, n, "_brutal_companion" )
   {
-    background = true;
+    background = proc = true;
     base_multiplier *= 1 + o()->talents.brutal_companion->effectN( 2 ).percent();
-  }
-
-  double cost() const override
-  {
-    return 0;
   }
 };
 
@@ -3122,11 +3080,41 @@ struct coordinated_assault_t: public hunter_pet_attack_t<hunter_main_pet_t>
 
 struct stomp_t : public hunter_pet_attack_t<hunter_pet_t>
 {
-  stomp_t( hunter_pet_t* p, double effectiveness = 1.0, util::string_view n = "stomp"  ) : hunter_pet_attack_t( n, p, p->find_spell( 201754 ) )
+  struct cleave_t : public hunter_pet_attack_t<hunter_pet_t>
+  {
+    cleave_t( hunter_pet_t* p, double effectiveness = 1.0 ) : hunter_pet_attack_t( "stomp_cleave", p, p->o()->talents.stomp_cleave )
+    {
+      background = true;
+      aoe = -1;
+      base_dd_multiplier *= effectiveness;
+    }
+
+    size_t available_targets( std::vector< player_t* >& tl ) const override
+    {
+      hunter_pet_attack_t::available_targets( tl );
+
+      range::erase_remove( tl, target );
+
+      return tl.size();
+    }
+  };
+
+  cleave_t* cleave;
+
+  stomp_t( hunter_pet_t* p, double effectiveness = 1.0, util::string_view n = "stomp_primary" ) : hunter_pet_attack_t( n, p, p->o()->talents.stomp_primary ),
+    cleave( new cleave_t( p, effectiveness ) )
   {
     background = true;
-    aoe = -1;
     base_dd_multiplier *= effectiveness;
+
+    add_child( cleave );
+  }
+
+  void execute() override
+  {
+    hunter_pet_attack_t::execute();
+
+    cleave->execute_on_target( target );
   }
 };
 
@@ -3138,11 +3126,6 @@ struct bloodshed_t : hunter_pet_attack_t<hunter_main_pet_t>
   {
     background = true;
     aoe = o() -> talents.shower_of_blood.ok() ? as<int>( o() -> talents.shower_of_blood -> effectN( 1 ).base_value() ) : 1;
-  }
-
-  void execute() override
-  {
-    hunter_pet_attack_t::execute();
   }
 
   void impact( action_state_t* s ) override
@@ -3168,11 +3151,6 @@ struct bestial_wrath_t : hunter_pet_attack_t<hunter_main_pet_base_t>
   {
     background = true;
   }
-
-  void impact( action_state_t* s ) override
-  {
-    hunter_pet_attack_t::impact( s );
-  }
 };
 
 // Ravenous Leap (Fenryr) ===================================================
@@ -3183,11 +3161,6 @@ struct ravenous_leap_t : public hunter_pet_attack_t<fenryr_t>
   {
     background = true;
   }
-
-  void impact( action_state_t* s ) override
-  {
-    hunter_pet_attack_t::impact( s );
-  }
 };
 
 // Rend Flesh (Bear) ===================================================
@@ -3196,7 +3169,10 @@ struct rend_flesh_t : public hunter_pet_attack_t<bear_t>
 {
   struct envenomed_fangs_t : public hunter_pet_attack_t<bear_t>
   {
-    envenomed_fangs_t( bear_t* p ) : hunter_pet_attack_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell ) {}
+    envenomed_fangs_t( bear_t* p ) : hunter_pet_attack_t( "envenomed_fangs", p, p->o()->talents.envenomed_fangs_spell )
+    {
+      background = true;
+    }
   };
   
   struct
@@ -3210,7 +3186,7 @@ struct rend_flesh_t : public hunter_pet_attack_t<bear_t>
 
   rend_flesh_t( bear_t* p ) : hunter_pet_attack_t( "rend_flesh", p, p->o()->talents.howl_of_the_pack_leader_bear_bleed )
   {
-    background = dual = true;
+    background = true;
     aoe = as<int>( data().effectN( 2 ).base_value() );
 
     if ( o()->talents.ursine_fury.ok() )
@@ -3246,7 +3222,7 @@ struct rend_flesh_t : public hunter_pet_attack_t<bear_t>
     if ( !t )
       return nullptr;
 
-    return o()->get_target_data( t )->dots.rend_flesh;
+    return p()->get_target_data( t )->dots.rend_flesh;
   }
 
   void tick( dot_t* d )
@@ -3557,10 +3533,12 @@ int hunter_t::ticking_dots( hunter_td_t* td )
   dots += hunter_dots.wildfire_bomb->is_ticking();
   dots += hunter_dots.merciless_blow->is_ticking();
   dots += hunter_dots.spearhead->is_ticking();
-  dots += hunter_dots.rend_flesh->is_ticking();
 
   auto pet_dots = pets.main->get_target_data( td->target )->dots;
   dots += pet_dots.bloodseeker->is_ticking();
+
+  if ( auto bear = pets.bear.active_pet() )
+    dots += bear->get_target_data( td->target )->dots.rend_flesh->is_ticking();
 
   return dots;
 }
@@ -3783,14 +3761,14 @@ bool hunter_t::consume_howl_of_the_pack_leader( player_t* target )
 {
   bool up = false;
 
-  if ( buffs.howl_of_the_pack_leader_wyvern_ready->check() )
+  if ( buffs.howl_of_the_pack_leader_wyvern->check() )
   {
     up = true;
     buffs.wyverns_cry->trigger( as<int>( talents.howl_of_the_pack_leader->effectN( 3 ).base_value() + specs.survival_hunter->effectN( 12 ).base_value() ) );
-    buffs.howl_of_the_pack_leader_wyvern_ready->expire();
+    buffs.howl_of_the_pack_leader_wyvern->expire();
   }
 
-  if ( buffs.howl_of_the_pack_leader_boar_ready->check() )
+  if ( buffs.howl_of_the_pack_leader_boar->check() )
   {
     up = true;
     make_event<ground_aoe_event_t>( *sim, this, 
@@ -3800,17 +3778,17 @@ bool hunter_t::consume_howl_of_the_pack_leader( player_t* target )
         .pulse_time( talents.howl_of_the_pack_leader_boar_charge_trigger->effectN( 2 ).period() )
         .action( actions.boar_charge ),
       true );
-    buffs.howl_of_the_pack_leader_boar_ready->expire();
+    buffs.howl_of_the_pack_leader_boar->expire();
 
     if ( talents.hogstrider.ok() )
       buffs.mongoose_fury->extend_duration( this, buffs.mongoose_fury->buff_duration() - buffs.mongoose_fury->remains() );
   }
 
-  if ( buffs.howl_of_the_pack_leader_bear_ready->check() )
+  if ( buffs.howl_of_the_pack_leader_bear->check() )
   {
     up = true;
     pets.bear.spawn( talents.howl_of_the_pack_leader_bear_summon->duration() + talents.dire_frenzy->effectN( 1 ).time_value() );
-    buffs.howl_of_the_pack_leader_bear_ready->expire();
+    buffs.howl_of_the_pack_leader_bear->expire();
   }
 
   // Only applied once even if two are summoned at once.
@@ -3823,22 +3801,22 @@ bool hunter_t::consume_howl_of_the_pack_leader( player_t* target )
   return up;
 }
 
-void hunter_t::trigger_howl_of_the_pack_leader_ready()
+void hunter_t::trigger_howl_of_the_pack_leader()
 {
   if ( state.howl_of_the_pack_leader_next_beast == WYVERN )
   {
     state.howl_of_the_pack_leader_next_beast = BOAR;
-    buffs.howl_of_the_pack_leader_wyvern_ready->trigger();
+    buffs.howl_of_the_pack_leader_wyvern->trigger();
   }
   else if ( state.howl_of_the_pack_leader_next_beast == BOAR )
   {
     state.howl_of_the_pack_leader_next_beast = BEAR;
-    buffs.howl_of_the_pack_leader_boar_ready->trigger();
+    buffs.howl_of_the_pack_leader_boar->trigger();
   }
   else if ( state.howl_of_the_pack_leader_next_beast == BEAR )
   {
     state.howl_of_the_pack_leader_next_beast = WYVERN;
-    buffs.howl_of_the_pack_leader_bear_ready->trigger();
+    buffs.howl_of_the_pack_leader_bear->trigger();
   }
 }
 
@@ -5155,15 +5133,6 @@ struct barbed_shot_t: public hunter_ranged_attack_t
     snapshot_flags = STATE_EFFECTIVENESS;
   }
 
-  void init_finished() override
-  {
-    pet_t* pets[] = { p() -> find_pet( p() -> options.summon_pet_str ), p() -> pets.animal_companion };
-    for ( auto pet : pets )
-      add_pet_stats( pet, { "stomp" } );
-
-    hunter_ranged_attack_t::init_finished();
-  }
-
   void execute() override
   {
     hunter_ranged_attack_t::execute();
@@ -5628,7 +5597,6 @@ struct aimed_shot_t : public aimed_shot_base_t
       explosive_shot_background_t::snapshot_internal( s, flags, rt );
 
       // TODO 23/1/25: Tooltip now says "at 300% effectiveness" but damage is actually increased by 300%, so 400% effectiveness
-      // note (not modeled): effectiveness bonus is only applying to primary target in aoe
       if ( flags & STATE_EFFECTIVENESS )
         debug_cast<state_t*>( s )->effectiveness = p()->tier_set.tww_s2_mm_4pc->effectN( 1 ).percent();
     }
@@ -6573,7 +6541,7 @@ struct coordinated_assault_t: public hunter_melee_attack_t
     if ( p()->talents.lead_from_the_front->ok() )
     {
       p()->buffs.lead_from_the_front->trigger();
-      p()->trigger_howl_of_the_pack_leader_ready();
+      p()->trigger_howl_of_the_pack_leader();
     }
   }
 };
@@ -7201,7 +7169,7 @@ struct bestial_wrath_t: public hunter_spell_t
     if ( p()->talents.lead_from_the_front->ok() )
     {
       p()->buffs.lead_from_the_front->trigger();
-      p()->trigger_howl_of_the_pack_leader_ready();
+      p()->trigger_howl_of_the_pack_leader();
     }
 
     if ( !is_precombat )
@@ -7587,21 +7555,11 @@ struct wildfire_bomb_base_t: public hunter_spell_t
       {
         double am = hunter_spell_t::composite_ta_multiplier( s );
 
-        auto td = p() -> find_target_data( s -> target ); 
-        if ( td )
-        {
-          am *= 1.0 + td -> debuffs.shredded_armor -> value();
-        }
+        if ( as<double>( s->n_targets ) > reduced_aoe_targets )
+          am *= std::sqrt( reduced_aoe_targets / s->n_targets );
 
-        if ( as<double>( s -> n_targets ) > reduced_aoe_targets )
-        {
-          am *= std::sqrt( reduced_aoe_targets / s -> n_targets );
-        }
-
-        if ( s -> chain_target == 0 )
-        {
-          am *= 1.0 + p() -> talents.wildfire_bomb -> effectN( 3 ).percent();
-        }
+        if ( s->chain_target == 0 )
+          am *= 1.0 + p()->talents.wildfire_bomb->effectN( 3 ).percent();
 
         return am;
       }
@@ -7660,16 +7618,8 @@ struct wildfire_bomb_base_t: public hunter_spell_t
     {
       double am = hunter_spell_t::composite_da_multiplier( s );
 
-      auto td = p() -> find_target_data( s -> target ); 
-      if ( td )
-      {
-        am *= 1.0 + td -> debuffs.shredded_armor -> value();
-      }
-
-      if ( s -> chain_target == 0 )
-      {
-        am *= 1.0 + p() -> talents.wildfire_bomb -> effectN( 3 ).percent();
-      }
+      if ( s->chain_target == 0 )
+        am *= 1.0 + p()->talents.wildfire_bomb->effectN( 3 ).percent();
 
       am *= 1 + p()->buffs.wildfire_arsenal->stack_value();
 
@@ -7813,10 +7763,6 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
       ->set_default_value_from_effect( 1 )
       ->apply_affecting_effect( p->talents.born_to_kill->effectN( 2 ) );
 
-  debuffs.shredded_armor = 
-    make_buff( *this, "shredded_armor", p -> find_spell( 410167 ) )
-      -> set_default_value_from_effect( 1 );
-
   debuffs.wild_instincts = make_buff( *this, "wild_instincts", p -> find_spell( 424567 ) )
     -> set_default_value_from_effect( 1 );
 
@@ -7857,7 +7803,6 @@ hunter_td_t::hunter_td_t( player_t* t, hunter_t* p ) : actor_target_data_t( t, p
   dots.explosive_shot = t->get_dot( "explosive_shot", p );
   dots.merciless_blow = t->get_dot( "merciless_blow", p );
   dots.spearhead = t->get_dot( "spearhead", p );
-  dots.rend_flesh = t->get_dot( "rend_flesh", p );
 
   t -> register_on_demise_callback( p, [this](player_t*) { target_demise(); } );
 }
@@ -8062,8 +8007,6 @@ void hunter_t::init_spells()
   talents.blackrock_munitions               = find_talent_spell( talent_tree::CLASS, "Blackrock Munitions" );
   talents.keen_eyesight                     = find_talent_spell( talent_tree::CLASS, "Keen Eyesight" );
 
-  talents.quick_load                        = find_talent_spell( talent_tree::CLASS, "Quick Load" );
-
   talents.serrated_tips                     = find_talent_spell( talent_tree::CLASS, "Serrated Tips" );
   talents.born_to_be_wild                   = find_talent_spell( talent_tree::CLASS, "Born To Be Wild" );
   talents.improved_traps                    = find_talent_spell( talent_tree::CLASS, "Improved Traps" );
@@ -8194,6 +8137,8 @@ void hunter_t::init_spells()
     talents.poisoned_barbs                    = find_talent_spell( talent_tree::SPECIALIZATION, "Poisoned Barbs", HUNTER_BEAST_MASTERY );
 
     talents.stomp                             = find_talent_spell( talent_tree::SPECIALIZATION, "Stomp", HUNTER_BEAST_MASTERY );
+    talents.stomp_primary                     = find_spell( 1217528 );
+    talents.stomp_cleave                      = find_spell( 201754 );
     talents.serpentine_rhythm                 = find_talent_spell( talent_tree::SPECIALIZATION, "Serpentine Rhythm", HUNTER_BEAST_MASTERY );
     talents.kill_cleave                       = find_talent_spell( talent_tree::SPECIALIZATION, "Kill Cleave", HUNTER_BEAST_MASTERY );
     talents.training_expert                   = find_talent_spell( talent_tree::SPECIALIZATION, "Training Expert", HUNTER_BEAST_MASTERY );
@@ -8843,24 +8788,24 @@ void hunter_t::create_buffs()
 
   // Hero Talents
 
-  buffs.howl_of_the_pack_leader_wyvern_ready = 
-    make_buff( this, "howl_of_the_pack_leader_wyvern_ready", talents.howl_of_the_pack_leader_wyvern_ready_buff )
+  buffs.howl_of_the_pack_leader_wyvern = 
+    make_buff( this, "howl_of_the_pack_leader_wyvern", talents.howl_of_the_pack_leader_wyvern_ready_buff )
       ->set_stack_change_callback(
         [ this ]( buff_t* b, int, int cur ) {
           if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
             buffs.howl_of_the_pack_leader_cooldown->trigger();
         } );
 
-  buffs.howl_of_the_pack_leader_boar_ready = 
-    make_buff( this, "howl_of_the_pack_leader_boar_ready", talents.howl_of_the_pack_leader_boar_ready_buff )
+  buffs.howl_of_the_pack_leader_boar = 
+    make_buff( this, "howl_of_the_pack_leader_boar", talents.howl_of_the_pack_leader_boar_ready_buff )
       ->set_stack_change_callback(
         [ this ]( buff_t* b, int, int cur ) {
           if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
             buffs.howl_of_the_pack_leader_cooldown->trigger();
         } );
 
-  buffs.howl_of_the_pack_leader_bear_ready = 
-    make_buff( this, "howl_of_the_pack_leader_bear_ready", talents.howl_of_the_pack_leader_bear_ready_buff )
+  buffs.howl_of_the_pack_leader_bear = 
+    make_buff( this, "howl_of_the_pack_leader_bear", talents.howl_of_the_pack_leader_bear_ready_buff )
       ->set_stack_change_callback(
         [ this ]( buff_t* b, int, int cur ) {
           if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
@@ -8873,7 +8818,7 @@ void hunter_t::create_buffs()
       ->set_stack_change_callback(
         [ this ]( buff_t* b, int, int cur ) {
           if ( cur == 0 )
-            trigger_howl_of_the_pack_leader_ready();
+            trigger_howl_of_the_pack_leader();
         } );
 
   buffs.wyverns_cry = 
