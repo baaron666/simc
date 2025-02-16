@@ -963,6 +963,16 @@ double parse_player_effects_t::composite_dodge() const
   return dodge;
 }
 
+double parse_player_effects_t::composite_player_absorb_multiplier( const action_state_t* s ) const
+{
+  auto am = player_t::composite_player_absorb_multiplier( s );
+
+  for ( const auto& i : absorb_multiplier_effects )
+    am *= 1.0 + get_effect_value( i );
+
+  return am;
+}
+
 double parse_player_effects_t::matching_gear_multiplier( attribute_e attr ) const
 {
   double mg = player_t::matching_gear_multiplier( attr );
@@ -1162,6 +1172,10 @@ std::vector<player_effect_t>* parse_player_effects_t::get_effect_vector( const s
       invalidate( CACHE_DODGE );
       return &dodge_effects;
 
+    case A_MOD_ABSORB_DONE_PERCENT:
+      str = "absorb multiplier";
+      return &absorb_multiplier_effects;
+
     default:
       return nullptr;
   }
@@ -1288,6 +1302,7 @@ void parse_player_effects_t::parsed_effects_html( report::sc_html_stream& os )
     print_parsed_type( os, mastery_effects, "Mastery", nullptr, mastery_val );
     print_parsed_type( os, parry_rating_from_crit_effects, "Parry Rating from Crit" );
     print_parsed_type( os, dodge_effects, "Dodge" );
+    print_parsed_type( os, absorb_multiplier_effects, "Absorb Multiplier" );
     print_parsed_type( os, target_multiplier_effects, "Target Multiplier", &opt_strings::school );
     print_parsed_type( os, target_pet_multiplier_effects, "Target Pet Multiplier", &opt_strings::pet_type );
     print_parsed_custom_type( os );
@@ -1318,6 +1333,7 @@ size_t parse_player_effects_t::total_effects_count()
          mastery_effects.size() +
          parry_rating_from_crit_effects.size() +
          dodge_effects.size() +
+         absorb_multiplier_effects.size() +
          target_multiplier_effects.size() +
          target_pet_multiplier_effects.size();
 }

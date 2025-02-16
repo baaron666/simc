@@ -726,6 +726,7 @@ struct parse_player_effects_t : public player_t, public parse_effects_t
   std::vector<player_effect_t> mastery_effects;
   std::vector<player_effect_t> parry_rating_from_crit_effects;
   std::vector<player_effect_t> dodge_effects;
+  std::vector<player_effect_t> absorb_multiplier_effects;
   std::vector<target_effect_t> target_multiplier_effects;
   std::vector<target_effect_t> target_pet_multiplier_effects;
 
@@ -759,6 +760,7 @@ struct parse_player_effects_t : public player_t, public parse_effects_t
   double composite_parry_rating() const override;
   double composite_dodge() const override;
   double matching_gear_multiplier( attribute_e ) const override;
+  double composite_player_absorb_multiplier( const action_state_t* s ) const override;
   double composite_player_target_multiplier( player_t*, school_e ) const override;
   double composite_player_target_pet_damage_multiplier( player_t*, bool ) const override;
 
