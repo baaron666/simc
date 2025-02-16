@@ -973,9 +973,9 @@ double parse_player_effects_t::composite_player_absorb_multiplier( const action_
   return am;
 }
 
-double parse_player_effects_t::composite_player_healing_recieved_multiplier() const
+double parse_player_effects_t::composite_player_healing_received_multiplier() const
 {
-  auto hr = player_t::composite_player_healing_recieved_multiplier();
+  auto hr = player_t::composite_player_healing_received_multiplier();
 
   for ( const auto& i : healing_received_effects )
     hr *= 1.0 + get_effect_value( i );
