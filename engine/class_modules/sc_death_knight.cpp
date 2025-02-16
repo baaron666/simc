@@ -1757,7 +1757,7 @@ public:
     cooldown.vampiric_blood         = get_cooldown( "vampiric_blood" );
     cooldown.enduring_strength_icd  = get_cooldown( "enduring_strength" );
     cooldown.mind_freeze            = get_cooldown( "mind_freeze" );
-    cooldown.frostwyrms_fury        = get_cooldown( "frostwyrms_fury_driver" );
+    cooldown.frostwyrms_fury        = get_cooldown( "frostwyrms_fury" );
     cooldown.chill_streak           = get_cooldown( "chill_streak" );
     cooldown.empower_rune_weapon    = get_cooldown( "empower_rune_weapon" );
     cooldown.frostscythe            = get_cooldown( "frostscythe" );
@@ -9127,10 +9127,10 @@ struct frostwyrms_fury_damage_t : public death_knight_spell_t
 struct frostwyrms_fury_t final : public death_knight_spell_t
 {
   frostwyrms_fury_t( death_knight_t* p, std::string_view options_str )
-    : death_knight_spell_t( "frostwyrms_fury_driver", p, p->talent.frost.frostwyrms_fury )
+    : death_knight_spell_t( "frostwyrms_fury", p, p->talent.frost.frostwyrms_fury )
   {
     parse_options( options_str );
-    execute_action = get_action<frostwyrms_fury_damage_t>( "frostwyrms_fury", p );
+    execute_action = get_action<frostwyrms_fury_damage_t>( "frostwyrms_fury_damage", p );
     // Stun is NYI
   }
 };
