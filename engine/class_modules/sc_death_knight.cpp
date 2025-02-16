@@ -5096,16 +5096,6 @@ struct permafrost_t final : public death_knight_absorb_t
     background = proc = true;
     may_crit          = false;
   }
-
-  double composite_da_multiplier( const action_state_t* s ) const override
-  {
-    double m = death_knight_absorb_t::composite_da_multiplier( s );
-
-    if( p()->buffs.vampiric_blood )
-      m *= 1.0 + p()->talent.blood.vampiric_blood->effectN( 3 ).percent();
-
-    return m;
-  }
 };
 
 // ==========================================================================
@@ -5229,7 +5219,7 @@ struct death_knight_heal_t : public death_knight_action_t<heal_t>
     // https://www.wowhead.com/news/upcoming-tank-tuning-in-the-war-within-nerfs-to-self-sustain-and-survivability-345239
     // Per above wowhead post, vamp blood no longer affects blood shield
     // if ( p()->buffs.vampiric_blood->up() )
-    //   amount *= 1.0 + p()->talent.blood.vampiric_blood->effectN( 3 ).percent();
+    amount /= 1.0 + p()->talent.blood.vampiric_blood->effectN( 3 ).percent();
 
     amount *= 1.0 + p()->talent.blood.iron_heart->effectN( 2 ).percent();
 
@@ -15346,7 +15336,7 @@ void death_knight_t::parse_player_effects()
     parse_effects( buffs.blood_shield, talent.blood.bloodshot );
     parse_effects( buffs.voracious, talent.blood.voracious );
     parse_effects( buffs.dancing_rune_weapon );
-    parse_effects( buffs.vampiric_blood, effect_mask_t( true ).disable( 2, 3, 4 ), talent.blood.vampiric_blood, talent.blood.improved_vampiric_blood );
+    parse_effects( buffs.vampiric_blood, effect_mask_t( true ).disable( 2, 4 ), talent.blood.vampiric_blood, talent.blood.improved_vampiric_blood );
     parse_effects( buffs.sanguine_ground, talent.blood.sanguine_ground );
     parse_effects( buffs.bone_shield, IGNORE_STACKS, talent.blood.improved_bone_shield, talent.blood.reinforced_bones );
     parse_effects( buffs.perseverance_of_the_ebon_blade );
