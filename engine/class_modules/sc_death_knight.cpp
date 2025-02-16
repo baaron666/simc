@@ -5218,8 +5218,8 @@ struct death_knight_heal_t : public death_knight_action_t<heal_t>
 
     // https://www.wowhead.com/news/upcoming-tank-tuning-in-the-war-within-nerfs-to-self-sustain-and-survivability-345239
     // Per above wowhead post, vamp blood no longer affects blood shield
-    // if ( p()->buffs.vampiric_blood->up() )
-    amount /= 1.0 + p()->talent.blood.vampiric_blood->effectN( 3 ).percent();
+    if ( p()->buffs.vampiric_blood->up() )
+      amount /= 1.0 + p()->talent.blood.vampiric_blood->effectN( 3 ).percent();
 
     amount *= 1.0 + p()->talent.blood.iron_heart->effectN( 2 ).percent();
 
