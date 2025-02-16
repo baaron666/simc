@@ -2779,10 +2779,9 @@ struct kill_command_bm_t: public hunter_pet_attack_t<hunter_main_pet_base_t>
   {
     double da = hunter_pet_attack_t::composite_da_multiplier( s );
 
-    if ( p() == o()->pets.main && 
-      ( o()->buffs.howl_of_the_pack_leader_wyvern->check()
+    if ( o()->buffs.howl_of_the_pack_leader_wyvern->check()
       || o()->buffs.howl_of_the_pack_leader_boar->check()
-      || o()->buffs.howl_of_the_pack_leader_bear->check() ) )
+      || o()->buffs.howl_of_the_pack_leader_bear->check() )
     {
       da *= 1 + o()->talents.pack_mentality->effectN( 1 ).percent();
     }
