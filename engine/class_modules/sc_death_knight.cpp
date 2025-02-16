@@ -5063,6 +5063,11 @@ struct death_knight_absorb_t : public absorb_t
     }
   }
 
+  death_knight_t* p() const
+  {
+    return debug_cast<death_knight_t*>( player );
+  }
+
   void execute() override
   {
     if ( target->is_enemy() )
@@ -5090,6 +5095,16 @@ struct permafrost_t final : public death_knight_absorb_t
   {
     background = proc = true;
     may_crit          = false;
+  }
+
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double m = death_knight_absorb_t::composite_da_multiplier( s );
+
+    if( p()->buffs.vampiric_blood )
+      m *= 1.0 + p()->talent.blood.vampiric_blood->effectN( 3 ).percent();
+
+    return m;
   }
 };
 
