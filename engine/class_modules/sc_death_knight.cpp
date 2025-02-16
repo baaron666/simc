@@ -1788,7 +1788,6 @@ public:
   void reset() override;
   void arise() override;
   void adjust_dynamic_cooldowns() override;
-  void assess_heal( school_e, result_amount_type, action_state_t* ) override;
   void assess_damage( school_e, result_amount_type, action_state_t* ) override;
   void assess_damage_imminent( school_e, result_amount_type, action_state_t* ) override;
   void target_mitigation( school_e, result_amount_type, action_state_t* ) override;
@@ -14255,8 +14254,6 @@ void death_knight_t::create_buffs()
     buffs.vampiric_blood =
         make_buff( this, "vampiric_blood", talent.blood.vampiric_blood )
             ->set_cooldown( 0_ms )
-            ->set_duration( talent.blood.vampiric_blood->duration() +
-                            talent.blood.improved_vampiric_blood->effectN( 3 ).time_value() )
             ->set_default_value_from_effect( 5 )
             ->set_stack_change_callback( [ this ]( buff_t*, int, int new_ ) {
               double old_health     = resources.current[ RESOURCE_HEALTH ];
@@ -14827,23 +14824,6 @@ void death_knight_t::reset()
   dk_active_pets.clear();
 }
 
-// death_knight_t::assess_heal ==============================================
-
-void death_knight_t::assess_heal( school_e school, result_amount_type t, action_state_t* s )
-{
-  if ( specialization() == DEATH_KNIGHT_BLOOD && buffs.vampiric_blood->up() )
-    s->result_total *= 1.0 + buffs.vampiric_blood->data().effectN( 1 ).percent() +
-                       talent.blood.improved_vampiric_blood->effectN( 1 ).percent();
-
-  if ( talent.blood.sanguine_ground.ok() && in_death_and_decay() )
-    s->result_total *= 1.0 + spell.sanguine_ground->effectN( 2 ).percent();
-
-  if ( talent.osmosis.ok() && buffs.antimagic_shell->check() )
-    s->result_total *= 1.0 + buffs.antimagic_shell->data().effectN( 4 ).percent();
-
-  player_t::assess_heal( school, t, s );
-}
-
 // death_knight_t::assess_damage ============================================
 
 void death_knight_t::assess_damage( school_e school, result_amount_type type, action_state_t* s )
@@ -15335,6 +15315,7 @@ void death_knight_t::parse_player_effects()
   parse_effects( talent.veteran_of_the_third_war, spec.blood_death_knight );
   parse_effects( talent.runic_protection );
   parse_effects( talent.gloom_ward );
+  parse_effects( buffs.antimagic_shell, talent.osmosis );
   parse_target_effects( d_fn( &death_knight_td_t::debuffs_t::brittle ), spell.brittle_debuff );
   parse_target_effects( d_fn( &death_knight_td_t::debuffs_t::apocalypse_war ), spell.apocalypse_war_debuff,
                         talent.unholy_bond );
@@ -15350,6 +15331,8 @@ void death_knight_t::parse_player_effects()
     parse_effects( buffs.blood_shield, talent.blood.bloodshot );
     parse_effects( buffs.voracious, talent.blood.voracious );
     parse_effects( buffs.dancing_rune_weapon );
+    parse_effects( buffs.vampiric_blood, effect_mask_t( true ).disable( 2, 3, 4 ), talent.blood.vampiric_blood, talent.blood.improved_vampiric_blood );
+    parse_effects( buffs.sanguine_ground, talent.blood.sanguine_ground );
     parse_effects( buffs.bone_shield, IGNORE_STACKS, talent.blood.improved_bone_shield, talent.blood.reinforced_bones );
     parse_effects( buffs.perseverance_of_the_ebon_blade );
 
@@ -15431,6 +15414,7 @@ void death_knight_t::apply_affecting_auras( buff_t& buff )
 
   // Blood
   buff.apply_affecting_aura( talent.blood.reinforced_bones );
+  buff.apply_affecting_aura( talent.blood.improved_vampiric_blood );
   buff.apply_affecting_aura( sets->set( DEATH_KNIGHT_BLOOD, TWW2, B4 ) );
 
   // Frost

@@ -973,6 +973,16 @@ double parse_player_effects_t::composite_player_absorb_multiplier( const action_
   return am;
 }
 
+double parse_player_effects_t::composite_player_healing_recieved_multiplier() const
+{
+  auto hr = player_t::composite_player_healing_recieved_multiplier();
+
+  for ( const auto& i : healing_received_effects )
+    hr *= 1.0 + get_effect_value( i );
+
+  return hr;
+}
+
 double parse_player_effects_t::matching_gear_multiplier( attribute_e attr ) const
 {
   double mg = player_t::matching_gear_multiplier( attr );
@@ -1176,6 +1186,10 @@ std::vector<player_effect_t>* parse_player_effects_t::get_effect_vector( const s
       str = "absorb multiplier";
       return &absorb_multiplier_effects;
 
+    case A_MOD_HEALING_RECEIVED_PCT:
+      str = "healing received";
+      return &healing_received_effects;
+
     default:
       return nullptr;
   }
@@ -1303,6 +1317,7 @@ void parse_player_effects_t::parsed_effects_html( report::sc_html_stream& os )
     print_parsed_type( os, parry_rating_from_crit_effects, "Parry Rating from Crit" );
     print_parsed_type( os, dodge_effects, "Dodge" );
     print_parsed_type( os, absorb_multiplier_effects, "Absorb Multiplier" );
+    print_parsed_type( os, healing_received_effects, "Healing Received" );
     print_parsed_type( os, target_multiplier_effects, "Target Multiplier", &opt_strings::school );
     print_parsed_type( os, target_pet_multiplier_effects, "Target Pet Multiplier", &opt_strings::pet_type );
     print_parsed_custom_type( os );
@@ -1334,6 +1349,7 @@ size_t parse_player_effects_t::total_effects_count()
          parry_rating_from_crit_effects.size() +
          dodge_effects.size() +
          absorb_multiplier_effects.size() +
+         healing_received_effects.size() +
          target_multiplier_effects.size() +
          target_pet_multiplier_effects.size();
 }
