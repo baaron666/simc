@@ -1673,15 +1673,16 @@ class SpellDataGenerator(DataGenerator):
           ( 164273, 2 ), # Lone Wolf buff
           ( 361736, 5 ), # Coordinated Assault (pet buff)
           ( 219199, 1 ), # Dire Beast (summon)
-          ( 426703, 5), # Dire Beast Kill Command
-          ( 459834, 3), # Sulfur-Lined Pockets (Explosive Shot buff)
+          ( 426703, 5 ), # Dire Beast Kill Command
+          ( 459834, 3 ), # Sulfur-Lined Pockets (Explosive Shot buff)
           # Hero Talents
-          ( 444354, 0), # Shadow Lash
-          ( 444269, 0), # Shadow Surge
-          ( 442419, 0), # Shadow Hounds
-          ( 468037, 0), # Withering Fire secondary Black Arrows
+          ( 444354, 0 ), # Shadow Lash
+          ( 444269, 0 ), # Shadow Surge
+          ( 442419, 0 ), # Shadow Hounds
+          ( 468037, 0 ), # Withering Fire secondary Black Arrows
           ( 474293, 2 ), # Moving Target buff
           ( 471947, 0 ), ( 472020, 0 ), # Boar Charge (Pack Leader)
+          ( 1225858, 0 ), # Bear Summon (Pack Leader)
         ),
 
         # Rogue:

@@ -887,6 +887,7 @@ public:
     spell_data_ptr_t howl_of_the_pack_leader_boar_charge_impact;
     spell_data_ptr_t howl_of_the_pack_leader_boar_charge_cleave;
     spell_data_ptr_t howl_of_the_pack_leader_bear_summon;
+    spell_data_ptr_t howl_of_the_pack_leader_bear_buff;
     spell_data_ptr_t howl_of_the_pack_leader_bear_bleed;
 
     spell_data_ptr_t pack_mentality;
@@ -1656,6 +1657,16 @@ struct hunter_pet_t: public pet_t
     main_hand_weapon.swing_time = 2_s;
   }
 
+  void apply_affecting_auras( action_t& action )
+  {
+    pet_t::apply_affecting_auras( action );
+
+    action.apply_affecting_aura( o()->specs.hunter );
+    action.apply_affecting_aura( o()->specs.beast_mastery_hunter );
+    action.apply_affecting_aura( o()->specs.marksmanship_hunter );
+    action.apply_affecting_aura( o()->specs.survival_hunter );
+  }
+
   void schedule_ready( timespan_t delta_time, bool waiting ) override
   {
     if ( main_hand_attack && !main_hand_attack->execute_event )
@@ -1823,8 +1834,8 @@ struct fenryr_t final : public dire_critter_t
 
   fenryr_t( hunter_t* owner, util::string_view n = "fenryr" ) : dire_critter_t( owner, n )
   {
-    owner_coeff.ap_from_ap = 0.4;
-    auto_attack_multiplier = 4.85;
+    owner_coeff.ap_from_ap = 0.37;
+    auto_attack_multiplier = 7;
     main_hand_weapon.swing_time = 1.5_s;
   }
 
@@ -1859,8 +1870,8 @@ struct hati_t final : public dire_critter_t
 {
   hati_t( hunter_t* owner, util::string_view n = "hati" ) : dire_critter_t( owner, n )
   {
-    owner_coeff.ap_from_ap = 0.4;
-    auto_attack_multiplier = 4.85;
+    owner_coeff.ap_from_ap = 0.37;
+    auto_attack_multiplier = 7;
     main_hand_weapon.swing_time = 1.5_s;
   }
 };
@@ -1882,6 +1893,11 @@ public:
 
 struct bear_t final : public dire_critter_t
 {
+  struct buffs_t
+  {
+    buff_t* bear_summon;
+  } buffs;
+
   struct actions_t
   {
     action_t* rend_flesh = nullptr;
@@ -1891,17 +1907,38 @@ struct bear_t final : public dire_critter_t
 
   bear_t( hunter_t* owner, util::string_view n = "bear" ) : dire_critter_t( owner, n )
   {
-    owner_coeff.ap_from_ap = 0.56;
-    auto_attack_multiplier = 7.5;
+    owner_coeff.ap_from_ap = 0.7;
+    auto_attack_multiplier = 8;
     main_hand_weapon.swing_time = 1.5_s;
   }
 
   void summon( timespan_t duration = 0_ms ) override
   {
     dire_critter_t::summon( duration );
+    
+    buffs.bear_summon->trigger( -1, buffs.bear_summon->default_value + ( o()->buffs.lead_from_the_front->check() ? o()->talents.lead_from_the_front_buff->effectN( 3 ).percent() : 0 ) );
 
     if ( actions.rend_flesh )
       actions.rend_flesh->execute_on_target( target );
+  }
+
+  double composite_player_multiplier( school_e school ) const override
+  {
+    double m = dire_critter_t::composite_player_multiplier( school );
+
+    if ( buffs.bear_summon->has_common_school( school ) )
+      m *= 1 + buffs.bear_summon->check_value();
+    
+    return m;
+  }
+
+  void create_buffs() override
+  {
+    dire_critter_t::create_buffs();
+
+    buffs.bear_summon = make_buff( this, "bear_summon", o()->talents.howl_of_the_pack_leader_bear_buff )
+      ->set_default_value_from_effect( 1 )
+      ->apply_affecting_aura( o()->specs.beast_mastery_hunter );
   }
 
   const bear_td_t* find_target_data( const player_t* target ) const override
@@ -1938,16 +1975,6 @@ struct stable_pet_t : public hunter_pet_t
     initial.armor_multiplier *= 1.05;
 
     main_hand_weapon.swing_time = owner -> options.pet_attack_speed;
-  }
-  
-  double composite_player_multiplier( school_e school ) const override
-  {
-    double m = hunter_pet_t::composite_player_multiplier( school );
-
-    m *= 1 + o() -> talents.training_expert -> effectN( 1 ).percent();
-    m *= 1 + o()->buffs.harmonize->check_value();
-
-    return m;
   }
   
   void init_spells() override;
@@ -8332,6 +8359,7 @@ void hunter_t::init_spells()
     talents.howl_of_the_pack_leader_boar_charge_impact = talents.howl_of_the_pack_leader.ok() ? find_spell( 471936 ) : spell_data_t::not_found();
     talents.howl_of_the_pack_leader_boar_charge_cleave = talents.howl_of_the_pack_leader.ok() ? find_spell( 471938 ) : spell_data_t::not_found();
     talents.howl_of_the_pack_leader_bear_summon = talents.howl_of_the_pack_leader.ok() ? find_spell( 471993 ) : spell_data_t::not_found();
+    talents.howl_of_the_pack_leader_bear_buff = talents.howl_of_the_pack_leader.ok() ? find_spell( 1225858 ) : spell_data_t::not_found();
     talents.howl_of_the_pack_leader_bear_bleed = talents.howl_of_the_pack_leader.ok() ? find_spell( 471999 ) : spell_data_t::not_found();
 
     talents.pack_mentality = find_talent_spell( talent_tree::HERO, "Pack Mentality" );
@@ -9411,16 +9439,18 @@ double hunter_t::composite_player_pet_damage_multiplier( const action_state_t* s
   m *= 1 + specs.survival_hunter -> effectN( guardian ? 7 : 3 ).percent();
   m *= 1 + specs.marksmanship_hunter -> effectN( guardian ? 7 : 3 ).percent();
 
-
   if ( !guardian )
   {
     if ( buffs.coordinated_assault->check() )
       m *= 1 + talents.coordinated_assault->effectN( 4 ).percent();
+    
+    m *= 1 + talents.training_expert->effectN( 1 ).percent();
 
     m *= 1 + buffs.summon_hati->check_value();
     m *= 1 + buffs.serpentine_blessing->check_value();
     m *= 1 + buffs.wyverns_cry->check_stack_value();
     m *= 1 + buffs.lead_from_the_front->check_value();
+    m *= 1 + buffs.harmonize->check_value();
   }
 
   return m;
