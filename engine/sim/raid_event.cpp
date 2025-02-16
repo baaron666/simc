@@ -2465,8 +2465,12 @@ double raid_event_t::evaluate_raid_event_expression( sim_t* s, util::string_view
 
   if ( filter == "has_boss" )
   {
-    if ( auto pull_event = dynamic_cast<pull_event_t*>( e ) )
-      return pull_event->has_boss;
+    if ( e->type == "pull" )
+      if ( auto pull_event = dynamic_cast<pull_event_t*>( e ) )
+        return pull_event->has_boss;
+
+    if ( e->type == "adds" )
+      return false;
 
     throw std::invalid_argument(
         fmt::format( "Invalid filter expression '{}' for non-pull raid event '{}'.", filter, type_or_name ) );
