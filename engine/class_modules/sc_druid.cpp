@@ -863,6 +863,8 @@ public:
   {
     // Class tree
     player_talent_t astral_influence;
+    player_talent_t circle_of_the_heavens;
+    player_talent_t circle_of_the_wild;
     player_talent_t cyclone;
     player_talent_t feline_swiftness;
     player_talent_t fluid_form;
@@ -914,8 +916,6 @@ public:
     player_talent_t wellhoned_instincts;
     player_talent_t wild_charge;
     player_talent_t wild_growth;
-    player_talent_t circle_of_the_wild;
-    player_talent_t circle_of_the_heavens;
 
     // Multi-spec
     player_talent_t convoke_the_spirits;
@@ -9914,6 +9914,8 @@ void druid_t::init_spells()
   // Class tree
   sim->print_debug( "Initializing class talents..." );
   talent.astral_influence               = CT( "Astral Influence" );
+  talent.circle_of_the_heavens          = CT( "Circle of the Heavens" );
+  talent.circle_of_the_wild             = CT( "Circle of the Wild" );
   talent.cyclone                        = CT( "Cyclone" );
   talent.feline_swiftness               = CT( "Feline Swiftness" );
   talent.fluid_form                     = CT( "Fluid Form" );
@@ -9964,8 +9966,6 @@ void druid_t::init_spells()
   talent.wellhoned_instincts            = CT( "Well-Honed Instincts" );
   talent.wild_charge                    = CT( "Wild Charge" );
   talent.wild_growth                    = CT( "Wild Growth" );
-  talent.circle_of_the_wild             = CT( "Circle of the Wild" );
-  talent.circle_of_the_heavens          = CT( "Circle of the Heavens" );
 
   // Multi-Spec
   sim->print_debug( "Initializing multi-spec talents..." );
@@ -13825,8 +13825,6 @@ void druid_t::apply_affecting_auras( action_t& a )
   a.apply_affecting_aura( talent.packs_endurance );
   a.apply_affecting_aura( talent.primal_fury );
   a.apply_affecting_aura( talent.starlight_conduit );
-  a.apply_affecting_aura( talent.circle_of_the_wild );
-  a.apply_affecting_aura( talent.circle_of_the_heavens );
 
   // Balance
   a.apply_affecting_aura( talent.astronomical_impact );
@@ -13958,6 +13956,18 @@ void druid_t::parse_action_effects( action_t* action )
   }
 
   _a->parse_effects( buff.heart_of_the_wild, hotw_mask );
+
+  auto circle_mask = effect_mask_t( true );
+  switch ( specialization() )
+  {
+    case DRUID_BALANCE:
+    case DRUID_FERAL:
+    case DRUID_GUARDIAN:    circle_mask.disable( 3, 4 ); break;
+    case DRUID_RESTORATION: circle_mask.disable( 1, 2 ); break;
+  }
+
+  _a->parse_effects( talent.circle_of_the_heavens, circle_mask );
+  _a->parse_effects( talent.circle_of_the_wild, circle_mask );
 
   // Balance
   _a->parse_effects( mastery.astral_invocation,
