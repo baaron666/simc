@@ -71,14 +71,13 @@ enum flag_e : uint32_t
   TREANT       = 0x00040000,  // treants of the moon moonfire
   LIGHTOFELUNE = 0x00080000,  // light of elune talent
   THRASHING    = 0x00100000,  // thrashing claws talent
-  JACKPOT_B    = 0x00200000,  // thrashing claws talent
   // free casts
   APEX         = 0x01000000,  // apex predators's craving
   TOOTHANDCLAW = 0x02000000,  // tooth and claw talent
   // misc
   UMBRAL       = 0x10000000,  // umbral embrace talent
 
-  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE | JACKPOT_B,
+  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE,
   FREE_CASTS = APEX | TOOTHANDCLAW
 };
 
@@ -9964,6 +9963,7 @@ void druid_t::init_spells()
   talent.verdant_heart                  = CT( "Verdant Heart" );
   talent.wellhoned_instincts            = CT( "Well-Honed Instincts" );
   talent.wild_charge                    = CT( "Wild Charge" );
+  talent.wild_growth                    = CT( "Wild Growth" );
   talent.circle_of_the_wild             = CT( "Circle of the Wild" );
   talent.circle_of_the_heavens          = CT( "Circle of the Heavens" );
 
