@@ -71,13 +71,14 @@ enum flag_e : uint32_t
   TREANT       = 0x00040000,  // treants of the moon moonfire
   LIGHTOFELUNE = 0x00080000,  // light of elune talent
   THRASHING    = 0x00100000,  // thrashing claws talent
+  JACKPOT_B    = 0x00200000,  // thrashing claws talent
   // free casts
   APEX         = 0x01000000,  // apex predators's craving
   TOOTHANDCLAW = 0x02000000,  // tooth and claw talent
   // misc
   UMBRAL       = 0x10000000,  // umbral embrace talent
 
-  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE,
+  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE | JACKPOT_B,
   FREE_CASTS = APEX | TOOTHANDCLAW
 };
 
@@ -606,6 +607,7 @@ public:
     action_t* crashing_star_sunfire;
     action_t* sundered_firmament;
     action_t* sunseeker_mushroom;
+    action_t* balance_tww2_2p_jackpot_mushroom; //TWW S2 Balance 2pc
 
     // Feral
     action_t* ferocious_bite_apex;  // free bite from apex predator's crazing
@@ -7058,6 +7060,9 @@ struct celestial_alignment_base_t : public trigger_control_of_the_dream_t<druid_
     base_t::execute();
 
     buff->trigger();
+    if ( p()->sets->has_set_bonus( DRUID_BALANCE, TWW2, B2 ) )
+      p()->active.balance_tww2_2p_jackpot_mushroom->execute_on_target( target );
+
   }
 };
 
@@ -11320,6 +11325,15 @@ void druid_t::create_actions()
     active.sunseeker_mushroom = shroom;
   }
 
+  if ( sets->has_set_bonus( DRUID_BALANCE, TWW2, B2 ) )
+  {
+    // TODO: Fix trigger spell
+    auto jackpot = get_secondary_action<wild_mushroom_t>( "balance_tww2_2p_jackpot_mushroom", find_spell( 468938 ) );
+    jackpot->background                     = true;
+    jackpot->proc                           = true;
+    active.balance_tww2_2p_jackpot_mushroom = jackpot;
+  }
+
   // Feral
   if ( talent.apex_predators_craving.ok() )
   {
@@ -11885,6 +11899,27 @@ void druid_t::init_special_effects()
 
     auto cb = new owlkin_frenzy_cb_t( this, *driver );
     cb->activate_with_buff( buff.moonkin_form );
+  }
+
+  if ( sets->has_set_bonus( DRUID_BALANCE, TWW2, B2 ) )
+  {
+    struct balance_jackpot_cb_t final : public druid_cb_t
+    {
+      balance_jackpot_cb_t( druid_t* p, const special_effect_t& e ) : druid_cb_t( p, e )
+      {
+      }
+
+      void execute( action_t*, action_state_t* s) override
+      {
+        p()->active.balance_tww2_2p_jackpot_mushroom->execute_on_target( s->target );
+      }
+    };
+
+    const auto driver = new special_effect_t( this );
+    driver->spell_id  = sets->set( DRUID_BALANCE, TWW2, B2 )->id();
+    special_effects.push_back( driver );
+
+    new balance_jackpot_cb_t( this, *driver );
   }
 
   // Feral
