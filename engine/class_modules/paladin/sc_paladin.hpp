@@ -1407,7 +1407,8 @@ public:
       if ( ab::rng().roll( p()->buffs.winning_streak->data().effectN( 2 ).percent() ) )
       {
         p()->buffs.winning_streak->expire();
-        if ( p()->sets->has_set_bonus( PALADIN_RETRIBUTION, TWW2, B4 ) )
+        // no refreshes in logs afaict
+        if ( p()->sets->has_set_bonus( PALADIN_RETRIBUTION, TWW2, B4 ) && !p()->buffs.all_in->up() )
         {
           p()->buffs.all_in->trigger();
           p()->resource_gain( ab::current_resource(), ab::last_resource_cost, p()->gains.all_in_refund );
