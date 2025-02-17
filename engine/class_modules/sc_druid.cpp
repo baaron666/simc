@@ -14019,19 +14019,6 @@ void druid_t::parse_action_effects( action_t* action )
   _a->parse_effects( buff.umbral_inspiration );
   _a->parse_effects( buff.warrior_of_elune );
 
-  auto circle_mask = effect_mask_t( true );
-  switch ( specialization() )
-  {
-    case DRUID_RESTORATION:
-      circle_mask.disable( 1, 2 );
-      break;
-    default:
-      circle_mask.disable( 3, 4 );
-      break;
-  }
-  _a->parse_effects( talent.circle_of_the_wild, circle_mask );
-  _a->parse_effects( talent.circle_of_the_heavens, circle_mask );
-
   // Feral
   _a->parse_effects( mastery.razor_claws );
   _a->parse_effects( buff.apex_predators_craving );
