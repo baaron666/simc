@@ -1203,6 +1203,7 @@ public:
     bool outland_venom = false;
     bool spearhead = false;
     bool deadly_duo = false;
+    damage_affected_by wildfire_arsenal;
     damage_affected_by spirit_bond;
     damage_affected_by tip_of_the_spear;
     damage_affected_by coordinated_assault;
@@ -1213,6 +1214,7 @@ public:
 
     // Tier Set
     damage_affected_by tww_s2_mm_2pc;
+    damage_affected_by tww_s2_sv_2pc;
   } affected_by;
 
   cdwaste::action_data_t* cd_waste = nullptr;
@@ -1247,11 +1249,13 @@ public:
     affected_by.coordinated_assault = parse_damage_affecting_aura( this, p->talents.coordinated_assault );
     affected_by.spearhead = check_affected_by( this, p->talents.spearhead_bleed->effectN( 2 ) );
     affected_by.deadly_duo = check_affected_by( this, p->talents.spearhead_bleed->effectN( 3 ) );
+    affected_by.wildfire_arsenal = parse_damage_affecting_aura( this, p->talents.wildfire_arsenal_buff );
 
     affected_by.wyverns_cry = parse_damage_affecting_aura( this, p->talents.howl_of_the_pack_leader_wyvern_buff );
     affected_by.lead_from_the_front = parse_damage_affecting_aura( this, p->talents.lead_from_the_front_buff );
 
     affected_by.tww_s2_mm_2pc = parse_damage_affecting_aura( this, p->tier_set.tww_s2_mm_2pc->effectN( 2 ).trigger() );
+    affected_by.tww_s2_sv_2pc = parse_damage_affecting_aura( this, p->tier_set.tww_s2_sv_2pc->effectN( 1 ).trigger() );
 
     // Hunter Tree passives
     ab::apply_affecting_aura( p->talents.specialized_arsenal );
@@ -1391,6 +1395,12 @@ public:
     if ( affected_by.lead_from_the_front.direct && p()->buffs.lead_from_the_front->check() )
       am *= 1 + p()->talents.lead_from_the_front_buff->effectN( affected_by.lead_from_the_front.direct ).percent();
 
+    if ( affected_by.wildfire_arsenal.direct )
+      am *= 1 + p()->buffs.wildfire_arsenal->stack_value();
+
+    if ( affected_by.tww_s2_sv_2pc.direct )
+      am *= 1 + p()->buffs.winning_streak->stack_value();
+
     return am;
   }
 
@@ -1419,6 +1429,9 @@ public:
 
     if ( affected_by.lead_from_the_front.tick && p()->buffs.lead_from_the_front->check() )
       am *= 1 + p()->talents.lead_from_the_front_buff->effectN( affected_by.lead_from_the_front.tick ).percent();
+
+    if ( affected_by.tww_s2_sv_2pc.tick )
+      am *= 1 + p()->buffs.winning_streak->stack_value();
 
     return am;
   }
@@ -7600,13 +7613,6 @@ struct wildfire_bomb_base_t: public hunter_spell_t
 
     void execute() override
     {
-      if ( p()->buffs.winning_streak->check() && rng().roll( p()->tier_set.tww_s2_sv_2pc->proc_chance() ) )
-      {
-        p()->buffs.winning_streak->expire();  // Consume 2pc buff
-        if ( p()->tier_set.tww_s2_sv_4pc.ok() )
-          p()->buffs.strike_it_rich->trigger(); // Apply 4pc buff
-      }
-
       hunter_spell_t::execute();
 
       if ( num_targets_hit > 0 )
@@ -7633,10 +7639,6 @@ struct wildfire_bomb_base_t: public hunter_spell_t
 
       if ( s->chain_target == 0 )
         am *= 1.0 + p()->talents.wildfire_bomb->effectN( 3 ).percent();
-
-      am *= 1 + p()->buffs.wildfire_arsenal->stack_value();
-
-      am *= 1 + p()->buffs.winning_streak->stack_value();
 
       return am;
     }
@@ -7678,6 +7680,13 @@ struct wildfire_bomb_t: public wildfire_bomb_base_t
     {
       p()->buffs.wyverns_cry->extend_duration( p(), fury_of_the_wyvern.extension );
       p()->state.fury_of_the_wyvern_extension += fury_of_the_wyvern.extension;
+    }
+
+    if ( p()->buffs.winning_streak->check() && rng().roll( p()->tier_set.tww_s2_sv_2pc->proc_chance() ) )
+    {
+      p()->buffs.winning_streak->expire();  // Consume 2pc buff
+      if ( p()->tier_set.tww_s2_sv_4pc.ok() )
+        p()->buffs.strike_it_rich->trigger(); // Apply 4pc buff
     }
   }
 };
@@ -8791,13 +8800,12 @@ void hunter_t::create_buffs()
       ->set_default_value_from_effect( 1 );
 
   buffs.winning_streak = 
-    make_buff( this, "winning_streak", find_spell( 1216874 ) ) 
-    ->set_default_value_from_effect( 1 ) // Damage increase per stack to wildfire bomb
-    ->set_chance( 1.0 );
+    make_buff( this, "winning_streak", tier_set.tww_s2_sv_2pc->effectN( 1 ).trigger() )
+      ->set_chance( 1.0 );
 
   buffs.strike_it_rich = 
     make_buff( this, "strike_it_rich", find_spell( 1216879 ) ) 
-    -> set_default_value_from_effect( 1 ); // Damage increase to mongoose/raptor strike
+      ->set_default_value_from_effect( 1 ); // Damage increase to mongoose/raptor strike
 
   // Hero Talents
 
