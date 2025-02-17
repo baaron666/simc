@@ -8801,6 +8801,7 @@ void hunter_t::create_buffs()
 
   buffs.winning_streak = 
     make_buff( this, "winning_streak", tier_set.tww_s2_sv_2pc->effectN( 1 ).trigger() )
+      ->set_default_value_from_effect( 1 ) // Damage increase per stack to wildfire bomb
       ->set_chance( 1.0 );
 
   buffs.strike_it_rich = 
