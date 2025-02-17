@@ -1187,6 +1187,9 @@ struct power_infusion_t final : public priest_spell_t
             std::min( player->buffs.power_infusion->buff_duration(), 30_s - player->buffs.power_infusion->remains() );
         if ( extend_amount > 0_s )
           player->buffs.power_infusion->extend_duration( player, extend_amount );
+
+        player->buffs.power_infusion->current_value = power_infusion_magnitude;
+        player->buffs.power_infusion->invalidate_cache();
       }
       else
       {
