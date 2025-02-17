@@ -628,7 +628,7 @@ public:
     // Beast Mastery/Survival
     spell_data_ptr_t kill_command;
     spell_data_ptr_t kill_command_pet;
-    spell_data_ptr_t alpha_predator; //TDOO Alpha Predator now increase Kill Command’s damage multiplicatively rather than additively.
+    spell_data_ptr_t alpha_predator;
 
     // Marksmanship Tree
     spell_data_ptr_t aimed_shot;
@@ -2721,8 +2721,6 @@ struct kill_command_bm_t: public hunter_pet_attack_t<hunter_main_pet_base_t>
   {
     background = dual = proc = true;
 
-    base_dd_multiplier *= 1 + o()->talents.alpha_predator->effectN( 2 ).percent();
-
     if ( o() -> talents.killer_instinct.ok() )
     {
       killer_instinct.percent = o() -> talents.killer_instinct -> effectN( 2 ).base_value();
@@ -2779,12 +2777,17 @@ struct kill_command_bm_t: public hunter_pet_attack_t<hunter_main_pet_base_t>
   {
     double da = hunter_pet_attack_t::composite_da_multiplier( s );
 
+    // TODO 16/2/25: Alpha Predator and Pack Mentality are being combined additively before being applied.
+    double bonus = o()->talents.alpha_predator->effectN( 2 ).percent();
+
     if ( o()->buffs.howl_of_the_pack_leader_wyvern->check()
       || o()->buffs.howl_of_the_pack_leader_boar->check()
       || o()->buffs.howl_of_the_pack_leader_bear->check() )
     {
-      da *= 1 + o()->talents.pack_mentality->effectN( 1 ).percent();
+      bonus += o()->talents.pack_mentality->effectN( 1 ).percent();
     }
+
+    da *= 1 + bonus;
 
     if ( killer_instinct.percent )
     {
@@ -2827,6 +2830,25 @@ struct kill_command_sv_t : public hunter_pet_attack_t<hunter_main_pet_t>
       dot_duration = 0_ms;
 
     base_multiplier *= 1 + o()->talents.alpha_predator->effectN( 2 ).percent();
+  }
+
+  double composite_da_multiplier( const action_state_t* s ) const override
+  {
+    double da = hunter_pet_attack_t::composite_da_multiplier( s );
+
+    // TODO 16/2/25: Alpha Predator and Pack Mentality are being combined additively before being applied.
+    double bonus = o()->talents.alpha_predator->effectN( 2 ).percent();
+
+    if ( o()->buffs.howl_of_the_pack_leader_wyvern->check()
+      || o()->buffs.howl_of_the_pack_leader_boar->check()
+      || o()->buffs.howl_of_the_pack_leader_bear->check() )
+    {
+      bonus += o()->talents.pack_mentality->effectN( 1 ).percent();
+    }
+
+    da *= 1 + bonus;
+
+    return da;
   }
   
   void impact( action_state_t* s ) override
