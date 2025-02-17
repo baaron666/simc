@@ -4400,8 +4400,7 @@ struct explosive_shot_background_t : public explosive_shot_base_t
   explosive_shot_background_t( util::string_view n, hunter_t* p )
     : explosive_shot_base_t( n, p, p->talents.explosive_shot_cast )
   {
-    background = dual = true;
-    base_costs[ RESOURCE_FOCUS ] = 0;
+    background = dual = proc = true;
   }
 };
 
@@ -5609,15 +5608,12 @@ struct aimed_shot_t : public aimed_shot_base_t
 
   struct explosive_shot_tww_s2_mm_4pc_t : public explosive_shot_background_t
   {
-    explosive_shot_tww_s2_mm_4pc_t( util::string_view n, hunter_t* p ) : explosive_shot_background_t( n, p )
-    {
-    }
+    explosive_shot_tww_s2_mm_4pc_t( util::string_view n, hunter_t* p ) : explosive_shot_background_t( n, p ) {}
 
     void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
     {
       explosive_shot_background_t::snapshot_internal( s, flags, rt );
 
-      // TODO 23/1/25: Tooltip now says "at 300% effectiveness" but damage is actually increased by 300%, so 400% effectiveness
       if ( flags & STATE_EFFECTIVENESS )
         debug_cast<state_t*>( s )->effectiveness = p()->tier_set.tww_s2_mm_4pc->effectN( 1 ).percent();
     }
@@ -5966,6 +5962,18 @@ struct melee_t : public auto_attack_base_t<melee_attack_t>
 
     p()->cooldowns.wildfire_bomb->adjust( -p()->talents.lunge->effectN( 2 ).time_value() );
     p()->buffs.wildfire_arsenal->trigger();
+  }
+
+  double action_multiplier() const override
+  {
+    double am = auto_attack_base_t::action_multiplier();
+
+    double bonus = p()->cache.mastery() * p()->mastery.spirit_bond -> effectN( 5 ).mastery_value();
+    bonus *= 1 + p()->mastery.spirit_bond_buff->effectN( 1 ).percent();
+      
+    am *= 1 + bonus;
+
+    return am;
   }
 };
 
@@ -6519,6 +6527,7 @@ struct coordinated_assault_t: public hunter_melee_attack_t
 
     base_teleport_distance = data().max_range();
     movement_directionality = movement_direction_type::OMNI;
+    gcd_type = gcd_haste_type::ATTACK_HASTE;
 
     damage = p->get_background_action<damage_t>( "coordinated_assault_player" );
     add_child( damage );
@@ -7224,6 +7233,8 @@ struct call_of_the_wild_t: public hunter_spell_t
     harmful = false;
     // disable automatic generation of the dot from spell data
     dot_duration = 0_ms;
+
+    gcd_type = gcd_haste_type::ATTACK_HASTE;
   }
 
   void execute() override
