@@ -58,11 +58,6 @@ actions+=/shield_block,use_off_gcd=1,if=buff.shield_block.down&(!talent.champion
 # TODO test shield_block in mitigations
 
 actions+=/thunder_blast,if=buff.thunder_blast.stack=2
-
-# Can drop - negligible dps loss if any
-# actions+=/revenge,if=rage>70&spell_targets.revenge>=3
-# actions+=/execute,if=rage>70
-
 actions+=/shield_slam,if=!(buff.violent_outburst.up&spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up)
 actions+=/thunder_blast,if=!(buff.violent_outburst.up&spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up)
 actions+=/thunder_clap,if=!(buff.violent_outburst.up&spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up)
