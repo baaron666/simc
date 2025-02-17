@@ -913,6 +913,8 @@ public:
     player_talent_t wellhoned_instincts;
     player_talent_t wild_charge;
     player_talent_t wild_growth;
+    player_talent_t circle_of_the_wild;
+    player_talent_t circle_of_the_heavens;
 
     // Multi-spec
     player_talent_t convoke_the_spirits;
@@ -9957,7 +9959,8 @@ void druid_t::init_spells()
   talent.verdant_heart                  = CT( "Verdant Heart" );
   talent.wellhoned_instincts            = CT( "Well-Honed Instincts" );
   talent.wild_charge                    = CT( "Wild Charge" );
-  talent.wild_growth                    = CT( "Wild Growth" );
+  talent.circle_of_the_wild             = CT( "Circle of the Wild" );
+  talent.circle_of_the_heavens          = CT( "Circle of the Heavens" );
 
   // Multi-Spec
   sim->print_debug( "Initializing multi-spec talents..." );
@@ -13787,6 +13790,8 @@ void druid_t::apply_affecting_auras( action_t& a )
   a.apply_affecting_aura( talent.packs_endurance );
   a.apply_affecting_aura( talent.primal_fury );
   a.apply_affecting_aura( talent.starlight_conduit );
+  a.apply_affecting_aura( talent.circle_of_the_wild );
+  a.apply_affecting_aura( talent.circle_of_the_heavens );
 
   // Balance
   a.apply_affecting_aura( talent.astronomical_impact );
