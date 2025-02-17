@@ -1652,13 +1652,6 @@ void paladin_t::create_buffs_retribution()
     ->set_default_value( 1.0 )
     ->set_period( timespan_t::from_millis( dbc->ptr ? 2000 : 2200 ) )
     ->set_freeze_stacks( true )
-    ->set_tick_time_callback([this](const buff_t* b, unsigned) -> timespan_t {
-      if ( dbc->ptr )
-        return timespan_t::from_millis( 2000 );
-      auto res = timespan_t::from_millis( 2200 );
-      res *= 1.0 / b->current_value;
-      return res;
-    })
     ->set_tick_callback([this](buff_t* b, int, const timespan_t&) {
       if ( !dbc->ptr && !resource_available( RESOURCE_HOLY_POWER, 1.0 ) ) {
         b->expire();
@@ -1694,6 +1687,12 @@ void paladin_t::create_buffs_retribution()
   );
   if ( dbc->ptr )
     buffs.divine_hammer->set_tick_time_behavior( buff_tick_time_behavior::HASTED );
+  else
+    buffs.divine_hammer->set_tick_time_callback([](const buff_t* b, unsigned) -> timespan_t {
+      auto res = timespan_t::from_millis( 2200 );
+      res *= 1.0 / b->current_value;
+      return res;
+    });
 
   // legendaries
   buffs.empyrean_legacy = make_buff( this, "empyrean_legacy", find_spell( 387178 ) );

@@ -1902,7 +1902,8 @@ public:
 
     if ( p->dbc->ptr && p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && p->cooldowns.divine_hammer_icd->up() )
     {
-      p->buffs.divine_hammer->extend_duration( p, timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() ) );
+      unsigned base_cost = as<int>( ab::base_cost() );
+      p->buffs.divine_hammer->extend_duration( p, timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() * base_cost ) );
       p->cooldowns.divine_hammer_icd->start();
     }
 
