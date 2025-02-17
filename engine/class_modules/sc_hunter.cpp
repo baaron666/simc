@@ -477,8 +477,8 @@ public:
     buff_t* mongoose_fury;
     buff_t* wildfire_arsenal;
     buff_t* frenzy_strikes;
-    buff_t* sulfur_lined_pockets;
-    buff_t* sulfur_lined_pockets_explosive;
+    buff_t* sulfurlined_pockets_building;
+    buff_t* sulfurlined_pockets_ready;
     buff_t* bloodseeker;
     buff_t* aspect_of_the_eagle;
     buff_t* terms_of_engagement;
@@ -797,7 +797,9 @@ public:
     spell_data_ptr_t wildfire_infusion;
     spell_data_ptr_t wildfire_arsenal;
     spell_data_ptr_t wildfire_arsenal_buff;
-    spell_data_ptr_t sulfur_lined_pockets;
+    spell_data_ptr_t sulfurlined_pockets;
+    spell_data_ptr_t sulfurlined_pockets_building_buff;
+    spell_data_ptr_t sulfurlined_pockets_ready_buff;
     spell_data_ptr_t butchery;
     spell_data_ptr_t flanking_strike;
     spell_data_ptr_t flanking_strike_player;
@@ -4064,11 +4066,11 @@ struct arcane_shot_base_t: public hunter_ranged_attack_t
 
     p()->consume_precise_shots();
 
-    p()->buffs.sulfur_lined_pockets->trigger();
-    if ( p()->buffs.sulfur_lined_pockets->at_max_stacks() )
+    p()->buffs.sulfurlined_pockets_building->trigger();
+    if ( p()->buffs.sulfurlined_pockets_building->at_max_stacks() )
     {
-      p()->buffs.sulfur_lined_pockets_explosive->trigger();
-      p()->buffs.sulfur_lined_pockets->expire();
+      p()->buffs.sulfurlined_pockets_ready->trigger();
+      p()->buffs.sulfurlined_pockets_building->expire();
     }
   }
 
@@ -4183,19 +4185,6 @@ struct serpent_sting_t: public hunter_ranged_attack_t
 
 struct explosive_shot_base_t : public hunter_ranged_attack_t
 {
-  static const snapshot_state_e STATE_EFFECTIVENESS = STATE_USER_1;
-
-  struct state_data_t
-  {
-    double effectiveness = 1.0;
-
-    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out )
-    {
-      fmt::format_to( out, "effectiveness={}", data.effectiveness );
-    }
-  };
-  using state_t = hunter_action_state_t<state_data_t>;
-
   struct damage_t final : hunter_ranged_attack_t
   {
     damage_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( n, p, p->talents.explosive_shot_damage )
@@ -4207,6 +4196,8 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
 
     void execute() override
     {
+      // Need to update here with the damage spell multipliers since the state came from the cast
+      // and the execute() call will skip player modifiers when a pre_execute_state exists
       if ( pre_execute_state )
         update_state( pre_execute_state, result_amount_type::DMG_DIRECT );
 
@@ -4232,19 +4223,6 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
       td( s->target )->debuffs.shrapnel_shot->trigger();
     }
 
-    action_state_t* new_state() override
-    {
-      return new state_t( this, target );
-    }
-
-    void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
-    {
-      hunter_ranged_attack_t::snapshot_internal( s, flags, rt );
-
-      if ( flags & STATE_MUL_SPELL_DA )
-        s->da_multiplier *= debug_cast<state_t*>( s )->effectiveness;
-    }
-
     double composite_da_multiplier( const action_state_t* s ) const override
     {
       double m = hunter_ranged_attack_t::composite_da_multiplier( s );
@@ -4261,8 +4239,7 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
   timespan_t grenade_juggler_reduction = 0_s;
   damage_t* explosion = nullptr;
 
-  explosive_shot_base_t( util::string_view n, hunter_t* p, const spell_data_t* s )
-    : hunter_ranged_attack_t( n, p, s )
+  explosive_shot_base_t( util::string_view n, hunter_t* p, const spell_data_t* s ) : hunter_ranged_attack_t( n, p, s )
   {
     may_miss = may_crit = false;
 
@@ -4270,12 +4247,11 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
     grenade_juggler_reduction = p->talents.grenade_juggler->effectN( 3 ).time_value();
   }
 
-  void init() override
+  virtual void update_state( action_state_t* s, result_amount_type rt )
   {
-    hunter_ranged_attack_t::init();
+    hunter_ranged_attack_t::update_state( s, rt );
 
-    // Don't let dot ticks lose our cast state.
-    snapshot_flags = STATE_EFFECTIVENESS;
+    s->persistent_multiplier = 1.0;
   }
 
   // We have a whole lot of Explosive Shot variations that all need to work with the same dot.
@@ -4298,12 +4274,28 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
       if ( !explosion->pre_execute_state )
         explosion->pre_execute_state = explosion->get_state();
       
-      // The dot should have the state from the cast that triggered it, so forward it to the explosion.
-      explosion->pre_execute_state->copy_state( dot->state );
+      // Have no way to test the true behavior of this, so just assume we ignore the original state and use the 
+      // impacting state for the instant detonation, then update the dot state after a small delay in order to give 
+      // Precision Detonation a chance to trigger the new dot with the effectiveness bonus before clearing it.
+      explosion->pre_execute_state->copy_state( s );
       explosion->execute_on_target( s->target );
+
+      // Based on their travel times, about 200ms should always give Aimed Shot a chance to hit if cast alongside the Explosive Shot.
+      make_event( sim, 200_ms, [ this, dot ]()
+        {
+          if ( dot->is_ticking() )
+            update_state( dot->state, dot->state->result_type );
+        } );
     }
-        
+
     hunter_ranged_attack_t::impact( s );
+  }
+
+  void tick( dot_t* d ) override
+  {
+    // Handling of Explosive Shot effectiveness in game is apparently not as robust as assumed, seemingly driven 
+    // by hidden auras based on the fact that at one point in time they could be stolen by other players. Block 
+    // tick() from updating state, and use update_state() to clear the effectiveness after it has been consumed.
   }
 
   void last_tick( dot_t* d ) override
@@ -4334,11 +4326,6 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
     double c = hunter_ranged_attack_t::cost_pct_multiplier();
 
     return c;
-  }
-
-  action_state_t* new_state() override
-  {
-    return new state_t( this, target );
   }
 
   int n_targets() const override
@@ -5093,19 +5080,6 @@ struct cobra_shot_snakeskin_quiver_t: public cobra_shot_t
 
 struct barbed_shot_t: public hunter_ranged_attack_t
 {
-  static const snapshot_state_e STATE_EFFECTIVENESS = STATE_USER_1;
-
-  struct state_data_t
-  {
-    double effectiveness = 1.0;
-
-    friend void sc_format_to( const state_data_t& data, fmt::format_context::iterator out )
-    {
-      fmt::format_to( out, "effectiveness={}", data.effectiveness );
-    }
-  };
-  using state_t = hunter_action_state_t<state_data_t>;
-
   struct poisoned_barbs_t final : hunter_ranged_attack_t
   {
     serpent_sting_t* poisoned_barbs_serpent_sting = nullptr;
@@ -5143,14 +5117,6 @@ struct barbed_shot_t: public hunter_ranged_attack_t
 
     if ( p->talents.poisoned_barbs.ok() )
       poisoned_barbs = p->get_background_action<poisoned_barbs_t>( "poisoned_barbs" );
-  }
-
-  void init() override
-  {
-    hunter_ranged_attack_t::init();
-
-    // Don't let dot ticks lose our cast state.
-    snapshot_flags = STATE_EFFECTIVENESS;
   }
 
   void execute() override
@@ -5203,19 +5169,6 @@ struct barbed_shot_t: public hunter_ranged_attack_t
     {
       p() -> cooldowns.kill_command -> adjust( -p() -> talents.master_handler -> effectN( 1 ).time_value() );
     }
-  }
-
-  action_state_t* new_state() override
-  {
-    return new state_t( this, target );
-  }
-
-  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
-  {
-    hunter_ranged_attack_t::snapshot_internal( s, flags, rt );
-
-    if ( flags & STATE_MUL_SPELL_TA )
-      s->ta_multiplier *= debug_cast<state_t*>( s )->effectiveness;
   }
 };
 
@@ -5270,31 +5223,39 @@ struct laceration_t : public residual_bleed_base_t
 };
 
 // Barbed Shot (Empowered) (The War Within Season 2 2 Piece Set Bonus) ==============
+
 struct barbed_shot_tww_s2_bm_2pc_t : public barbed_shot_t
 {
   barbed_shot_tww_s2_bm_2pc_t( util::string_view n, hunter_t* p ) : barbed_shot_t( p, "" )
   {
-    background = dual = true;
-    base_costs[ RESOURCE_FOCUS ] = 0;
+    background = dual = proc = true;
   }
 
-  void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+  void init() override
   {
-    barbed_shot_t::snapshot_internal( s, flags, rt );
+    barbed_shot_t::init();
 
-    if ( flags & STATE_EFFECTIVENESS )
-      debug_cast<state_t*>( s )->effectiveness = p()->tier_set.tww_s2_bm_2pc->effectN( 1 ).percent();
+    snapshot_flags |= STATE_MUL_PERSISTENT;
+  }
+
+  double composite_persistent_multiplier( const action_state_t *state ) const override
+  {
+    double pm = barbed_shot_t::composite_persistent_multiplier( state );
+
+    pm *= p()->tier_set.tww_s2_bm_2pc->effectN( 1 ).percent();
+
+    return pm;
   }
 };
 
 // Potent Mutagen (The War Within Season 2 4 Piece Set Bonus) ======================
+
 struct potent_mutagen_t : public hunter_spell_t
 {
-  
-    potent_mutagen_t( hunter_t* p ) : hunter_spell_t( "potent_mutagen", p, p->find_spell( 1218004 ) )
-    {
-      background = dual = true;
-    }
+  potent_mutagen_t( hunter_t* p ) : hunter_spell_t( "potent_mutagen", p, p->find_spell( 1218004 ) )
+  {
+    background = dual = true;
+  }
 };
 
 //==============================
@@ -5610,12 +5571,20 @@ struct aimed_shot_t : public aimed_shot_base_t
   {
     explosive_shot_tww_s2_mm_4pc_t( util::string_view n, hunter_t* p ) : explosive_shot_background_t( n, p ) {}
 
-    void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+    void init() override
     {
-      explosive_shot_background_t::snapshot_internal( s, flags, rt );
+      explosive_shot_background_t::init();
 
-      if ( flags & STATE_EFFECTIVENESS )
-        debug_cast<state_t*>( s )->effectiveness = p()->tier_set.tww_s2_mm_4pc->effectN( 1 ).percent();
+      snapshot_flags = STATE_MUL_PERSISTENT;
+    }
+
+    double composite_persistent_multiplier( const action_state_t *state ) const override
+    {
+      double pm = explosive_shot_background_t::composite_persistent_multiplier( state );
+
+      pm *= p()->tier_set.tww_s2_mm_4pc->effectN( 1 ).percent();
+
+      return pm;
     }
   };
 
@@ -6805,18 +6774,24 @@ struct kill_command_t: public hunter_spell_t
     }
   };
 
-  struct explosive_shot_quick_shot_t : public attacks::explosive_shot_background_t
+  struct explosive_shot_sulfurlined_pockets_t : public attacks::explosive_shot_background_t
   {
-    explosive_shot_quick_shot_t( util::string_view n, hunter_t* p ) : explosive_shot_background_t( n, p )
+    explosive_shot_sulfurlined_pockets_t( util::string_view n, hunter_t* p ) : explosive_shot_background_t( n, p ) {}
+
+    void init() override
     {
+      explosive_shot_background_t::init();
+
+      snapshot_flags = STATE_MUL_PERSISTENT;
     }
 
-    void snapshot_internal( action_state_t* s, unsigned flags, result_amount_type rt ) override
+    double composite_persistent_multiplier( const action_state_t *state ) const override
     {
-      explosive_shot_background_t::snapshot_internal( s, flags, rt );
+      double pm = explosive_shot_background_t::composite_persistent_multiplier( state );
 
-      if ( flags & STATE_EFFECTIVENESS )
-        debug_cast<state_t*>( s )->effectiveness = p()->talents.sulfur_lined_pockets->effectN( 2 ).percent();
+      pm *= p()->talents.sulfurlined_pockets->effectN( 2 ).percent();
+
+      return pm;
     }
   };
 
@@ -6828,7 +6803,7 @@ struct kill_command_t: public hunter_spell_t
   struct {
     double chance = 0;
     arcane_shot_quick_shot_t* arcane_shot = nullptr;
-    explosive_shot_quick_shot_t* explosive_shot = nullptr;
+    explosive_shot_sulfurlined_pockets_t* explosive_shot = nullptr;
   } quick_shot;
 
   struct {
@@ -6867,8 +6842,8 @@ struct kill_command_t: public hunter_spell_t
         quick_shot.arcane_shot = p->get_background_action<arcane_shot_quick_shot_t>( "arcane_shot_quick_shot" );
         add_child( quick_shot.arcane_shot );
 
-        if ( p->talents.sulfur_lined_pockets.ok() )
-          quick_shot.explosive_shot = p->get_background_action<explosive_shot_quick_shot_t>( "explosive_shot_quick_shot" );
+        if ( p->talents.sulfurlined_pockets.ok() )
+          quick_shot.explosive_shot = p->get_background_action<explosive_shot_sulfurlined_pockets_t>( "explosive_shot_sulfurlined_pockets" );
       }
 
       wildfire_infusion_reduction = p->talents.wildfire_infusion->effectN( 2 ).time_value();
@@ -6925,9 +6900,9 @@ struct kill_command_t: public hunter_spell_t
 
     if ( rng().roll( quick_shot.chance ) )
     {
-      if ( p()->buffs.sulfur_lined_pockets_explosive->up() )
+      if ( p()->buffs.sulfurlined_pockets_ready->up() )
       {
-        p()->buffs.sulfur_lined_pockets_explosive->expire();
+        p()->buffs.sulfurlined_pockets_ready->expire();
         quick_shot.explosive_shot->execute_on_target( target );
       }
       else
@@ -8238,7 +8213,9 @@ void hunter_t::init_spells()
     talents.wildfire_infusion                 = find_talent_spell( talent_tree::SPECIALIZATION, "Wildfire Infusion", HUNTER_SURVIVAL );
     talents.wildfire_arsenal                  = find_talent_spell( talent_tree::SPECIALIZATION, "Wildfire Arsenal", HUNTER_SURVIVAL );
     talents.wildfire_arsenal_buff             = talents.wildfire_arsenal.ok() ? find_spell( 1223701 ) : spell_data_t::not_found();
-    talents.sulfur_lined_pockets              = find_talent_spell( talent_tree::SPECIALIZATION, "Sulfur-Lined Pockets", HUNTER_SURVIVAL );
+    talents.sulfurlined_pockets               = find_talent_spell( talent_tree::SPECIALIZATION, "Sulfur-Lined Pockets", HUNTER_SURVIVAL );
+    talents.sulfurlined_pockets_building_buff = talents.sulfurlined_pockets.ok() ? find_spell( 459830 ) : spell_data_t::not_found();
+    talents.sulfurlined_pockets_ready_buff    = talents.sulfurlined_pockets.ok() ? find_spell( 459834 ) : spell_data_t::not_found();
     talents.butchery                          = find_talent_spell( talent_tree::SPECIALIZATION, "Butchery", HUNTER_SURVIVAL );
     talents.flanking_strike                   = find_talent_spell( talent_tree::SPECIALIZATION, "Flanking Strike", HUNTER_SURVIVAL );
     talents.flanking_strike_player            = talents.flanking_strike.ok() ? find_spell( 269752 ) : spell_data_t::not_found();
@@ -8723,13 +8700,11 @@ void hunter_t::create_buffs()
       -> set_default_value_from_effect( 1 )
       -> add_invalidate( CACHE_AUTO_ATTACK_SPEED );
 
-  buffs.sulfur_lined_pockets =
-    make_buff( this, "sulfur_lined_pockets", find_spell( 459830 ) )
-      ->set_chance( talents.sulfur_lined_pockets.ok() );
+  buffs.sulfurlined_pockets_building =
+    make_buff( this, "sulfur_lined_pockets_building", talents.sulfurlined_pockets_building_buff );
 
-  buffs.sulfur_lined_pockets_explosive =
-    make_buff( this, "sulfur_lined_pockets_explosive", find_spell( 459834 ) )
-      ->set_chance( talents.sulfur_lined_pockets.ok() );
+  buffs.sulfurlined_pockets_ready =
+    make_buff( this, "sulfur_lined_pockets", talents.sulfurlined_pockets_ready_buff );
 
   buffs.terms_of_engagement =
     make_buff( this, "terms_of_engagement", talents.terms_of_engagement_buff )
