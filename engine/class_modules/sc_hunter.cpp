@@ -4274,10 +4274,18 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
       if ( !explosion->pre_execute_state )
         explosion->pre_execute_state = explosion->get_state();
       
-      // Have no way to test the true behavior of this, so just assume we ignore the original state and use the 
-      // impacting state for the instant detonation, then update the dot state after a small delay in order to give 
-      // Precision Detonation a chance to trigger the new dot with the effectiveness bonus before clearing it.
-      explosion->pre_execute_state->copy_state( s );
+      // Either of the following scenarios will cause the detonation to have an effectiveness bonus and the last_tick() to have no bonus:
+      // - an existing dot applied with an effectiveness bonus being detonated by a normal cast
+      // - an existing dot applied by a normal cast being detonated by a cast with an effectiveness bonus
+      // There is no way to test if a competing effectiveness bonus would be combined, overwritten, or would carry on to the last_tick(),
+      // so just use the effectiveness bonus if it exists then clear the bonus from the dot state.
+      // For Precision Detonation, a detonation from an Aimed Shot cast alongside an Explosive Shot with bonus effectiveness that itself 
+      // detonates an existing dot before the Aimed Shot impact will result in both detonations having a bonus.
+      // For that case, delay updating the dot state and clearing the effectiveness bonus until after the Aimed Shot would hit.
+      if ( s->action->snapshot_flags & STATE_MUL_PERSISTENT )
+        dot->state->persistent_multiplier = s->persistent_multiplier;
+
+      explosion->pre_execute_state->copy_state( dot->state );
       explosion->execute_on_target( s->target );
 
       // Based on their travel times, about 200ms should always give Aimed Shot a chance to hit if cast alongside the Explosive Shot.
@@ -4293,9 +4301,7 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
 
   void tick( dot_t* d ) override
   {
-    // Handling of Explosive Shot effectiveness in game is apparently not as robust as assumed, seemingly driven 
-    // by hidden auras based on the fact that at one point in time they could be stolen by other players. Block 
-    // tick() from updating state, and use update_state() to clear the effectiveness after it has been consumed.
+    // Prevent tick() from updating state so it can be used to clear the effectiveness bonus.
   }
 
   void last_tick( dot_t* d ) override
