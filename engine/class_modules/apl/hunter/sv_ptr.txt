@@ -70,7 +70,7 @@ actions.sentst=wildfire_bomb,if=!buff.lunar_storm_cooldown.remains
 actions.sentst+=/kill_command,target_if=min:bloodseeker.remains,if=(buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1)
 actions.sentst+=/spearhead,if=cooldown.coordinated_assault.remains
 actions.sentst+=/flanking_strike,if=buff.tip_of_the_spear.stack>0
-actions.sentst+=/kill_command,target_if=buff.strike_it_rich.remains&buff.tip_of_the_spear.stack<1
+actions.sentst+=/kill_command,if=buff.strike_it_rich.remains&buff.tip_of_the_spear.stack<1
 actions.sentst+=/mongoose_bite,if=buff.strike_it_rich.remains&buff.coordinated_assault.up
 actions.sentst+=/wildfire_bomb,if=(buff.lunar_storm_cooldown.remains>full_recharge_time-gcd)&(buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9)|(talent.bombardier&cooldown.coordinated_assault.remains<2*gcd)
 actions.sentst+=/butchery
