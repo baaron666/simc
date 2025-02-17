@@ -85,8 +85,6 @@ actions.sentst+=/explosive_shot
 actions.sentst+=/kill_shot
 actions.sentst+=/raptor_bite,target_if=min:dot.serpent_sting.remains,if=!talent.contagious_reagents
 actions.sentst+=/raptor_bite,target_if=max:dot.serpent_sting.remains
-actions.sentst+=/explosive_shot
-actions.sentst+=/kill_shot
 
 #SENTINEL | DEFAULT AOE ACTIONLIST
 actions.sentcleave=wildfire_bomb,if=!buff.lunar_storm_cooldown.remains
