@@ -31,8 +31,8 @@ actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.ravager.ready*1
 actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.demoralizing_shout.ready*talent.booming_voice.enabled*30*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
 actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.champions_spear.ready*10*(1+talent.piercing_challenge.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
 actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.shield_charge.ready*(20+20*talent.champions_bulwark.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.thunder_clap.ready*(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.shield_slam.ready*(15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.thunder_clap.ready*(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-1*buff.thunder_blast.up))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=rage.deficit<=10+cooldown.shield_slam.ready*(15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-1*buff.thunder_blast.up))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
 
 actions+=/use_items
 actions+=/avatar
@@ -54,9 +54,13 @@ actions+=/shield_charge
 actions+=/shield_block,use_off_gcd=1,if=buff.shield_block.down&(!talent.champions_bulwark.enabled|!cooldown.shield_charge.ready)
 
 actions+=/thunder_blast,if=buff.thunder_blast.stack=2
-actions+=/shield_slam,if=!(buff.violent_outburst.up&spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up)
-actions+=/thunder_blast,if=!(buff.violent_outburst.up&spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up)
-actions+=/thunder_clap,if=!(buff.violent_outburst.up&spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up)
-actions+=/revenge,if=spell_targets.revenge>=3
+actions+=/revenge,if=rage>70&spell_targets.revenge>=5
+actions+=/execute,if=rage>70
+actions+=/thunder_blast,if=spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-1*buff.thunder_blast.up
+actions+=/thunder_clap,if=spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-1*buff.thunder_blast.up
+actions+=/shield_slam,if=!(buff.violent_outburst.up&spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-1*buff.thunder_blast.up)
+actions+=/thunder_blast,if=!(buff.violent_outburst.up&spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-1*buff.thunder_blast.up)
+actions+=/thunder_clap,if=!(buff.violent_outburst.up&spell_targets.thunder_clap<7-3*talent.crashing_thunder.enabled-1*buff.thunder_blast.up)
+actions+=/revenge,if=spell_targets.revenge>=5
 actions+=/execute
 actions+=/revenge
