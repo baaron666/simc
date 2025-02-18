@@ -6008,70 +6008,6 @@ struct elunes_favored_heal_t final : public druid_residual_action_t<druid_heal_t
   }
 };
 
-// Frenzied Regeneration ====================================================
-struct frenzied_regeneration_t final : public bear_attacks::rage_spender_t<druid_heal_t>
-{
-  cooldown_t* dummy_cd;
-  cooldown_t* orig_cd;
-  double goe_mul = 0.0;
-  double ir_mul;
-  double lm_pct;
-
-  DRUID_ABILITY( frenzied_regeneration_t, base_t, "frenzied_regeneration", p->talent.frenzied_regeneration ),
-    dummy_cd( p->get_cooldown( "dummy_cd" ) ),
-    orig_cd( cooldown ),
-    ir_mul( p->talent.innate_resolve->effectN( 1 ).percent() ),
-    lm_pct( p->talent.layered_mane->effectN( 2 ).percent() )
-  {
-    target = p;
-
-    if ( p->talent.guardian_of_elune.ok() )
-      goe_mul = p->buff.guardian_of_elune->data().effectN( 2 ).percent();
-
-    if ( p->talent.empowered_shapeshifting.ok() )
-    {
-      form_mask |= CAT_FORM;
-
-      base_costs[ RESOURCE_ENERGY ] =
-        find_effect( p->talent.empowered_shapeshifting, this, A_ADD_FLAT_MODIFIER, P_RESOURCE_COST_1 )
-          .resource( RESOURCE_ENERGY );
-    }
-  }
-
-  resource_e current_resource() const override
-  {
-    if ( p()->talent.empowered_shapeshifting.ok() && p()->buff.cat_form->check() )
-      return RESOURCE_ENERGY;
-    else
-      return base_t::current_resource();
-  }
-
-  void execute() override
-  {
-    if ( rng().roll( lm_pct ) )
-      cooldown = dummy_cd;
-
-    base_t::execute();
-
-    cooldown = orig_cd;
-
-    p()->buff.guardian_of_elune->expire( this );
-  }
-
-  double composite_persistent_multiplier( const action_state_t* s ) const override
-  {
-    double pm = base_t::composite_persistent_multiplier( s );
-
-    if ( p()->buff.guardian_of_elune->check() )
-      pm *= 1.0 + goe_mul;
-
-    // TODO: confirm the innate resolve multiplier snapshots
-    pm *= 1.0 + ir_mul * ( 1.0 - p()->resources.pct( RESOURCE_HEALTH ) );
-
-    return pm;
-  }
-};
-
 // Flourish =================================================================
 struct flourish_t final : public druid_heal_t
 {
@@ -6625,6 +6561,96 @@ struct yseras_gift_t final : public druid_heal_t
       target = smart_target();
 
     druid_heal_t::execute();
+  }
+};
+
+// Frenzied Regeneration ====================================================
+// NOTE: this msut come after regrowth and rejuvenation due to reinvigoration
+struct frenzied_regeneration_t final : public bear_attacks::rage_spender_t<druid_heal_t>
+{
+  cooldown_t* dummy_cd;
+  cooldown_t* orig_cd;
+  action_t* regrowth = nullptr;
+  action_t* rejuvenation = nullptr;
+  double goe_mul = 0.0;
+  double ir_mul;
+  double lm_pct;
+
+  DRUID_ABILITY( frenzied_regeneration_t, base_t, "frenzied_regeneration", p->talent.frenzied_regeneration ),
+    dummy_cd( p->get_cooldown( "dummy_cd" ) ),
+    orig_cd( cooldown ),
+    ir_mul( p->talent.innate_resolve->effectN( 1 ).percent() ),
+    lm_pct( p->talent.layered_mane->effectN( 2 ).percent() )
+  {
+    target = p;
+
+    if ( p->talent.guardian_of_elune.ok() )
+      goe_mul = p->buff.guardian_of_elune->data().effectN( 2 ).percent();
+
+    if ( p->talent.empowered_shapeshifting.ok() )
+    {
+      form_mask |= CAT_FORM;
+
+      base_costs[ RESOURCE_ENERGY ] =
+        find_effect( p->talent.empowered_shapeshifting, this, A_ADD_FLAT_MODIFIER, P_RESOURCE_COST_1 )
+          .resource( RESOURCE_ENERGY );
+    }
+
+    if ( p->talent.reinvigoration.ok() )
+    {
+      regrowth = get_reinvigoration_action<regrowth_t>( "regrowth" );
+      rejuvenation = get_reinvigoration_action<rejuvenation_t>( "rejuvenation" );
+    }
+  }
+
+  template <typename T>
+  T* get_reinvigoration_action( std::string n )
+  {
+    auto a = p()->get_secondary_action<T>( n );
+    a->name_str_reporting = n;
+    a->dot_name = n;
+    a->base_multiplier = p()->talent.reinvigoration->effectN( 3 ).percent();
+    add_child( a );
+    return a;
+  }
+
+  resource_e current_resource() const override
+  {
+    if ( p()->talent.empowered_shapeshifting.ok() && p()->buff.cat_form->check() )
+      return RESOURCE_ENERGY;
+    else
+      return base_t::current_resource();
+  }
+
+  void execute() override
+  {
+    if ( rng().roll( lm_pct ) )
+      cooldown = dummy_cd;
+
+    base_t::execute();
+
+    cooldown = orig_cd;
+
+    p()->buff.guardian_of_elune->expire( this );
+
+    if ( regrowth )
+      regrowth->execute();
+
+    if ( rejuvenation )
+      rejuvenation->execute();
+  }
+
+  double composite_persistent_multiplier( const action_state_t* s ) const override
+  {
+    double pm = base_t::composite_persistent_multiplier( s );
+
+    if ( p()->buff.guardian_of_elune->check() )
+      pm *= 1.0 + goe_mul;
+
+    // TODO: confirm the innate resolve multiplier snapshots
+    pm *= 1.0 + ir_mul * ( 1.0 - p()->resources.pct( RESOURCE_HEALTH ) );
+
+    return pm;
   }
 };
 
@@ -14086,7 +14112,10 @@ void druid_t::parse_action_effects( action_t* action )
 
   _a->parse_effects( buff.gory_fur, EXPIRE_BUFF );
   _a->parse_effects( buff.rage_of_the_sleeper );
-  _a->parse_effects( talent.reinvigoration, effect_mask_t( true ).disable( talent.innate_resolve.ok() ? 1 : 2 ) );
+
+  if ( !is_ptr() )
+    _a->parse_effects( talent.reinvigoration, effect_mask_t( true ).disable( talent.innate_resolve.ok() ? 1 : 2 ) );
+
   _a->parse_effects( buff.tooth_and_claw );
   _a->parse_effects( buff.vicious_cycle_mangle, USE_DEFAULT, EXPIRE_BUFF );
   _a->parse_effects( buff.vicious_cycle_maul, USE_DEFAULT, EXPIRE_BUFF );
