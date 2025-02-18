@@ -1,8 +1,7 @@
 actions+=/pummel
 actions+=/call_action_list,name=mitigation
 
-# Not necessarily needed? The offensive rule already covers 98+% uptime
-# actions.mitigation+=/shield_block,use_off_gcd=1,if=tanking&buff.shield_block.remains<=2&(!talent.champions_bulwark.enabled|buff.shield_block.remains<=cooldown.shield_charge.remains&(cooldown.ravager.ready+cooldown.demoralizing_shout.ready&talent.booming_voice.enabled+cooldown.champions_spear.ready+cooldown.thunderous_roar.ready>1))
+actions.mitigation+=/shield_block,use_off_gcd=1,if=tanking&buff.shield_block.remains<=1&(!talent.champions_bulwark.enabled|buff.shield_block.remains<=cooldown.shield_charge.remains<?gcd.max*(cooldown.ravager.ready+cooldown.demoralizing_shout.ready&talent.booming_voice.enabled+cooldown.champions_spear.ready+cooldown.thunderous_roar.ready))
 actions.mitigation+=/ignore_pain,use_off_gcd=1,if=tanking&buff.ignore_pain.down
 actions.mitigation+=/spell_block,use_off_gcd=1,if=tanking&incoming_magic_damage_5s>spell_block_damage_taken&health.pct<=spell_block_health_pct&!(buff.spell_reflection_defense.up)
 actions.mitigation+=/shield_wall,use_off_gcd=1,if=tanking&incoming_damage_5s>shield_wall_damage_taken&health.pct<=shield_wall_health_pct&!(buff.shield_wall.up|buff.last_stand.up)
@@ -52,10 +51,7 @@ actions+=/champions_spear
 actions+=/demolish,if=buff.colossal_might.stack>=3
 actions+=/thunderous_roar
 actions+=/shield_charge
-# For offensive purpose (buffing shield slam damage)
 actions+=/shield_block,use_off_gcd=1,if=buff.shield_block.down&(!talent.champions_bulwark.enabled|!cooldown.shield_charge.ready)
-# TODO actions+=/shield_block,use_off_gcd=1,if=buff.shield_block.down
-# TODO test shield_block in mitigations
 
 actions+=/thunder_blast,if=buff.thunder_blast.stack=2
 actions+=/shield_slam,if=!(buff.violent_outburst.up&spell_targets.thunder_clap>=7-3*talent.crashing_thunder.enabled-2*buff.thunder_blast.up)
@@ -64,5 +60,3 @@ actions+=/thunder_clap,if=!(buff.violent_outburst.up&spell_targets.thunder_clap<
 actions+=/revenge,if=spell_targets.revenge>=3
 actions+=/execute
 actions+=/revenge
-
-# TODO tweak spell_targets.thunder_clap for violent_outburst
