@@ -875,7 +875,7 @@ public:
     player_talent_t improved_barkskin;
     player_talent_t improved_rejuvenation;  // TODO: remove in 11.1
     player_talent_t improved_stampeding_roar;
-    player_talent_t improved_sunfire;
+    player_talent_t improved_sunfire;  // TODO: remove in 11.1
     player_talent_t incapacitating_roar;
     player_talent_t innervate;
     player_talent_t instincts_of_the_claw;
@@ -8527,7 +8527,7 @@ struct sunfire_t final : public druid_spell_t
     sunfire_damage_t( druid_t* p, flag_e f ) : base_t( "sunfire_dmg", p, p->spec.sunfire_dmg, f )
     {
       dual = background = proc = true;
-      aoe = p->talent.improved_sunfire.ok() ? -1 : 0;
+      aoe = p->talent.improved_sunfire.ok() || p->is_ptr() ? -1 : 0;
       base_aoe_multiplier = 0;
 
       dot_name = "sunfire";
