@@ -8198,6 +8198,15 @@ struct starfall_t final : public ap_spender_t
           .set_value( eff.percent() )
           .set_eff( &eff );
       }
+
+      // scripted so requires manual entry
+      if ( const auto& eff = p->sets->set( DRUID_BALANCE, TWW2, B4 )->effectN( 1 ); eff.percent() )
+      {
+        add_parse_entry( target_multiplier_effects )
+          .set_func( d_fn( &druid_td_t::dots_t::fungal_growth ) )
+          .set_value( eff.percent() )
+          .set_eff( &eff );
+      }
     }
 
     double action_multiplier() const override
@@ -8501,6 +8510,15 @@ struct starsurge_t final : public ap_spender_t
     }
 
     weaver_buff = p->buff.starweaver_starsurge;
+
+    // scripted so requires manual entry
+    if ( const auto& eff = p->sets->set( DRUID_BALANCE, TWW2, B4 )->effectN( 1 ); eff.percent() )
+    {
+      add_parse_entry( target_multiplier_effects )
+        .set_func( d_fn( &druid_td_t::dots_t::fungal_growth ) )
+        .set_value( eff.percent() )
+        .set_eff( &eff );
+    }
   }
 
   void init() override
