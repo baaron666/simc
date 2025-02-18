@@ -4624,7 +4624,13 @@ struct ferocious_bite_t final : public ferocious_bite_base_t
     }
   };
 
+  struct big_winner_t final : public cat_attack_t
+  {
+    big_winner_t( druid_t* p ) : cat_attack_t( "big_winner", p, p->find_spell( 1217245 ) ) {}
+  };
+
   ravage_ferocious_bite_t* ravage = nullptr;
+  action_t* big_winner = nullptr;
 
   DRUID_ABILITY( ferocious_bite_t, ferocious_bite_base_t, "ferocious_bite", p->find_class_spell( "Ferocious Bite" ) )
   {
@@ -4633,6 +4639,9 @@ struct ferocious_bite_t final : public ferocious_bite_base_t
       ravage = p->get_secondary_action<ravage_ferocious_bite_t>( "ravage_" + name_str, f );
       add_child( ravage );
     }
+
+    if ( !has_flag( flag_e::APEX ) && !p->buff.big_winner->is_fallback )
+      big_winner = p->get_secondary_action<big_winner_t>( "big_winner" );
   }
 
   void init() override
@@ -4652,6 +4661,7 @@ struct ferocious_bite_t final : public ferocious_bite_base_t
       p()->active.ferocious_bite_apex->execute_on_target( target );
       p()->buff.apex_predators_craving->expire();
       p()->buff.big_winner->trigger();
+      big_winner->execute_on_target( target );
       return;
     }
 
@@ -10985,7 +10995,7 @@ void druid_t::create_buffs()
       ->set_trigger_spell( cat_tww2_2pc );
 
   buff.big_winner =
-    make_fallback( sets->has_set_bonus( DRUID_FERAL, TWW2, B4 ), this, "big_winner", find_spell( 1215735 ) );
+    make_fallback( sets->has_set_bonus( DRUID_FERAL, TWW2, B4 ), this, "big_winner", find_spell( 1217245 ) );
 
   // Guardian buffs
   buff.after_the_wildfire = make_fallback( talent.after_the_wildfire.ok(), this, "after_the_wildfire",
