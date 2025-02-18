@@ -862,6 +862,7 @@ public:
   struct talents_t
   {
     // Class tree
+    player_talent_t aessinas_renewal;  // TODO: NYI
     player_talent_t astral_influence;
     player_talent_t circle_of_the_heavens;
     player_talent_t circle_of_the_wild;
@@ -873,6 +874,7 @@ public:
     player_talent_t heart_of_the_wild;
     player_talent_t hibernate;
     player_talent_t gale_winds;
+    player_talent_t grievous_wounds;
     player_talent_t improved_barkskin;
     player_talent_t improved_rejuvenation;  // TODO: remove in 11.1
     player_talent_t improved_stampeding_roar;
@@ -895,6 +897,7 @@ public:
     player_talent_t natures_vigil;
     player_talent_t nurturing_instinct;
     player_talent_t oakskin;
+    player_talent_t perfectlyhoned_instincts;  // TODO: NYI
     player_talent_t primal_fury;
     player_talent_t rake;
     player_talent_t rejuvenation;
@@ -909,6 +912,7 @@ public:
     player_talent_t starlight_conduit;
     player_talent_t starsurge;
     player_talent_t sunfire;
+    player_talent_t symbiotic_relationship;  // TODO: NYI
     player_talent_t thick_hide;
     player_talent_t thrash;
     player_talent_t tiger_dash;
@@ -1061,6 +1065,7 @@ public:
     player_talent_t vulnerable_flesh;
     player_talent_t untamed_savagery;
     player_talent_t ursocs_guidance;
+    player_talent_t ursols_warding;  // TODO: NYI
 
     // Restoration
     player_talent_t abundance;
@@ -9969,6 +9974,7 @@ void druid_t::init_spells()
 
   // Class tree
   sim->print_debug( "Initializing class talents..." );
+  talent.aessinas_renewal               = CT( "Aessina's Renewal" );  // TODO: NYI
   talent.astral_influence               = CT( "Astral Influence" );
   talent.circle_of_the_heavens          = CT( "Circle of the Heavens" );
   talent.circle_of_the_wild             = CT( "Circle of the Wild" );
@@ -9980,6 +9986,7 @@ void druid_t::init_spells()
   talent.heart_of_the_wild              = CT( "Heart of the Wild" );
   talent.hibernate                      = CT( "Hibernate" );
   talent.gale_winds                     = CT( "Gale Winds" );
+  talent.grievous_wounds                = CT( "Grievous Wounds" );
   talent.improved_barkskin              = CT( "Improved Barkskin" );
   talent.improved_rejuvenation          = CT( "Improved Rejuvenation" );  // TODO: remove in 11.1
   talent.improved_stampeding_roar       = CT( "Improved Stampeding Roar");
@@ -10002,6 +10009,7 @@ void druid_t::init_spells()
   talent.natures_vigil                  = CT( "Nature's Vigil" );
   talent.nurturing_instinct             = CT( "Nurturing Instinct" );
   talent.oakskin                        = CT( "Oakskin" );
+  talent.perfectlyhoned_instincts       = CT( "Perfectly-Honed Instincts" );  // TODO: NYI
   talent.primal_fury                    = CT( "Primal Fury" );
   talent.rake                           = CT( "Rake" );
   talent.rejuvenation                   = CT( "Rejuvenation" );
@@ -10016,6 +10024,7 @@ void druid_t::init_spells()
   talent.starlight_conduit              = CT( "Starlight Conduit" );
   talent.starsurge                      = CT( "Starsurge" );
   talent.sunfire                        = CT( "Sunfire" );
+  talent.symbiotic_relationship         = CT( "Symbiotic Relationship" );  // TODO: NYI
   talent.thick_hide                     = CT( "Thick Hide" );
   talent.thrash                         = CT( "Thrash" );
   talent.typhoon                        = CT( "Typhoon" );
@@ -10171,6 +10180,7 @@ void druid_t::init_spells()
   talent.vulnerable_flesh               = ST( "Vulnerable Flesh" );
   talent.untamed_savagery               = ST( "Untamed Savagery" );
   talent.ursocs_fury                    = ST( "Ursoc's Fury" );
+  talent.ursols_warding                 = ST( "Ursol's Warding" );  // TODO: NYI
 
   // Restoration
   sim->print_debug( "Initializing restoration talents..." );
@@ -13878,6 +13888,7 @@ void druid_t::apply_affecting_auras( action_t& a )
   // Class
   a.apply_affecting_aura( talent.astral_influence );
   a.apply_affecting_aura( talent.gale_winds );
+  a.apply_affecting_aura( talent.grievous_wounds );
   a.apply_affecting_aura( talent.improved_rejuvenation );  // TODO: remove in 11.1
   a.apply_affecting_aura( talent.improved_stampeding_roar );
   a.apply_affecting_aura( talent.incessant_tempest );
