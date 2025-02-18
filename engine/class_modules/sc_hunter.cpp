@@ -602,14 +602,12 @@ public:
 
     spell_data_ptr_t lone_survivor;
     spell_data_ptr_t specialized_arsenal;
-    spell_data_ptr_t disruptive_rounds; //NYI - When Counter Shot interrupts a cast, gain 10 focus. 
 
     spell_data_ptr_t explosive_shot;
     spell_data_ptr_t explosive_shot_cast;
     spell_data_ptr_t explosive_shot_damage;
 
-    spell_data_ptr_t bursting_shot; 
-    spell_data_ptr_t scatter_shot; // NYI
+    spell_data_ptr_t bursting_shot;
     spell_data_ptr_t trigger_finger;
     spell_data_ptr_t blackrock_munitions; 
     spell_data_ptr_t keen_eyesight;
@@ -731,7 +729,7 @@ public:
     spell_data_ptr_t cobra_senses;
     spell_data_ptr_t beast_cleave;
     spell_data_ptr_t wild_call;
-    spell_data_ptr_t hunters_prey; //TODO Additional Kill Shots fired from Hunter’s Prey will now target enemies regardless of health percentage.
+    spell_data_ptr_t hunters_prey;
     spell_data_ptr_t hunters_prey_hidden_buff;
     spell_data_ptr_t poisoned_barbs;
 
@@ -4603,7 +4601,6 @@ struct kill_shot_t : public kill_shot_base_t
   {
     kill_shot_base_t::impact( s );
 
-    // TODO leap
     if ( p()->talents.no_mercy.ok() && p()->cooldowns.no_mercy->up() )
     {
       p()->pets.main->actions.no_mercy_ba->execute_on_target( s->target );
@@ -6603,11 +6600,6 @@ struct interrupt_base_t: public hunter_spell_t
     is_interrupt = true;
   }
 
-  void execute() override
-  {
-    hunter_spell_t::execute();
-  }
-
   bool target_ready( player_t* candidate_target ) override
   {
     if ( !candidate_target -> debuffs.casting || !candidate_target -> debuffs.casting -> check() ) return false;
@@ -8035,14 +8027,12 @@ void hunter_t::init_spells()
 
   talents.lone_survivor                     = find_talent_spell( talent_tree::CLASS, "Lone Survivor" );
   talents.specialized_arsenal               = find_talent_spell( talent_tree::CLASS, "Specialized Arsenal" );
-  talents.disruptive_rounds                 = find_talent_spell( talent_tree::CLASS, "Disruptive Rounds" );
 
   talents.explosive_shot                    = find_talent_spell( talent_tree::CLASS, "Explosive Shot" );
   talents.explosive_shot_cast               = find_spell( 212431 );
   talents.explosive_shot_damage             = find_spell( 212680 );
 
   talents.bursting_shot                     = find_talent_spell( talent_tree::CLASS, "Bursting Shot" );
-  talents.scatter_shot                      = find_talent_spell( talent_tree::CLASS, "Scatter Shot" );  
   talents.trigger_finger                    = find_talent_spell( talent_tree::CLASS, "Trigger Finger" );
   talents.blackrock_munitions               = find_talent_spell( talent_tree::CLASS, "Blackrock Munitions" );
   talents.keen_eyesight                     = find_talent_spell( talent_tree::CLASS, "Keen Eyesight" );
@@ -9364,12 +9354,12 @@ double hunter_t::composite_melee_auto_attack_speed() const
   {
     // TODO 23/1/25: Trigger Finger is maybe applying another attack speed mod from the effect 2 script separately (multiplicative), so there is always double the expected amount
     // only one effect is doubled while petless, so mm sees triple the expected amount
-    s /= 1 + talents.trigger_finger->effectN( 2 ).percent();
+    s /= 1 + talents.trigger_finger->effectN( 1 ).percent();
 
     if ( pets.main )
-      s /= 1 + talents.trigger_finger->effectN( 1 ).percent();
+      s /= 1 + talents.trigger_finger->effectN( 2 ).percent();
     else
-      s /= 1 + talents.trigger_finger->effectN( 1 ).percent() * ( 1 + talents.trigger_finger->effectN( 3 ).percent() );
+      s /= 1 + talents.trigger_finger->effectN( 2 ).percent() * ( 1 + talents.trigger_finger->effectN( 3 ).percent() );
   }
 
   s /= 1 + buffs.frenzy_strikes->check_value();
