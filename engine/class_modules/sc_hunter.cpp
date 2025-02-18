@@ -8204,8 +8204,8 @@ void hunter_t::init_spells()
     talents.scent_of_blood                    = find_talent_spell( talent_tree::SPECIALIZATION, "Scent of Blood", HUNTER_BEAST_MASTERY );
     talents.brutal_companion                  = find_talent_spell( talent_tree::SPECIALIZATION, "Brutal Companion", HUNTER_BEAST_MASTERY );
     talents.bloodshed                         = find_talent_spell( talent_tree::SPECIALIZATION, "Bloodshed", HUNTER_BEAST_MASTERY );
-    talents.bloodshed_dot                     = talents.a_murder_of_crows.ok() ? find_spell( 321538 ) : spell_data_t::not_found();
-    talents.bloodshed_debuff                  = talents.a_murder_of_crows.ok() ? find_spell( 346396 ) : spell_data_t::not_found();
+    talents.bloodshed_dot                     = talents.bloodshed.ok() ? find_spell( 321538 ) : spell_data_t::not_found();
+    talents.bloodshed_debuff                  = talents.bloodshed.ok() ? find_spell( 346396 ) : spell_data_t::not_found();
 
     talents.wild_instincts                    = find_talent_spell( talent_tree::SPECIALIZATION, "Wild Instincts", HUNTER_BEAST_MASTERY );
     talents.bloody_frenzy                     = find_talent_spell( talent_tree::SPECIALIZATION, "Bloody Frenzy", HUNTER_BEAST_MASTERY );
