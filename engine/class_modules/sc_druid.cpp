@@ -4661,8 +4661,11 @@ struct ferocious_bite_t final : public ferocious_bite_base_t
       p()->active.ferocious_bite_apex->execute_on_target( target );
       p()->buff.apex_predators_craving->expire();
       p()->buff.big_winner->trigger();
-      big_winner->execute_on_target( target );
-      return;
+
+      if ( big_winner )
+        big_winner->execute_on_target( target );
+
+        return;
     }
 
     if ( ravage && p()->buff.ravage_fb->check() )
