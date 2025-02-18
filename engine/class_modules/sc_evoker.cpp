@@ -7528,9 +7528,9 @@ evoker_td_t::evoker_td_t( player_t* target, evoker_t* evoker )
   debuffs.temporal_wound = make_buff_fallback<temporal_wound_buff_t>( make_temporal_wound, *this, "temporal_wound",
                                                                       evoker->talent.temporal_wound );
 
-  buffs.thread_of_fate = make_buff_fallback<thread_of_fate_buff_t>( is_ally, *this, "thread_of_fate_" + evoker->name_str );
+  buffs.thread_of_fate = make_buff_fallback<thread_of_fate_buff_t>( is_ally, *this, "thread_of_fate" );
 
-  buffs.shifting_sands = make_buff_fallback<e_buff_t>( is_ally, *this, "shifting_sands_" + evoker->name_str,
+  buffs.shifting_sands = make_buff_fallback<e_buff_t>( is_ally, *this, "shifting_sands",
                                                        evoker->find_spell( 413984 ) );
   if ( is_ally )
   {
@@ -7546,7 +7546,7 @@ evoker_td_t::evoker_td_t( player_t* target, evoker_t* evoker )
         ->set_freeze_stacks( true );
   }
 
-  buffs.ebon_might = make_buff_fallback<evoker_buff_t<stat_buff_t>>( is_ally, *this, "ebon_might_" + evoker->name_str,
+  buffs.ebon_might = make_buff_fallback<evoker_buff_t<stat_buff_t>>( is_ally, *this, "ebon_might",
                                                                      evoker->find_spell( 395152 ) );
   if ( is_ally )
   {
@@ -7635,7 +7635,7 @@ evoker_td_t::evoker_td_t( player_t* target, evoker_t* evoker )
 
   bool make_blistering_scales = is_ally && evoker->talent.blistering_scales.ok();
   buffs.blistering_scales = make_buff_fallback<blistering_scales_buff_t>(
-      make_blistering_scales, *this, "blistering_scales_" + evoker->name_str, evoker->talent.blistering_scales );
+      make_blistering_scales, *this, "blistering_scales", evoker->talent.blistering_scales );
 
   bool make_infernos_blessing = is_ally && evoker->talent.infernos_blessing.ok();
   buffs.infernos_blessing = make_buff_fallback<e_buff_t>( make_infernos_blessing, *this, "infernos_blessing",
