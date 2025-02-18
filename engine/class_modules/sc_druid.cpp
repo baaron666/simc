@@ -743,6 +743,7 @@ public:
     buff_t* tigers_tenacity;
     buff_t* tigers_strength;  // TWW1 2pc
     buff_t* fell_prey;        // TWW1 4pc
+    buff_t* winning_streak;   // TWW2 2pc
 
     // Guardian
     buff_t* after_the_wildfire;
@@ -3780,8 +3781,10 @@ protected:
   using state_t = druid_action_state_t<Data>;
 
 public:
+  double loser_pct;
+
   cp_spender_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f = flag_e::NONE )
-    : base_t( n, p, s, f )
+    : base_t( n, p, s, f ), loser_pct( p->buff.winning_streak->data().proc_chance() )
   {}
 
   action_state_t* new_state() override
@@ -3840,6 +3843,9 @@ public:
 
     if ( !has_flag( flag_e::CONVOKE ) )
       p()->buff.overflowing_power->expire( this );
+
+    if ( !dual && rng().roll( loser_pct ) )
+      p()->buff.winning_streak->expire();
   }
 
   void consume_resource() override
@@ -4513,6 +4519,9 @@ struct ferocious_bite_base_t : public cat_finisher_t
       rampant_ferocity = p->get_secondary_action<rampant_ferocity_t>( "rampant_ferocity_" + name_str );
       add_child( rampant_ferocity );
     }
+
+    if ( is_free() )
+      loser_pct = 0.0;
   }
 
   double maximum_energy() const
@@ -4720,7 +4729,10 @@ struct lunar_inspiration_t final : public cp_generator_t
 // Maim =====================================================================
 struct maim_t final : public cat_finisher_t
 {
-  DRUID_ABILITY( maim_t, cat_finisher_t, "maim", p->talent.maim ) {}
+  DRUID_ABILITY( maim_t, cat_finisher_t, "maim", p->talent.maim )
+  {
+    loser_pct = 0.0;  // maim doesn't have a chance to expire tww2_2pc
+  }
 
   double composite_da_multiplier( const action_state_t* s ) const override
   {
@@ -10948,8 +10960,8 @@ void druid_t::create_buffs()
     } );
 
   auto cat_tww1_2pc = sets->set( DRUID_FERAL, TWW1, B2 );
-  buff.tigers_strength = make_fallback( sets->has_set_bonus( DRUID_FERAL, TWW1, B2 ),
-    this, "tigers_strength", find_trigger( cat_tww1_2pc ).trigger() )
+  buff.tigers_strength =
+    make_fallback( cat_tww1_2pc->ok(), this, "tigers_strength", find_trigger( cat_tww1_2pc ).trigger() )
       ->set_trigger_spell( cat_tww1_2pc )
       ->set_freeze_stacks( true )  // prevent buff_t::bump it buff_t::tick_t overwriting current value
       ->set_default_value_from_effect_type( A_MOD_ALL_CRIT_CHANCE )
@@ -10960,10 +10972,15 @@ void druid_t::create_buffs()
       } );
 
   auto cat_tww1_4pc = sets->set( DRUID_FERAL, TWW1, B4 );
-  buff.fell_prey = make_fallback( sets->has_set_bonus( DRUID_FERAL, TWW1, B4 ),
-    this, "fell_prey", find_trigger( cat_tww1_4pc ).trigger() )
+  buff.fell_prey =
+    make_fallback( cat_tww1_4pc->ok(), this, "fell_prey", find_trigger( cat_tww1_4pc ).trigger() )
       ->set_trigger_spell( cat_tww1_4pc )
       ->set_cooldown( cat_tww1_4pc->internal_cooldown() );
+
+  auto cat_tww2_2pc = sets->set( DRUID_FERAL, TWW2, B2 );
+  buff.winning_streak =
+    make_fallback( cat_tww2_2pc->ok(), this, "winning_streak", find_trigger( cat_tww2_2pc ).trigger() )
+      ->set_trigger_spell( cat_tww2_2pc );
 
   // Guardian buffs
   buff.after_the_wildfire = make_fallback( talent.after_the_wildfire.ok(), this, "after_the_wildfire",
@@ -14127,6 +14144,7 @@ void druid_t::parse_action_effects( action_t* action )
   // applies 15% to rampant ferocity (label 2740) via hidden script
   _a->parse_effects( buff.fell_prey, effect_mask_t( false ).enable( 2 ),
                      buff.fell_prey->data().effectN( 1 ).percent() );
+  _a->parse_effects( buff.winning_streak );
 
   // Guardian
   _a->parse_effects( buff.bear_form );
