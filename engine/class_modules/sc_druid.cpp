@@ -5686,7 +5686,7 @@ struct raze_t final : public trigger_aggravate_wounds_t<DRUID_GUARDIAN,
 
   double attack_direct_power_coefficient( const action_state_t* s ) const
   {
-    return s->chain_target == 0 ? attack_direct_power_coefficient( s ) : aoe_coeff;
+    return s->chain_target == 0 ? base_t::attack_direct_power_coefficient( s ) : aoe_coeff;
   }
 
   void impact( action_state_t* s ) override
