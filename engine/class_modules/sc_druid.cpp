@@ -14075,12 +14075,14 @@ void druid_t::parse_action_effects( action_t* action )
   _a->parse_effects( spec.elunes_favored, effect_mask_t( false ).enable( 3, 4 ) );
 
   // dot damage is buffed via script so copy da_mult entries to ta_mult
-  // thrash damage buff always applies
   // value is set on talent via script
   _a->parse_effects( spec.fury_of_nature, &_a->ta_multiplier_effects, effect_mask_t( false ).enable( 1 ),
                      talent.fury_of_nature->effectN( 1 ).percent() );
-  _a->parse_effects( spec.fury_of_nature, effect_mask_t( false ).enable( 2, 3 ),
-                     talent.fury_of_nature->effectN( 1 ).percent() );
+
+  if ( !is_ptr() )
+    _a->parse_effects( spec.fury_of_nature, effect_mask_t( false ).enable( 2, 3 ), talent.fury_of_nature->effectN( 1 ).percent() );
+  else
+    _a->parse_effects( spec.fury_of_nature, effect_mask_t( true ).disable( 1 ), talent.lunar_calling );
 
   _a->parse_effects( buff.gory_fur, EXPIRE_BUFF );
   _a->parse_effects( buff.rage_of_the_sleeper );
