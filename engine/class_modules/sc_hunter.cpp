@@ -3125,7 +3125,8 @@ struct stomp_t : public hunter_pet_attack_t<hunter_pet_t>
 {
   struct cleave_t : public hunter_pet_attack_t<hunter_pet_t>
   {
-    cleave_t( hunter_pet_t* p, double effectiveness = 1.0 ) : hunter_pet_attack_t( "stomp_cleave", p, p->o()->talents.stomp_cleave )
+    cleave_t( hunter_pet_t* p, util::string_view n, double effectiveness = 1.0 )
+      : hunter_pet_attack_t( fmt::format( "{}_cleave", n ), p, p->o()->talents.stomp_cleave )
     {
       background = true;
       aoe = -1;
@@ -3144,8 +3145,9 @@ struct stomp_t : public hunter_pet_attack_t<hunter_pet_t>
 
   cleave_t* cleave;
 
-  stomp_t( hunter_pet_t* p, double effectiveness = 1.0, util::string_view n = "stomp_primary" ) : hunter_pet_attack_t( n, p, p->o()->talents.stomp_primary ),
-    cleave( new cleave_t( p, effectiveness ) )
+  stomp_t( hunter_pet_t* p, util::string_view n = "stomp", double effectiveness = 1.0 )
+    : hunter_pet_attack_t( n, p, p->o()->talents.stomp_primary ),
+    cleave( new cleave_t( p, n, effectiveness ) )
   {
     background = true;
     base_dd_multiplier *= effectiveness;
@@ -3369,7 +3371,7 @@ void stable_pet_t::init_spells()
     actions.stomp = new actions::stomp_t( this );
 
   if ( o()->talents.thundering_hooves.ok() )
-    actions.thundering_hooves = new actions::stomp_t( this, o()->talents.thundering_hooves->effectN( 1 ).percent(), "thundering_hooves" );
+    actions.thundering_hooves = new actions::stomp_t( this, "thundering_hooves", o()->talents.thundering_hooves->effectN( 1 ).percent() );
 }
 
 void hunter_main_pet_base_t::init_spells()
