@@ -872,11 +872,13 @@ public:
     player_talent_t frenzied_regeneration;
     player_talent_t heart_of_the_wild;
     player_talent_t hibernate;
+    player_talent_t gale_winds;
     player_talent_t improved_barkskin;
     player_talent_t improved_rejuvenation;  // TODO: remove in 11.1
     player_talent_t improved_stampeding_roar;
     player_talent_t improved_sunfire;  // TODO: remove in 11.1
     player_talent_t incapacitating_roar;
+    player_talent_t incessant_tempest;
     player_talent_t innervate;
     player_talent_t instincts_of_the_claw;
     player_talent_t ironfur;
@@ -1036,7 +1038,7 @@ public:
     player_talent_t incarnation_bear;
     player_talent_t infected_wounds_bear;
     player_talent_t innate_resolve;
-    player_talent_t layered_mane;
+    player_talent_t layered_mane;  // TODO: remove in 11.1
     player_talent_t lunar_beam;
     player_talent_t mangle;
     player_talent_t maul;
@@ -9961,11 +9963,13 @@ void druid_t::init_spells()
   talent.frenzied_regeneration          = CT( "Frenzied Regeneration" );
   talent.heart_of_the_wild              = CT( "Heart of the Wild" );
   talent.hibernate                      = CT( "Hibernate" );
+  talent.gale_winds                     = CT( "Gale Winds" );
   talent.improved_barkskin              = CT( "Improved Barkskin" );
   talent.improved_rejuvenation          = CT( "Improved Rejuvenation" );  // TODO: remove in 11.1
   talent.improved_stampeding_roar       = CT( "Improved Stampeding Roar");
   talent.improved_sunfire               = CT( "Improved Sunfire" );
   talent.incapacitating_roar            = CT( "Incapacitating Roar" );
+  talent.incessant_tempest              = CT( "Incessant Tempest" );
   talent.innervate                      = CT( "Innervate" );
   talent.instincts_of_the_claw          = CT( "Instincts of the Claw" );
   talent.ironfur                        = CT( "Ironfur" );
@@ -13857,8 +13861,10 @@ void druid_t::apply_affecting_auras( action_t& a )
 
   // Class
   a.apply_affecting_aura( talent.astral_influence );
+  a.apply_affecting_aura( talent.gale_winds );
   a.apply_affecting_aura( talent.improved_rejuvenation );  // TODO: remove in 11.1
   a.apply_affecting_aura( talent.improved_stampeding_roar );
+  a.apply_affecting_aura( talent.incessant_tempest );
   a.apply_affecting_aura( talent.instincts_of_the_claw );
   a.apply_affecting_aura( talent.killer_instinct );
   a.apply_affecting_aura( talent.lingering_healing );
