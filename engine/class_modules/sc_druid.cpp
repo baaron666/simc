@@ -873,7 +873,7 @@ public:
     player_talent_t heart_of_the_wild;
     player_talent_t hibernate;
     player_talent_t improved_barkskin;
-    player_talent_t improved_rejuvenation;
+    player_talent_t improved_rejuvenation;  // TODO: remove in 11.1
     player_talent_t improved_stampeding_roar;
     player_talent_t improved_sunfire;
     player_talent_t incapacitating_roar;
@@ -881,6 +881,7 @@ public:
     player_talent_t instincts_of_the_claw;
     player_talent_t ironfur;
     player_talent_t killer_instinct;
+    player_talent_t lingering_healing;
     player_talent_t lore_of_the_grove;
     player_talent_t lycaras_teachings;
     player_talent_t maim;
@@ -6308,6 +6309,16 @@ struct regrowth_t final : public druid_heal_t
     return pm;
   }
 
+  timespan_t dot_duration_flat_modifier( const action_state_t* s ) const override
+  {
+    auto mod = druid_heal_t::dot_duration_flat_modifier( s );
+
+    if ( s->target == player )
+      mod += p()->talent.lingering_healing->effectN( 2 ).time_value();
+
+    return mod;
+  }
+
   bool check_form_restriction() override
   {
     if ( p()->buff.predatory_swiftness->check() || p()->buff.dream_of_cenarius->check() )
@@ -9925,7 +9936,7 @@ void druid_t::init_spells()
   talent.heart_of_the_wild              = CT( "Heart of the Wild" );
   talent.hibernate                      = CT( "Hibernate" );
   talent.improved_barkskin              = CT( "Improved Barkskin" );
-  talent.improved_rejuvenation          = CT( "Improved Rejuvenation" );
+  talent.improved_rejuvenation          = CT( "Improved Rejuvenation" );  // TODO: remove in 11.1
   talent.improved_stampeding_roar       = CT( "Improved Stampeding Roar");
   talent.improved_sunfire               = CT( "Improved Sunfire" );
   talent.incapacitating_roar            = CT( "Incapacitating Roar" );
@@ -9933,6 +9944,7 @@ void druid_t::init_spells()
   talent.instincts_of_the_claw          = CT( "Instincts of the Claw" );
   talent.ironfur                        = CT( "Ironfur" );
   talent.killer_instinct                = CT( "Killer Instinct" );
+  talent.lingering_healing              = CT( "Lingering Healing" );
   talent.lore_of_the_grove              = CT( "Lore of the Grove" );
   talent.lycaras_teachings              = CT( "Lycara's Teachings" );
   talent.maim                           = CT( "Maim" );
@@ -13819,10 +13831,11 @@ void druid_t::apply_affecting_auras( action_t& a )
 
   // Class
   a.apply_affecting_aura( talent.astral_influence );
-  a.apply_affecting_aura( talent.improved_rejuvenation );
+  a.apply_affecting_aura( talent.improved_rejuvenation );  // TODO: remove in 11.1
   a.apply_affecting_aura( talent.improved_stampeding_roar );
   a.apply_affecting_aura( talent.instincts_of_the_claw );
   a.apply_affecting_aura( talent.killer_instinct );
+  a.apply_affecting_aura( talent.lingering_healing );
   a.apply_affecting_aura( talent.lore_of_the_grove );
   a.apply_affecting_aura( talent.nurturing_instinct );
   a.apply_affecting_aura( talent.packs_endurance );
