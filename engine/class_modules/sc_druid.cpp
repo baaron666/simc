@@ -744,6 +744,7 @@ public:
     buff_t* tigers_strength;  // TWW1 2pc
     buff_t* fell_prey;        // TWW1 4pc
     buff_t* winning_streak;   // TWW2 2pc
+    buff_t* big_winner;       // TWW2 4pc
 
     // Guardian
     buff_t* after_the_wildfire;
@@ -4650,6 +4651,7 @@ struct ferocious_bite_t final : public ferocious_bite_base_t
       p()->last_foreground_action = p()->active.ferocious_bite_apex;
       p()->active.ferocious_bite_apex->execute_on_target( target );
       p()->buff.apex_predators_craving->expire();
+      p()->buff.big_winner->trigger();
       return;
     }
 
@@ -10982,6 +10984,9 @@ void druid_t::create_buffs()
     make_fallback( cat_tww2_2pc->ok(), this, "winning_streak", find_trigger( cat_tww2_2pc ).trigger() )
       ->set_trigger_spell( cat_tww2_2pc );
 
+  buff.big_winner =
+    make_fallback( sets->has_set_bonus( DRUID_FERAL, TWW2, B4 ), this, "big_winner", find_spell( 1215735 ) );
+
   // Guardian buffs
   buff.after_the_wildfire = make_fallback( talent.after_the_wildfire.ok(), this, "after_the_wildfire",
                                            talent.after_the_wildfire->effectN( 1 ).trigger() )
@@ -14145,6 +14150,7 @@ void druid_t::parse_action_effects( action_t* action )
   _a->parse_effects( buff.fell_prey, effect_mask_t( false ).enable( 2 ),
                      buff.fell_prey->data().effectN( 1 ).percent() );
   _a->parse_effects( buff.winning_streak );
+  _a->parse_effects( buff.big_winner );
 
   // Guardian
   _a->parse_effects( buff.bear_form );
