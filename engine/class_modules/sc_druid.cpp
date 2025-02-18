@@ -8772,6 +8772,7 @@ struct wild_mushroom_t final : public druid_spell_t
     fungal_growth_t( druid_t* p, std::string_view n, flag_e f ) : base_t( n, p, p->find_spell( 81281 ), f )
     {
       name_str_reporting = "fungal_growth";
+      dot_name = "fungal_growth";
     }
   };
 
