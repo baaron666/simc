@@ -2565,6 +2565,15 @@ using namespace helpers;
 
       if ( p()->talents.dread_calling.ok() )
         p()->buffs.dread_calling->trigger( shards_used );
+
+      if ( p()->talents.doom.ok() && p()->min_version_check( VERSION_11_1_0 ) )
+      {
+        for ( const auto t : p()->sim->target_non_sleeping_list )
+        {
+          if ( td( t )->debuffs_doom->check() )
+            td( t )->debuffs_doom->extend_duration( p(), -p()->talents.doom->effectN( 1 ).time_value() * shards_used );
+        }
+      }
     }
 
     void consume_resource() override
@@ -2674,7 +2683,7 @@ using namespace helpers;
             debug_cast<pets::demonology::felguard_pet_t*>( active_pet )->hatred_proc->execute_on_target( execute_state->target );
         }
 
-        if ( p()->talents.doom.ok() )
+        if ( p()->talents.doom.ok() && !p()->min_version_check( VERSION_11_1_0 ) )
         {
           for ( const auto t : p()->sim->target_non_sleeping_list )
           {
@@ -3290,6 +3299,14 @@ using namespace helpers;
 
       if ( p()->talents.impending_doom.ok() )
         p()->warlock_pet_list.wild_imps.spawn( as<int>( p()->talents.impending_doom->effectN( 2 ).base_value() ) );
+
+      if ( p()->talents.doom_eternal.ok() && p()->min_version_check( VERSION_11_1_0 ) )
+      {
+        bool success = p()->buffs.demonic_core->trigger( 1, buff_t::DEFAULT_VALUE(), p()->talents.doom_eternal->effectN( 1 ).percent() );
+
+        if ( success )
+          p()->procs.doom_eternal->occur();
+      }
     }
   };
 
