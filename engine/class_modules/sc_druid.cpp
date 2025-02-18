@@ -680,8 +680,8 @@ public:
     buff_t* matted_fur;
     buff_t* moonkin_form;
     buff_t* natures_vigil;
-    buff_t* rising_light_falling_night_day;
-    buff_t* rising_light_falling_night_night;
+    buff_t* rising_light_falling_night_day;  // TODO: remove in 11.1
+    buff_t* rising_light_falling_night_night;  // TODO: remove in 11.1
     buff_t* tiger_dash;
     buff_t* ursine_vigor;
     buff_t* wild_charge_movement;
@@ -900,7 +900,7 @@ public:
     player_talent_t rejuvenation;
     player_talent_t remove_corruption;
     player_talent_t renewal;
-    player_talent_t rising_light_falling_night;
+    player_talent_t rising_light_falling_night;  // TODO: remove in 11.1
     player_talent_t rip;
     player_talent_t skull_bash;
     player_talent_t soothe;
@@ -14214,6 +14214,7 @@ void druid_t::parse_player_effects()
   parse_effects( find_specialization_spell( "Leather Specialization" ) );
 
   parse_effects( mastery.natures_guardian_AP );
+  parse_effects( talent.ursocs_spirit );
 
   auto bear_stam = spec.bear_form_passive->effectN( 2 ).percent() +
                    spec.bear_form_2->effectN( 1 ).percent() +
