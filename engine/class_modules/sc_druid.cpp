@@ -12045,6 +12045,16 @@ void druid_t::init_special_effects()
   }
 
   // Feral
+  if ( auto spell = sets->set( DRUID_FERAL, TWW2, B2 ); spell->ok() )
+  {
+    const auto driver = new special_effect_t( this );
+    driver->name_str = spell->name_cstr();
+    driver->spell_id = spell->id();
+    driver->custom_buff = buff.winning_streak;
+    special_effects.push_back( driver );
+
+    new druid_cb_t( this, *driver );
+  }
 
   // Guardian
   if ( mastery.natures_guardian->ok() )
