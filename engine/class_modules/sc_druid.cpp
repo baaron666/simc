@@ -5666,10 +5666,22 @@ struct rage_of_the_sleeper_t final : public bear_attack_t
 struct raze_t final : public trigger_aggravate_wounds_t<DRUID_GUARDIAN,
                                trigger_ursocs_fury_t<trigger_gore_t<rage_spender_t<>>>>
 {
+  double aoe_coeff;
+
   DRUID_ABILITY( raze_t, base_t, "raze", p->talent.raze )
   {
+    // the aoe effect is parsed last and overwrites the st effect, so we need to cache the aoe coeff and re-parse the
+    // st effect
+    aoe_coeff = attack_power_mod.direct;
+    parse_effect_direct_mods( data().effectN( 1 ), false );
+
     aoe = -1;  // actually a frontal cone
-    reduced_aoe_targets = 5.0;  // PTR not in spell data
+    reduced_aoe_targets = !p->is_ptr() ? 5.0 : data().effectN( 3 ).base_value();
+  }
+
+  double attack_direct_power_coefficient( const action_state_t* s ) const
+  {
+    return s->chain_target == 0 ? attack_direct_power_coefficient( s ) : aoe_coeff;
   }
 
   void impact( action_state_t* s ) override
