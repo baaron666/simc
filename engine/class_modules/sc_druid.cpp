@@ -887,6 +887,7 @@ public:
     player_talent_t matted_fur;
     player_talent_t mass_entanglement;
     player_talent_t mighty_bash;
+    player_talent_t moonkin_form;
     player_talent_t natural_recovery;
     player_talent_t natures_vigil;
     player_talent_t nurturing_instinct;
@@ -1217,7 +1218,7 @@ public:
     const spell_data_t* full_moon;
     const spell_data_t* half_moon;
     const spell_data_t* incarnation_moonkin;
-    const spell_data_t* moonkin_form;
+    const spell_data_t* moonkin_form;  // TODO: remove in 11.1
     const spell_data_t* shooting_stars_dmg;
     const spell_data_t* starfall;
     const spell_data_t* stellar_amplification;
@@ -9938,6 +9939,7 @@ void druid_t::init_spells()
   talent.mass_entanglement              = CT( "Mass Entanglement" );
   talent.matted_fur                     = CT( "Matted Fur" );
   talent.mighty_bash                    = CT( "Mighty Bash" );
+  talent.moonkin_form                   = CT( "Moonkin Form" );
   talent.natural_recovery               = CT( "Natural Recovery" );
   talent.natures_vigil                  = CT( "Nature's Vigil" );
   talent.nurturing_instinct             = CT( "Nurturing Instinct" );
@@ -10271,7 +10273,7 @@ void druid_t::init_spells()
   spec.full_moon                = check( talent.new_moon, 274283 );
   spec.half_moon                = check( talent.new_moon, 274282 );
   spec.incarnation_moonkin      = check( talent.incarnation_moonkin, 102560 );
-  spec.moonkin_form             = find_specialization_spell( "Moonkin Form" );
+  spec.moonkin_form             = !is_ptr() ? find_specialization_spell( "Moonkin Form" ) : talent.moonkin_form;
   spec.shooting_stars_dmg       = check( talent.shooting_stars, 202497 );  // shooting stars damage
   spec.stellar_amplification    = check( talent.stellar_amplification, 450214 );
   spec.waning_twilight          = check( talent.waning_twilight, 393957 );
@@ -10682,7 +10684,8 @@ void druid_t::create_buffs()
     ->set_quiet( true )
     ->set_max_stack( std::max( 1, as<int>( talent.orbit_breaker->effectN( 1 ).base_value() ) ) );
 
-  buff.owlkin_frenzy = make_fallback( spec.moonkin_form->ok(), this, "owlkin_frenzy", find_spell( 157228 ) );
+  buff.owlkin_frenzy = make_fallback( specialization() == DRUID_BALANCE && spec.moonkin_form->ok(),
+    this, "owlkin_frenzy", find_spell( 157228 ) );
 
   buff.shooting_stars_moonfire = make_fallback<shooting_stars_buff_t>( talent.shooting_stars.ok(),
     this, "shooting_stars_moonfire", dot_lists.moonfire, active.shooting_stars_moonfire, active.crashing_star_moonfire );
@@ -11876,7 +11879,7 @@ void druid_t::init_special_effects()
     new denizen_of_the_dream_cb_t( this, *driver );
   }
 
-  if ( spec.moonkin_form->ok() )
+  if ( specialization() == DRUID_BALANCE && spec.moonkin_form->ok() )
   {
     struct owlkin_frenzy_cb_t final : public druid_cb_t
     {
