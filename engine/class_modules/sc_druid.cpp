@@ -8133,9 +8133,13 @@ struct shooting_stars_t final : public druid_spell_t
 };
 
 // Skull Bash ===============================================================
-struct skull_bash_t final : public druid_interrupt_t
+struct skull_bash_t final : public use_fluid_form_t<DRUID_FERAL, druid_interrupt_t>
 {
-  DRUID_ABILITY( skull_bash_t, druid_interrupt_t, "skull_bash", p->talent.skull_bash ) {}
+  DRUID_ABILITY( skull_bash_t, base_t, "skull_bash", p->talent.skull_bash )
+  {
+    if ( !p->is_ptr() )
+      base_t::autoshift = nullptr;
+  }
 };
 
 // Solar Beam ===============================================================
