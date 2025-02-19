@@ -6175,7 +6175,7 @@ void ratfang_toxin( special_effect_t& effect )
     return;
 
   auto equip_driver = effect.player->find_spell( 1216603 );
-  assert( equip_driver && "Ratfang Toxing missing Equip Driver" );
+  assert( equip_driver && "Ratfang Toxin missing Equip Driver" );
 
   struct ratfang_toxin_cb_t : public dbc_proc_callback_t
   {
@@ -6198,7 +6198,8 @@ void ratfang_toxin( special_effect_t& effect )
 
     void execute( action_t*, action_state_t* s ) override
     {
-      get_debuff( s->target )->trigger();
+      if ( buff_t* d = get_debuff( s->target ) )
+        d->trigger();
     }
   };
 
