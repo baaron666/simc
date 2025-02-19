@@ -3782,18 +3782,14 @@ protected:
   using state_t = druid_action_state_t<Data>;
 
 public:
-  double loser_pct;
-  proc_t* winner_proc;
   proc_t* loser_proc;
-  proc_t* bug_proc;
+  double loser_pct;
 
   cp_spender_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f = flag_e::NONE )
-    : base_t( n, p, s, f ), loser_pct( p->buff.winning_streak->data().proc_chance() )
-  {
-    winner_proc = p->get_proc( fmt::format( "Winner_{}", n ) );
-    loser_proc = p->get_proc( fmt::format( "Loser_{}", n ) );
-    bug_proc = p->get_proc( fmt::format( "Bug_{}", n ) );
-  }
+    : base_t( n, p, s, f ),
+      loser_proc( p->get_proc( "Big Loser" ) ),
+      loser_pct( p->buff.winning_streak->data().proc_chance() )
+  {}
 
   action_state_t* new_state() override
   {
@@ -3852,8 +3848,11 @@ public:
     if ( !has_flag( flag_e::CONVOKE ) )
       p()->buff.overflowing_power->expire( this );
 
-    if ( !dual && rng().roll( loser_pct ) )
+    if ( !dual && p()->buff.winning_streak->check() && rng().roll( loser_pct ) )
+    {
       p()->buff.winning_streak->expire();
+      loser_proc->occur();
+    }
   }
 
   void consume_resource() override
