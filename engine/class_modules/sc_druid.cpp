@@ -3783,10 +3783,17 @@ protected:
 
 public:
   double loser_pct;
+  proc_t* winner_proc;
+  proc_t* loser_proc;
+  proc_t* bug_proc;
 
   cp_spender_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f = flag_e::NONE )
     : base_t( n, p, s, f ), loser_pct( p->buff.winning_streak->data().proc_chance() )
-  {}
+  {
+    winner_proc = p->get_proc( fmt::format( "Winner_{}", n ) );
+    loser_proc = p->get_proc( fmt::format( "Loser_{}", n ) );
+    bug_proc = p->get_proc( fmt::format( "Bug_{}", n ) );
+  }
 
   action_state_t* new_state() override
   {
@@ -12050,13 +12057,28 @@ void druid_t::init_special_effects()
   // Feral
   if ( auto spell = sets->set( DRUID_FERAL, TWW2, B2 ); spell->ok() )
   {
+    struct winning_streak_cb_t final : public druid_cb_t
+    {
+      proc_t* proc;
+
+      winning_streak_cb_t( druid_t* p, const special_effect_t& e ) : druid_cb_t( p, e )
+      {
+        proc = p->get_proc( "Winning Streak" )->collect_count()->collect_interval();
+      }
+
+      void execute( action_t*, action_state_t* s ) override
+      {
+        p()->buff.winning_streak->trigger();
+        proc->occur();
+      }
+    };
+
     const auto driver = new special_effect_t( this );
     driver->name_str = spell->name_cstr();
     driver->spell_id = spell->id();
-    driver->custom_buff = buff.winning_streak;
     special_effects.push_back( driver );
 
-    new druid_cb_t( this, *driver );
+    new winning_streak_cb_t( this, *driver );
   }
 
   // Guardian
