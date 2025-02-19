@@ -6583,6 +6583,28 @@ void amorphous_relic( special_effect_t& effect )
   } );
 }
 
+// Synergistic Brewterializer
+// 443393 Driver
+// 449376 Barrel Missile
+// 449490 Barrel Summon
+// 223724 Barrel NPC
+// 449381 Barrel Team Buff
+// 449386 Barrel Explosion
+void synergistic_brewterializer( special_effect_t& effect )
+{
+  auto damage_spell = effect.player->find_spell( 449386 );
+
+  // Initial implementation - Just trigger the damage outright.
+  auto aoe_damage = create_proc_action<generic_aoe_proc_t>( "synergistic_brewterialization", effect, damage_spell, true );
+
+  aoe_damage->base_dd_min = aoe_damage->base_dd_max = effect.driver()->effectN( 1 ).average( effect );
+  aoe_damage->base_multiplier                       = role_mult( effect.player, effect.driver() );
+
+  effect.execute_action = aoe_damage;
+
+  new dbc_proc_callback_t( effect.player, effect );
+}
+
 // Zee's Thug Hotline
 // 1217356 Driver
 // Pocket Ace:
@@ -9667,6 +9689,7 @@ void register_special_effects()
   register_special_effect( 471548, items::mugs_moxie_jug );
   register_special_effect( 471057, DISABLED_EFFECT ); // Effect Amount for Flarendo's Pilot Light
   register_special_effect( 471142, items::flarendos_pilot_light );
+  register_special_effect( 443393, items::synergistic_brewterializer );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
