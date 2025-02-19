@@ -1530,6 +1530,7 @@ class SpellDataGenerator(DataGenerator):
          1214787, 1214806, 1214807, 1214808, 1214810, # Mechano-core Amplifier 
          1219299, # Garbagemancer's Last Resort
          1213433, 1213434, # Funhouse Lens
+         1218715, # Maybe Stop Blowing Up (Improvised Seaforium Pacemaker)
         ),
 
         # Warrior:

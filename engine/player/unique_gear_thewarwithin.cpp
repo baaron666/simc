@@ -5785,8 +5785,10 @@ void geargrinders_remote( special_effect_t& effect )
 }
 
 // Improvised Seaforium Pacemaker
-// 1218714 Driver
-// 1218713 Buff
+// 1218714 crit buff driver
+// 1218715 cooldown buff
+// 1218713 crit buff
+// 1218712 extension driver
 void improvised_seaforium_pacemaker( special_effect_t& effect )
 {
   if ( !effect.player->is_ptr() )
