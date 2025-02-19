@@ -365,10 +365,12 @@ struct simplified_player_t : public player_t
           { "one_mins_cds",      0.3, 15_s,  60_s, 3_s },
           { "one_mins_cds_lingering",      0.25, 30_s,  60_s, 3_s },
           { "two_mins_cds_two",  0.4, is_ptr() ? 65_s : 45_s, 120_s, 3_s } } } },
-      { "bm",      { ROLE_SPELL,  is_ptr() ? 7.85 : 6.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
+      { "bm",      { ROLE_SPELL,  is_ptr() ? 7.35 : 6.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
           { "two_mins_cds",           0.3,   20_s, 120_s, 3_s },
           { "two_mins_cds_lingering", 0.15,  30_s, 120_s, 3_s },
-          { "30s_cds",                0.35, 15_s,  30_s, 3_s } } } },
+          { "30s_cds",                0.35,  15_s, is_ptr() ? 15_s : 30_s, 3_s },
+          { "30s_cds_two",            0.15,   4_s, is_ptr() ? 15_s : 30_s, 3_s },
+          { "30s_cds_three",          0.12,   8_s, is_ptr() ? 15_s : 30_s, 3_s } } } },
       { "assa",    { ROLE_SPELL, is_ptr() ? 4.94 : 4.65, false,   1_s, 0.5,  -1, 8, 1, 0.8, 11100.0, 0.0011, {              // 234.6k
           { "two_mins_cds", 0.9 , 20_s, 120_s, 6_s },
           { "one_mins_cds", 0.65, 14_s,  60_s, 8_s } } } },
@@ -778,8 +780,7 @@ struct simplified_player_t : public player_t
         player_t::invalidate_cache( CACHE_PLAYER_DAMAGE_MULTIPLIER );
         break;
       case CACHE_HASTE:
-        if ( haste_modifier > 0 )
-          player_t::invalidate_cache( CACHE_PLAYER_DAMAGE_MULTIPLIER );
+        player_t::invalidate_cache( CACHE_PLAYER_DAMAGE_MULTIPLIER );
         break;
       default:
         break;
