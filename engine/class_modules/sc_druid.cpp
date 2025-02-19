@@ -3723,7 +3723,7 @@ struct cp_generator_t : public trigger_aggravate_wounds_t<DRUID_FERAL, cat_attac
     if ( const auto& eff = p->spec.berserk_cat->effectN( 2 ); energize && !energize->modified_by( eff ) )
     {
       energize->add_parse_entry()
-        .set_buff( p->buff.berserk_cat )
+        .set_buff( p->buff.b_inc_cat )
         .set_func( []( const action_t* a, const action_state_t* ) {
           return a ? !a->proc : false;
         } )
