@@ -543,7 +543,6 @@ public:
   // !!! Runtime variables NOTE: these MUST be properly reset in druid_t::reset() !!!
   // !!!==========================================================================!!!
   moon_stage_e moon_stage;
-  bool orbital_bug;
   std::vector<event_t*> persistent_event_delay;
   event_t* astral_power_decay;
   struct dot_list_t
@@ -7553,12 +7552,7 @@ struct moon_base_t : public druid_spell_t
         minor->execute_on_target( target );
 
     if ( proc )
-    {
-      if ( p()->moon_stage == moon_stage_e::MAX_MOON && p()->orbital_bug && p()->bugs )
-        p()->orbital_bug = false;
-      else
         return;
-    }
 
     advance_stage();
   }
@@ -7622,9 +7616,6 @@ struct full_moon_t final : public trigger_atmospheric_exposure_t<moon_base_t>
   void advance_stage() override
   {
     auto max_stage = p()->talent.radiant_moonlight.ok() ? moon_stage_e::MAX_MOON : moon_stage_e::FULL_MOON;
-
-    if ( p()->moon_stage == moon_stage_e::MAX_MOON )
-      p()->orbital_bug = false;
 
     if ( p()->moon_stage == max_stage )
       p()->moon_stage = moon_stage_e::NEW_MOON;
@@ -12448,7 +12439,6 @@ void druid_t::reset()
 
   // Reset runtime variables
   moon_stage = static_cast<moon_stage_e>( options.initial_moon_stage );
-  orbital_bug = true;
   persistent_event_delay.clear();
   astral_power_decay = nullptr;
   dot_lists.moonfire.clear();
