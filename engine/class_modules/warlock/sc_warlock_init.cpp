@@ -389,6 +389,8 @@ namespace warlock
     talents.channel_demonfire_tick = find_spell( 196448 ); // Includes both direct and splash damage values
     talents.channel_demonfire_travel = find_spell( 196449 );
 
+    talents.demonfire_infusion = find_talent_spell( talent_tree::SPECIALIZATION, "Demonfire Infusion" ); // Should be ID 1214442
+
     talents.blistering_atrophy = find_talent_spell( talent_tree::SPECIALIZATION, "Blistering Atrophy" ); // Should be ID 456939
 
     talents.conflagration_of_chaos = find_talent_spell( talent_tree::SPECIALIZATION, "Conflagration of Chaos" ); // Should be ID 387108
@@ -1010,6 +1012,8 @@ namespace warlock
   {
     procs.reverse_entropy = get_proc( "reverse_entropy" );
     procs.rain_of_chaos = get_proc( "rain_of_chaos" );
+    procs.demonfire_infusion_inc = get_proc( "demonfire_infusion_incinerate" );
+    procs.demonfire_infusion_dot = get_proc( "demonfire_infusion_dot" );
     procs.decimation = get_proc( "decimation" );
     procs.dimension_ripper = get_proc( "dimension_ripper" );
     procs.echo_of_the_azjaqir = get_proc( "echo_of_the_azjaqir" );
