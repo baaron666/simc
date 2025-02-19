@@ -319,12 +319,12 @@ void marksmanship_ptr( player_t* p )
   st->add_action( "steady_shot" );
 
   trickshots->add_action( "volley,if=!talent.double_tap" );
-  trickshots->add_action( "explosive_shot,if=talent.precision_detonation&action.aimed_shot.in_flight" );
   trickshots->add_action( "trueshot,if=variable.trueshot_ready" );
   trickshots->add_action( "volley,if=talent.double_tap&buff.double_tap.down" );
-  trickshots->add_action( "black_arrow,if=buff.withering_fire.up" );
+  trickshots->add_action( "black_arrow,if=buff.withering_fire.up&buff.trick_shots.up" );
   trickshots->add_action( "multishot,if=buff.precise_shots.up|buff.trick_shots.down" );
   trickshots->add_action( "rapid_fire,if=buff.trick_shots.up&(!hero_tree.sentinel|buff.lunar_storm_cooldown.remains>cooldown%3|buff.lunar_storm_ready.up)" );
+  trickshots->add_action( "explosive_shot,if=talent.precision_detonation&buff.precise_shots.down&buff.trick_shots.up" );
   trickshots->add_action( "aimed_shot,if=buff.precise_shots.down&buff.trick_shots.up" );
   trickshots->add_action( "explosive_shot" );
   trickshots->add_action( "black_arrow" );

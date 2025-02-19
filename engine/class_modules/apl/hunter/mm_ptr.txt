@@ -40,12 +40,12 @@ actions.st+=/kill_shot,if=!talent.headshot
 actions.st+=/steady_shot
 
 actions.trickshots=/volley,if=!talent.double_tap
-actions.trickshots+=/explosive_shot,if=talent.precision_detonation&action.aimed_shot.in_flight
 actions.trickshots+=/trueshot,if=variable.trueshot_ready
 actions.trickshots+=/volley,if=talent.double_tap&buff.double_tap.down
-actions.trickshots+=/black_arrow,if=buff.withering_fire.up
+actions.trickshots+=/black_arrow,if=buff.withering_fire.up&buff.trick_shots.up
 actions.trickshots+=/multishot,if=buff.precise_shots.up|buff.trick_shots.down
 actions.trickshots+=/rapid_fire,if=buff.trick_shots.up&(!hero_tree.sentinel|buff.lunar_storm_cooldown.remains>cooldown%3|buff.lunar_storm_ready.up)
+actions.trickshots+=/explosive_shot,if=talent.precision_detonation&buff.precise_shots.down&buff.trick_shots.up
 actions.trickshots+=/aimed_shot,if=buff.precise_shots.down&buff.trick_shots.up
 actions.trickshots+=/explosive_shot
 actions.trickshots+=/black_arrow
