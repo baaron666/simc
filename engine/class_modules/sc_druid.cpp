@@ -2442,13 +2442,16 @@ template <typename BASE>
 struct trigger_waning_twilight_t : public BASE
 {
 private:
+  uptime_t* uptime;
   int num_dots;
 
 public:
   using base_t = trigger_waning_twilight_t<BASE>;
 
   trigger_waning_twilight_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f = flag_e::NONE )
-    : BASE( n, p, s, f ), num_dots( as<int>( p->talent.waning_twilight->effectN( 3 ).base_value() ) )
+    : BASE( n, p, s, f ),
+      uptime( p->get_uptime( "Waning Twilight" ) ),
+      num_dots( as<int>( p->talent.waning_twilight->effectN( 3 ).base_value() ) )
   {}
 
   void update_waning_twilight( player_t* t )
@@ -2469,9 +2472,15 @@ public:
                 td_->dots.thrash_cat->is_ticking();
 
     if ( count < num_dots )
+    {
       td_->debuff.waning_twilight->expire();
+      uptime->update( false, BASE::sim->current_time() );
+    }
     else if ( !td_->debuff.waning_twilight->check() )
+    {
       td_->debuff.waning_twilight->trigger();
+      uptime->update( true, BASE::sim->current_time() );
+    }
   }
 
   void trigger_dot( action_state_t* s ) override
