@@ -3676,6 +3676,20 @@ void priest_t::init_special_effects()
     }
   }
 
+  if ( unique_gear::find_special_effect( this, 443393 ) && talents.twist_of_fate.enabled() )
+  {
+    callbacks.register_callback_execute_function(
+        443393, [ this ]( const dbc_proc_callback_t* cb, action_t* a, const action_state_t* s ) {
+          buffs.twist_of_fate->trigger();
+
+          cb->proc_action->set_target( cb->target( s ) );
+          auto proc_state    = cb->proc_action->get_state();
+          proc_state->target = cb->proc_action->target;
+          cb->proc_action->snapshot_state( proc_state, cb->proc_action->amount_type( proc_state ) );
+          cb->proc_action->schedule_execute( proc_state );
+        } );
+  }
+
   // Entropic Rift is coded as direct damage, but should not count
   // as casts for Burst of Knowledge
   callbacks.register_callback_trigger_function(

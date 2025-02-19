@@ -8539,6 +8539,26 @@ void evoker_t::init_spells()
 
 void evoker_t::init_special_effects()
 {
+  if ( unique_gear::find_special_effect( this, 443393 ) && talent.pupil_of_alexstrasza.enabled() &&
+       talent.essence_burst.enabled() )
+  {
+    callbacks.register_callback_execute_function(
+        443393, [ this ]( const dbc_proc_callback_t* cb, action_t* a, const action_state_t* s ) {
+          // Only trigger this on Single Target (Pretending its a 2nd target)
+          if ( sim->target_non_sleeping_list.size() == 1 &&
+               rng().roll( talent.ruby_essence_burst->effectN( 1 ).percent() ) )
+          {
+            buff.essence_burst->trigger();
+          }
+
+          cb->proc_action->set_target( cb->target( s ) );
+          auto proc_state    = cb->proc_action->get_state();
+          proc_state->target = cb->proc_action->target;
+          cb->proc_action->snapshot_state( proc_state, cb->proc_action->amount_type( proc_state ) );
+          cb->proc_action->schedule_execute( proc_state );
+        } );
+  }
+
   player_t::init_special_effects();
 
   if ( is_ptr() && sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B2 ) )
