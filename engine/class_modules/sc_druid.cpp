@@ -8813,10 +8813,27 @@ struct wild_mushroom_t final : public druid_spell_t
 {
   struct fungal_growth_t final : public trigger_waning_twilight_t<druid_spell_t>
   {
-    fungal_growth_t( druid_t* p, std::string_view n, flag_e f ) : base_t( n, p, p->find_spell( 81281 ), f )
+    uptime_t* uptime;
+
+    fungal_growth_t( druid_t* p, std::string_view n, flag_e f )
+      : base_t( n, p, p->find_spell( 81281 ), f ), uptime( p->get_uptime( "Fungal Growth" ) )
     {
       name_str_reporting = "fungal_growth";
       dot_name = "fungal_growth";
+    }
+
+    void trigger_dot( action_state_t* s ) override
+    {
+      base_t::trigger_dot( s );
+
+      uptime->update( true, sim->current_time() );
+    }
+
+    void last_tick( dot_t* d ) override
+    {
+      base_t::last_tick( d );
+
+      uptime->update( false, sim->current_time() );
     }
   };
 
