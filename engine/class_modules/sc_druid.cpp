@@ -606,7 +606,7 @@ public:
     action_t* crashing_star_sunfire;
     action_t* sundered_firmament;
     action_t* sunseeker_mushroom;
-    action_t* balance_tww2_2p_jackpot_mushroom; //TWW S2 Balance 2pc
+    action_t* jackpot_mushroom;  // TWW S2 Balance 2pc
 
     // Feral
     action_t* ferocious_bite_apex;  // free bite from apex predator's crazing
@@ -1233,6 +1233,7 @@ public:
     const spell_data_t* starfall;
     const spell_data_t* stellar_amplification;
     const spell_data_t* waning_twilight;
+    const spell_data_t* wild_mushroom;
 
     // Feral
     const spell_data_t* adaptive_swarm_damage;
@@ -7149,8 +7150,9 @@ struct celestial_alignment_base_t : public trigger_control_of_the_dream_t<druid_
     base_t::execute();
 
     buff->trigger();
-    if ( p()->sets->has_set_bonus( DRUID_BALANCE, TWW2, B2 ) )
-      p()->active.balance_tww2_2p_jackpot_mushroom->execute_on_target( target );
+
+    if ( p()->active.jackpot_mushroom )
+      p()->active.jackpot_mushroom->execute_on_target( target );
 
   }
 };
@@ -10395,9 +10397,9 @@ void druid_t::init_spells()
   spec.incarnation_moonkin      = check( talent.incarnation_moonkin, 102560 );
   spec.moonkin_form             = !is_ptr() ? find_specialization_spell( "Moonkin Form" ) : talent.moonkin_form;
   spec.shooting_stars_dmg       = check( talent.shooting_stars, 202497 );  // shooting stars damage
+  spec.starfall                 = find_specialization_spell( "Starfall" );
   spec.stellar_amplification    = check( talent.stellar_amplification, 450214 );
   spec.waning_twilight          = check( talent.waning_twilight, 393957 );
-  spec.starfall                 = find_specialization_spell( "Starfall" );
 
   // Feral Abilities
   spec.adaptive_swarm_damage    = check( talent.adaptive_swarm, 391889 );
@@ -11458,11 +11460,12 @@ void druid_t::create_actions()
 
   if ( sets->has_set_bonus( DRUID_BALANCE, TWW2, B2 ) )
   {
-    // TODO: Fix trigger spell
-    auto jackpot = get_secondary_action<wild_mushroom_t>( "balance_tww2_2p_jackpot_mushroom", find_spell( 468938 ) );
-    jackpot->background                     = true;
-    jackpot->proc                           = true;
-    active.balance_tww2_2p_jackpot_mushroom = jackpot;
+    // tww2_2pc uses same spell as the talent, so hardcode ID in case the talent isn't selected
+    auto jackpot = get_secondary_action<wild_mushroom_t>( "jackpot_mushrooms", find_spell( 88747 ) );
+    jackpot->name_str_reporting = "Jackpot!";
+    jackpot->background = true;
+    jackpot->proc = true;
+    active.jackpot_mushroom = jackpot;
   }
 
   // Feral
@@ -12032,25 +12035,15 @@ void druid_t::init_special_effects()
     cb->activate_with_buff( buff.moonkin_form );
   }
 
-  if ( sets->has_set_bonus( DRUID_BALANCE, TWW2, B2 ) )
+  if ( auto spell = sets->set( DRUID_BALANCE, TWW2, B2 ); spell->ok() )
   {
-    struct balance_jackpot_cb_t final : public druid_cb_t
-    {
-      balance_jackpot_cb_t( druid_t* p, const special_effect_t& e ) : druid_cb_t( p, e )
-      {
-      }
-
-      void execute( action_t*, action_state_t* s) override
-      {
-        p()->active.balance_tww2_2p_jackpot_mushroom->execute_on_target( s->target );
-      }
-    };
-
     const auto driver = new special_effect_t( this );
-    driver->spell_id  = sets->set( DRUID_BALANCE, TWW2, B2 )->id();
+    driver->name_str = spell->name_cstr();
+    driver->spell_id = spell->id();
+    driver->execute_action = active.jackpot_mushroom;
     special_effects.push_back( driver );
 
-    new balance_jackpot_cb_t( this, *driver );
+    new druid_cb_t( this, *driver );
   }
 
   // Feral
