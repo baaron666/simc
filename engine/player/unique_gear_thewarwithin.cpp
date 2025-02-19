@@ -5794,49 +5794,60 @@ void improvised_seaforium_pacemaker( special_effect_t& effect )
   if ( !effect.player->is_ptr() )
     return;
 
-  auto buff_spell = effect.player->find_spell( 1218713 );
-  auto buff       = create_buff<stat_buff_t>( effect.player, buff_spell )
-                  ->set_stat_from_effect_type( A_MOD_RATING, effect.driver()->effectN( 1 ).average( effect ) );
+  if ( unique_gear::create_fallback_buffs( effect, { "maybe_stop_blowing_up" } ) )
+    return;
+
+  auto crit_buff = create_buff<stat_buff_t>( effect.player, effect.player->find_spell( 1218713 ) )
+    ->set_stat_from_effect_type( A_MOD_RATING, effect.driver()->effectN( 1 ).average( effect ) );
+
+  auto cooldown_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1218715 ) );
 
   struct explosive_adrenaline_cb_t : public dbc_proc_callback_t
   {
-    buff_t* buff;
+    buff_t* crit_buff;
+    buff_t* cooldown_buff;
+    timespan_t extension;
     int max_extensions;
-    int extensions;
-    explosive_adrenaline_cb_t( const special_effect_t& e, buff_t* b )
-      : dbc_proc_callback_t( e.player, e ), buff( b ), max_extensions( 0 ), extensions( 0 )
+    int extensions = 0;
+
+    explosive_adrenaline_cb_t( const special_effect_t& e, buff_t* crit_buff, buff_t* cooldown_buff, const spell_data_t* s ) : dbc_proc_callback_t( e.player, e ),
+      crit_buff( crit_buff ),
+      cooldown_buff( cooldown_buff ),
+      extension( timespan_t::from_seconds( s->effectN( 1 ).base_value() ) ),
+      max_extensions( as<int>( s->effectN( 2 ).base_value() ) )
     {
-      // Max extensions doesnt appear to be in spell data, basing it off tooltip for now.
-      max_extensions = 15;
-      buff->set_expire_callback( [ & ]( buff_t*, int, timespan_t ) { extensions = 0; } );
+      crit_buff->set_expire_callback( [ & ]( buff_t*, int, timespan_t ) { extensions = 0; } );
     }
 
     void execute( action_t*, action_state_t* ) override
     {
       if ( extensions++ < max_extensions )
-      {
-        // Duration extension doesnt appear to be in spell data. Manually setting for now.
-        buff->extend_duration( listener, 1_s );
-      }
+        crit_buff->extend_duration( listener, extension );
     }
 
-    void reset() override
+    void activate() override
     {
-      extensions = 0;
+      dbc_proc_callback_t::activate();
+
+      cooldown_buff->trigger();
     }
+
+    void reset() override { extensions = 0; }
   };
 
+  const spell_data_t* extension_driver = effect.player->find_spell( 1218712 );
+
   auto buff_extension          = new special_effect_t( effect.player );
-  buff_extension->name_str     = buff_spell->name_cstr();
-  buff_extension->spell_id     = buff_spell->id();
-  buff_extension->proc_flags_  = PF_ALL_DAMAGE | PF_ALL_HEAL;
+  buff_extension->name_str     = extension_driver->name_cstr();
+  buff_extension->spell_id     = extension_driver->id();
   buff_extension->proc_flags2_ = PF2_CRIT;
   effect.player->special_effects.push_back( buff_extension );
 
-  auto cb = new explosive_adrenaline_cb_t( *buff_extension, buff );
-  cb->activate_with_buff( buff );
+  auto cb = new explosive_adrenaline_cb_t( *buff_extension, crit_buff, cooldown_buff, extension_driver );
+  cb->activate_with_buff( crit_buff );
 
   effect.cooldown_ = timespan_t::from_seconds( effect.driver()->effectN( 2 ).base_value() );
+  effect.proc_flags2_ = PF2_ALL_HIT;
   new dbc_proc_callback_t( effect.player, effect );
 }
 
