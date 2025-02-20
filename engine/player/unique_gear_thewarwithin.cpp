@@ -6916,6 +6916,7 @@ void zees_thug_hotline( special_effect_t& effect )
   };
 
   effect.execute_action = create_proc_action<zees_thug_hotline_t>( "zees_thug_hotline", effect );
+  effect.proc_flags2_ = PF2_ALL_HIT;
 
   new dbc_proc_callback_t( effect.player, effect );
 }
