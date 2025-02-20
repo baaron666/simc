@@ -2027,7 +2027,7 @@ void sigil_of_algari_concordance( special_effect_t& e )
         aoe_action( aoe_action ),
         one_time_action( one_time_action ),
         tick( tick ),
-        pet( p ), 
+        pet( p ),
         period( 0_ms )
     {
       period = pet->find_spell( 452325 )->effectN( 1 ).period();
@@ -6420,7 +6420,7 @@ void mugs_moxie_jug( special_effect_t& effect )
 
   auto second_proc = new dbc_proc_callback_t( effect.player, *buff_driver );
   second_proc->activate_with_buff( crit_buff, true );
-  
+
   effect.proc_flags2_ = PF2_ALL_HIT;
   effect.custom_buff   = crit_buff;
   auto main_proc = new dbc_proc_callback_t( effect.player, effect );
@@ -7026,12 +7026,12 @@ void junkmaestros_mega_magnet( special_effect_t& effect )
 
   auto charging_buff = create_buff<stat_buff_t>( effect.player, effect.player->find_spell( 1219661 ) )
     ->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
-  
+
   equip->custom_buff = charging_buff;
   equip->proc_flags2_ = PF2_ALL_HIT;
 
   new dbc_proc_callback_t( effect.player, *equip );
-  
+
   struct recycle_garbage_t : public generic_proc_t
   {
     struct junkmaestros_mega_magnet_t : public generic_proc_t
@@ -7869,7 +7869,7 @@ void sureki_zealots_insignia( special_effect_t& e )
 // 1215043 Cooldown spell
 // 1214823 Self Buff
 // 1214826 Ally Buff
-// TODO: NYI Bug - Randomly just breaks and stops triggering. 
+// TODO: NYI Bug - Randomly just breaks and stops triggering.
 // https://cdn.discordapp.com/attachments/1240061447372017760/1333977502577721554/image.png?ex=67aaacdc&is=67a95b5c&hm=3ba419d6968805aa51d124df52b5d0312d90e669099f8540f1d8bc4691ac9e59&
 // TODO: Appears to dynamically update the stat value given if the targeted players highest stat changes. This might be an absolute headache.
 void the_jastor_diamond( special_effect_t& effect )
@@ -8157,6 +8157,154 @@ void the_jastor_diamond( special_effect_t& effect )
   effect.cooldown_ = cooldown_spell->duration();
   effect.spell_id  = equip_driver->id();
   new the_jastor_diamond_cb_t( effect );
+}
+
+// Ringing Ritual Mud
+// NYI: CDR from periodic damage taken
+void ringing_ritual_mud( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  struct mudborne_t : action_t
+  {
+    action_t* tick;
+    buff_t* damage;
+    buff_t* absorb;
+
+    mudborne_t( const special_effect_t& effect )
+      : action_t( action_e::ACTION_OTHER, "ringing_ritual_mud", effect.player, effect.driver() ),
+        tick( nullptr ),
+        damage( nullptr ),
+        absorb( nullptr )
+    {
+      callbacks = false;
+      quiet     = true;
+
+      const spell_data_t* equip = effect.player->find_spell( 1221145 );
+
+      absorb = create_buff<absorb_buff_t>( effect.player, effect.driver() )
+                   ->set_default_value( equip->effectN( 3 ).average( effect.item ) );
+
+      tick = create_proc_action<generic_aoe_proc_t>( "mud_echo", effect,
+                                                     effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).trigger(), true );
+
+      double tick_count = effect.driver()->effectN( 2 ).trigger()->duration() /
+                          effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).period();
+
+      tick->base_dd_min = tick->base_dd_max = equip->effectN( 1 ).average( effect.item );
+
+      damage = create_buff<buff_t>( effect.player, effect.driver()->effectN( 2 ).trigger() )
+                   ->set_tick_callback( [ & ]( buff_t* self, int current_tick, timespan_t ) {
+                     tick->execute();
+                     if ( !absorb->check() && self->check() && current_tick < tick_count )
+                       self->expire();
+                   } );
+    }
+
+    result_e calculate_result( action_state_t* ) const override
+    {
+      return result_e::RESULT_NONE;
+    }
+
+    void execute() override
+    {
+      action_t::execute();
+
+      absorb->trigger();
+      damage->trigger();
+    }
+  };
+
+  effect.execute_action = create_proc_action<mudborne_t>("ringing_ritual_mud", effect );
+}
+
+// Gigazap's Zap-Cap
+void gigazaps_zapcap( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  struct zap_t : generic_proc_t
+  {
+    buff_t* max_stack;
+    const special_effect_t& effect;
+
+    zap_t( const special_effect_t& effect, buff_t* max_stack )
+      : generic_proc_t( effect, "zap", effect.player->find_spell( 1220419 ) ), max_stack( max_stack ), effect( effect )
+    {
+      base_dd_min = base_dd_max = effect.driver()->effectN( 1 ).average( effect.item );
+      base_multiplier *= role_mult( effect );
+      // the second impact is delayed 500ms, but snapshots multipliers as of
+      // the primary execute. this is not exactly that, but somewhat close
+      aoe = 1.0 + effect.driver()->effectN( 5 ).base_value();
+    }
+
+    double action_multiplier() const override
+    {
+      double m = generic_proc_t::action_multiplier();
+
+      if ( max_stack->check() )
+        m *= effect.driver()->effectN( 4 ).base_value();
+
+      return m;
+    }
+  };
+
+  auto max_stack_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1220413 ) );
+
+  auto ramp_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1220415 ) )
+                       ->set_expire_at_max_stack( true )
+                       ->set_stack_change_callback( [ max_stack_buff ]( buff_t*, int old_, int new_ ) {
+                         if ( old_ && !new_ )
+                           max_stack_buff->trigger();
+                       } );
+
+  effect.custom_buff = ramp_buff;
+  new dbc_proc_callback_t( effect.player, effect );
+
+  auto zap = create_proc_action<zap_t>( "zap", effect, max_stack_buff );
+
+  effect.player->register_combat_begin( [ effect, zap, max_stack_buff ]( player_t* player ) {
+    make_repeating_event( *player->sim, effect.driver()->effectN( 1 ).period(), [ player, zap, max_stack_buff ] {
+      if ( player->in_combat && !max_stack_buff->check() )
+        zap->execute();
+    } );
+    make_repeating_event( *player->sim, effect.driver()->effectN( 1 ).period() / 2.0, [ player, zap, max_stack_buff ] {
+      if ( player->in_combat && max_stack_buff->check() )
+        zap->execute();
+    } );
+  } );
+}
+
+void capos_molten_knuckles( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  effect.execute_action = create_proc_action<generic_proc_t>( "capos_molten_knuckles", effect, effect.driver() );
+  effect.execute_action->base_dd_min = effect.execute_action->base_dd_max =
+      effect.driver()->effectN( 1 ).average( effect.item );
+  effect.execute_action->base_multiplier *= role_mult( effect );
+
+  const spell_data_t* dot_spell         = effect.driver()->effectN( 1 ).trigger()->effectN( 2 ).trigger();
+  effect.execute_action->execute_action = create_proc_action<generic_proc_t>( "molten_gold", effect, dot_spell );
+
+  effect.execute_action->execute_action->tick_action =
+      create_proc_action<generic_proc_t>( "molten_gold_tick", effect, effect.player->find_spell( 473704 ) );
+  double tick_count = dot_spell->duration() / dot_spell->effectN( 1 ).period();
+  effect.execute_action->execute_action->tick_action->base_dd_min =
+      effect.execute_action->execute_action->tick_action->base_dd_max =
+          effect.driver()->effectN( 2 ).average( effect.item ) / tick_count;
+  effect.execute_action->execute_action->base_multiplier *= role_mult( effect );
+
+  // Not in spell data, needs to be tested.
+  effect.execute_action->execute_action->aoe = -1;
+  effect.execute_action->execute_action->reduced_aoe_targets = 8.0;
+
+  effect.execute_action->add_child( effect.execute_action->execute_action );
+
+  new dbc_proc_callback_t( effect.player, effect );
 }
 
 }  // namespace items
@@ -9804,6 +9952,10 @@ void register_special_effects()
   register_special_effect( 443393, items::synergistic_brewterializer );
   register_special_effect( 471212, items::junkmaestros_mega_magnet, true );
   register_special_effect( 471211, DISABLED_EFFECT ); // junkmaestro's mega magnet
+  register_special_effect( 1219102, items::ringing_ritual_mud );
+  register_special_effect( 1221145, DISABLED_EFFECT );
+  register_special_effect( 1219103, items::gigazaps_zapcap );
+  register_special_effect( 467774, items::capos_molten_knuckles );
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );
@@ -9833,7 +9985,7 @@ void register_special_effects()
   register_special_effect( 455521, sets::woven_dawn, true );
   register_special_effect( 443764, sets::embrace_of_the_cinderbee, true );
   register_special_effect( 443773, sets::fury_of_the_stormrook );
-  
+
   // Singing Citrines
   register_special_effect( singing_citrines::CYRCES_CIRCLET,                    DISABLED_EFFECT );  // Disable ring driver.
   register_special_effect( singing_citrines::THUNDERLORDS_CRACKLING_CITRINE,    singing_citrines::thunderlords_crackling_citrine );
