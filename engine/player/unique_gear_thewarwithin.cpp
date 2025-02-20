@@ -7002,6 +7002,107 @@ void mister_locknstalk( special_effect_t& effect )
   new mister_locknstalk_cb_t( effect );
 }
 
+// Junkmaestro's Mega Magnet
+// 471211 equip driver
+//  effect 1 damage per stack
+//  effect 2 max aoe
+//  effect 3 dot tick percent of damage
+// 471212 on-use
+// 1219661 charging buff
+// 1219662 impact damage (splits into an addition hit every 10 stacks)
+// 1220481 dot spell
+// 1220483 tick damage spell
+void junkmaestros_mega_magnet( special_effect_t& effect )
+{
+  if ( !effect.player->is_ptr() )
+    return;
+
+  if ( unique_gear::create_fallback_buffs( effect, { "junkmaestros_mega_magnet" } ) )
+    return;
+
+  unsigned equip_id = 471211;
+  auto equip = find_special_effect( effect.player, equip_id );
+  assert( equip && "Junkmaestro's Mega Magnet missing equip effect" );
+
+  auto charging_buff = create_buff<stat_buff_t>( effect.player, effect.player->find_spell( 1219661 ) )
+    ->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
+  
+  equip->custom_buff = charging_buff;
+  equip->proc_flags2_ = PF2_ALL_HIT;
+
+  new dbc_proc_callback_t( effect.player, *equip );
+  
+  struct recycle_garbage_t : public generic_proc_t
+  {
+    struct junkmaestros_mega_magnet_t : public generic_proc_t
+    {
+      junkmaestros_mega_magnet_t( const special_effect_t& e ) : generic_proc_t( e, "junkmaestros_mega_magnet", e.player->find_spell( 1219662 ) )
+      {
+        base_multiplier *= role_mult( e );
+      }
+    };
+
+    struct putrid_garbage_tick_t : public generic_proc_t
+    {
+      putrid_garbage_tick_t( const special_effect_t& e, int targets ) : generic_proc_t( e, "junkmaestros_putrid_garbage", e.player->find_spell( 1220483 ) )
+      {
+        aoe = targets;
+      }
+    };
+
+    struct putrid_garbage_dot_t : public generic_proc_t
+    {
+      action_t* tick_damage;
+
+      putrid_garbage_dot_t( const special_effect_t& e, action_t* tick ) : generic_proc_t( e, "junkmaestros_putrid_garbage_dot", e.player->find_spell( 1220481 ) ),
+        tick_damage( tick )
+      {
+      }
+
+      void tick( dot_t* d ) override
+      {
+        generic_proc_t::tick( d );
+
+        tick_damage->execute_on_target( d->target );
+      }
+    };
+
+    buff_t* charging_buff;
+    action_t* damage;
+    action_t* tick_damage;
+    action_t* dot;
+    double stack_damage;
+    double tick_percent;
+
+    recycle_garbage_t( const special_effect_t& e, buff_t* charging_buff, const spell_data_t* equip_data ) : generic_proc_t( e, "recycle_garbage", e.driver() ),
+      charging_buff( charging_buff ),
+      damage( create_proc_action<junkmaestros_mega_magnet_t>( "junkmaestros_mega_magnet", e ) ),
+      tick_damage( create_proc_action<putrid_garbage_tick_t>( "junkmaestros_putrid_garbage", e, as<int>( equip_data->effectN( 2 ).base_value() ) ) ),
+      dot( create_proc_action<putrid_garbage_dot_t>( "junkmaestros_putrid_garbage_dot", e, tick_damage ) ),
+      stack_damage( equip_data->effectN( 1 ).average( e ) ),
+      tick_percent( equip_data->effectN( 3 ).percent() / ( dot->data().duration() / dot->data().effectN( 1 ).period() ) )
+    {
+    }
+
+    void execute() override
+    {
+      generic_proc_t::execute();
+
+      int hits = 1 + as<int>( charging_buff->check() / 10 );
+      double total = stack_damage * charging_buff->check();
+      for ( int i = 0; i < hits; i++ )
+        damage->execute_on_target( target, total / hits );
+
+      tick_damage->base_dd_min = tick_damage->base_dd_max = total * tick_percent;
+      dot->execute_on_target( target );
+
+      charging_buff->expire();
+    }
+  };
+
+  effect.execute_action = create_proc_action<recycle_garbage_t>( "recycle_garbage", effect, charging_buff, equip->driver() );
+}
+
 // Weapons
 
 // 443384 driver
@@ -9672,7 +9773,7 @@ void register_special_effects()
   register_special_effect( 443559, items::cirral_concoctory );
   register_special_effect( 469888, items::eye_of_kezan );
   register_special_effect( 471059, items::geargrinders_remote );
-  register_special_effect( 1218714, items::improvised_seaforium_pacemaker );
+  register_special_effect( 1218714, items::improvised_seaforium_pacemaker, true );
   register_special_effect( 471567, items::reverb_radio );
   register_special_effect( 1214787, items::mechanocore_amplifier );
   register_special_effect( 1215238, items::papas_prized_putter );
@@ -9692,6 +9793,8 @@ void register_special_effects()
   register_special_effect( 471057, DISABLED_EFFECT ); // Effect Amount for Flarendo's Pilot Light
   register_special_effect( 471142, items::flarendos_pilot_light );
   register_special_effect( 443393, items::synergistic_brewterializer );
+  register_special_effect( 471212, items::junkmaestros_mega_magnet, true );
+  register_special_effect( 471211, DISABLED_EFFECT ); // junkmaestro's mega magnet
 
   // Weapons
   register_special_effect( 443384, items::fateweaved_needle );

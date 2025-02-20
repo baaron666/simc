@@ -1531,6 +1531,7 @@ class SpellDataGenerator(DataGenerator):
          1219299, # Garbagemancer's Last Resort
          1213433, 1213434, # Funhouse Lens
          1218715, # Maybe Stop Blowing Up (Improvised Seaforium Pacemaker)
+         1219662, # Junkmaestro's Mega Magnet
         ),
 
         # Warrior:
