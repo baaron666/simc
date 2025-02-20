@@ -7289,6 +7289,7 @@ void vile_contamination( special_effect_t& effect )
   dot->base_td_multiplier = role_mult( effect );
 
   effect.execute_action = dot;
+  effect.proc_flags2_ = PF2_ALL_HIT;
   new dbc_proc_callback_t( effect.player, effect );
 }
 
