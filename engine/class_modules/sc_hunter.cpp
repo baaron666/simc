@@ -2028,8 +2028,6 @@ struct hunter_main_pet_base_t : public stable_pet_t
     action_t* kill_command = nullptr;
     action_t* kill_cleave = nullptr;
     action_t* bestial_wrath = nullptr;
-
-    action_t* potent_mutagen = nullptr; // TWW S2 BM 4PC
   } actions;
 
   struct buffs_t
@@ -2038,8 +2036,6 @@ struct hunter_main_pet_base_t : public stable_pet_t
     buff_t* thrill_of_the_hunt = nullptr;
     buff_t* bestial_wrath = nullptr;
     buff_t* piercing_fangs = nullptr;
-
-    buff_t* potent_mutagen = nullptr; // TWW S2 BM 4pc
   } buffs;
 
   target_specific_t<hunter_main_pet_base_td_t> target_data;
@@ -2082,11 +2078,6 @@ struct hunter_main_pet_base_t : public stable_pet_t
       make_buff( this, "piercing_fangs", o() -> find_spell( 392054 ) )
         -> set_default_value_from_effect( 1 )
         -> set_chance( o() -> talents.piercing_fangs.ok() );
-
-    buffs.potent_mutagen = 
-      make_buff( this, "potent_mutagen", o()->find_spell( 1218003 ) )
-        //2025-02-11 - For some reason the base value is still 1 (so the pet buff says 1 second reduction per hit) but the server script doing the reduction only reduces by 0.5s
-        ->set_default_value( o()->find_spell( 1218004 )->effectN( 2 ).base_value() / 2 );
   }
 
   double composite_melee_auto_attack_speed() const override
@@ -2232,6 +2223,7 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
     action_t* basic_attack = nullptr;
     action_t* brutal_companion_ba = nullptr;
     action_t* bloodshed = nullptr;
+    action_t* potent_mutagen = nullptr; // TWW S2 BM 4PC
 
     action_t* flanking_strike = nullptr;
     action_t* coordinated_assault = nullptr;
@@ -2242,6 +2234,8 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
   struct buffs_t
   {
     buff_t* solitary_companion = nullptr;
+    buff_t* potent_mutagen = nullptr; // TWW S2 BM 4pc
+
     buff_t* bloodseeker = nullptr;
     buff_t* spearhead = nullptr;
   } buffs;
@@ -2295,6 +2289,11 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
       make_buff( this, "bloodseeker", o() -> find_spell( 260249 ) )
         -> set_default_value_from_effect( 1 )
         -> add_invalidate( CACHE_AUTO_ATTACK_SPEED );
+
+    buffs.potent_mutagen = 
+      make_buff( this, "potent_mutagen", o()->find_spell( 1218003 ) )
+        //2025-02-11 - For some reason the base value is still 1 (so the pet buff says 1 second reduction per hit) but the server script doing the reduction only reduces by 0.5s
+        ->set_default_value( o()->find_spell( 1218004 )->effectN( 2 ).base_value() / 2 );
 
     buffs.solitary_companion = 
       make_buff( this, "solitary_companion", find_spell( 474751 ) )
@@ -2992,10 +2991,11 @@ struct main_pet_base_melee_t : public hunter_pet_melee_t<hunter_main_pet_base_t>
     if ( o()->buffs.wyverns_cry->check() )
       o()->buffs.wyverns_cry->increment();
 
-    if ( p()->buffs.potent_mutagen->up() )
+    auto main_pet = dynamic_cast<hunter_main_pet_t*>( p() );
+    if ( main_pet && main_pet->buffs.potent_mutagen->up() )
     {
-      p()->actions.potent_mutagen->execute_on_target( s->target );
-      o()->cooldowns.bestial_wrath->adjust( -timespan_t::from_seconds( p()->buffs.potent_mutagen->value() ) );
+      main_pet->actions.potent_mutagen->execute_on_target( s->target );
+      o()->cooldowns.bestial_wrath->adjust( -timespan_t::from_seconds( main_pet->buffs.potent_mutagen->value() ) );
     }
   }
 };
@@ -3388,9 +3388,6 @@ void hunter_main_pet_base_t::init_spells()
 
     if ( !stable_pet_t::actions.stomp && ( o()->talents.stomp.ok() || o()->talents.bloody_frenzy.ok() ) )
       stable_pet_t::actions.stomp = new actions::stomp_t( this );
-    
-    if ( o()->tier_set.tww_s2_bm_4pc.ok() )
-      actions.potent_mutagen = new actions::potent_mutagen_t( this );
   }
 }
 
@@ -3420,6 +3417,9 @@ void hunter_main_pet_t::init_spells()
 
     if ( o()->talents.brutal_companion.ok() )
       actions.brutal_companion_ba = new actions::brutal_companion_ba_t( this, "Claw" );
+
+    if ( o()->tier_set.tww_s2_bm_4pc.ok() )
+      actions.potent_mutagen = new actions::potent_mutagen_t( this );
   }
 
   if ( o()->talents.no_mercy.ok() )
@@ -7205,14 +7205,11 @@ struct bestial_wrath_t: public hunter_spell_t
 
     if ( !is_precombat )
     {
-      for ( auto pet : pets::active<pets::hunter_main_pet_base_t>( p()->pets.main, p()->pets.animal_companion ) )
-      {
-        if ( barbed_shot_tww_s2_bm_2pc )
+      if ( barbed_shot_tww_s2_bm_2pc )
           barbed_shot_tww_s2_bm_2pc->execute_on_target( target );
 
-        if ( p()->tier_set.tww_s2_bm_4pc.ok() )
-          pet->buffs.potent_mutagen->trigger();
-      }
+      if ( p()->tier_set.tww_s2_bm_4pc.ok() )
+        p()->pets.main->buffs.potent_mutagen->trigger();
     }
   }
 
@@ -9201,7 +9198,7 @@ void hunter_t::init_special_effects()
         barbed_shot->execute_on_target( s->target );
 
         if ( player->tier_set.tww_s2_bm_4pc.ok())
-          player->pets.main->hunter_main_pet_base_t::buffs.potent_mutagen->trigger();
+          player->pets.main->buffs.potent_mutagen->trigger();
       }
     };
 
