@@ -2989,7 +2989,7 @@ struct main_pet_base_melee_t : public hunter_pet_melee_t<hunter_main_pet_base_t>
       o()->buffs.harmonize->trigger();
 
     if ( o()->buffs.wyverns_cry->check() )
-      o()->buffs.wyverns_cry->increment();
+      o()->buffs.wyverns_cry->increment( 1, buff_t::DEFAULT_VALUE(), o()->buffs.wyverns_cry->remains() );
 
     auto main_pet = dynamic_cast<hunter_main_pet_t*>( p() );
     if ( main_pet && main_pet->buffs.potent_mutagen->up() )
@@ -8848,7 +8848,6 @@ void hunter_t::create_buffs()
   buffs.wyverns_cry = 
     make_buff( this, "wyverns_cry", talents.howl_of_the_pack_leader_wyvern_buff )
       ->set_default_value_from_effect( 1 )
-      ->set_refresh_behavior( buff_refresh_behavior::DISABLED )
       ->set_stack_change_callback(
         [ this ]( buff_t* b, int, int cur ) {
           if ( cur == 0 )
