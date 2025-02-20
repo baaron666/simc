@@ -7048,6 +7048,15 @@ void junkmaestros_mega_magnet( special_effect_t& effect )
       {
         aoe = targets;
       }
+
+      size_t available_targets( std::vector< player_t* >& tl ) const override
+      {
+        generic_proc_t::available_targets( tl );
+
+        range::erase_remove( tl, target );
+
+        return tl.size();
+      }
     };
 
     struct putrid_garbage_dot_t : public generic_proc_t
