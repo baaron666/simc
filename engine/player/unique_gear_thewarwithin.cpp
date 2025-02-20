@@ -5759,6 +5759,7 @@ void eye_of_kezan( special_effect_t& effect )
       }
     }
   };
+  effect.proc_flags2_ = PF2_ALL_HIT;
 
   new eye_of_kezan_cb_t( effect );
 }
