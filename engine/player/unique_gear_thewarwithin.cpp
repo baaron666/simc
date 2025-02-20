@@ -8293,9 +8293,10 @@ void capos_molten_knuckles( special_effect_t& effect )
   effect.execute_action->execute_action->tick_action =
       create_proc_action<generic_proc_t>( "molten_gold_tick", effect, effect.player->find_spell( 473704 ) );
   double tick_count = dot_spell->duration() / dot_spell->effectN( 1 ).period();
+  // tooltip uses effect 2 for scaling, but the item seems to use effect 1 for both dot and initial hit
   effect.execute_action->execute_action->tick_action->base_dd_min =
       effect.execute_action->execute_action->tick_action->base_dd_max =
-          effect.driver()->effectN( 2 ).average( effect.item ) / tick_count;
+          effect.driver()->effectN( 1 ).average( effect.item ) / tick_count;
   effect.execute_action->execute_action->base_multiplier *= role_mult( effect );
 
   // Not in spell data, needs to be tested.
