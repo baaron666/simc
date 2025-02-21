@@ -325,29 +325,30 @@ struct spelleffect_data_t
   {
     switch ( _scaling_type )
     {
-      case -9: return PLAYER_SPECIAL_SCALE9;
-      case -8: return PLAYER_SPECIAL_SCALE8;
-      case -7: return PLAYER_SPECIAL_SCALE7;
-      case -6: return PLAYER_SPECIAL_SCALE6;
-      case -5: return PLAYER_SPECIAL_SCALE5;
-      case -4: return PLAYER_SPECIAL_SCALE4;
-      case -3: return PLAYER_SPECIAL_SCALE3;
-      case -2: return PLAYER_SPECIAL_SCALE2;
-      case -1: return PLAYER_SPECIAL_SCALE;
-      case 1:  return WARRIOR;
-      case 2:  return PALADIN;
-      case 3:  return HUNTER;
-      case 4:  return ROGUE;
-      case 5:  return PRIEST;
-      case 6:  return DEATH_KNIGHT;
-      case 7:  return SHAMAN;
-      case 8:  return MAGE;
-      case 9:  return WARLOCK;
-      case 10: return MONK;
-      case 11: return DRUID;
-      case 12: return DEMON_HUNTER;
-      case 13: return EVOKER;
-      default: break;
+      case -10: return PLAYER_SPECIAL_SCALE10;
+      case -9:  return PLAYER_SPECIAL_SCALE9;
+      case -8:  return PLAYER_SPECIAL_SCALE8;
+      case -7:  return PLAYER_SPECIAL_SCALE7;
+      case -6:  return PLAYER_SPECIAL_SCALE6;
+      case -5:  return PLAYER_SPECIAL_SCALE5;
+      case -4:  return PLAYER_SPECIAL_SCALE4;
+      case -3:  return PLAYER_SPECIAL_SCALE3;
+      case -2:  return PLAYER_SPECIAL_SCALE2;
+      case -1:  return PLAYER_SPECIAL_SCALE;
+      case 1:   return WARRIOR;
+      case 2:   return PALADIN;
+      case 3:   return HUNTER;
+      case 4:   return ROGUE;
+      case 5:   return PRIEST;
+      case 6:   return DEATH_KNIGHT;
+      case 7:   return SHAMAN;
+      case 8:   return MAGE;
+      case 9:   return WARLOCK;
+      case 10:  return MONK;
+      case 11:  return DRUID;
+      case 12:  return DEMON_HUNTER;
+      case 13:  return EVOKER;
+      default:  break;
     }
 
     return PLAYER_NONE;
