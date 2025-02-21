@@ -21,6 +21,10 @@ actions=auto_attack
 
 ########################################
 
+actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.down
+
+########################################
+
 actions.precombat+=/battle_stance,toggle=on
 actions.precombat+=/battle_shout
 
@@ -51,7 +55,7 @@ actions+=/champions_spear
 actions+=/thunderous_roar
 actions+=/demolish,if=buff.colossal_might.stack>=10
 actions+=/shield_charge
-actions+=/shield_block,use_off_gcd=1,if=buff.shield_block.down&(!talent.champions_bulwark.enabled|!cooldown.shield_charge.ready)
+actions+=/shield_block,use_off_gcd=1,if=buff.shield_block.remains<=2
 
 actions+=/revenge,if=spell_targets.revenge>=3&talent.one_against_many.enabled
 actions+=/execute,if=talent.juggernaut.enabled
