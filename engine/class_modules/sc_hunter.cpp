@@ -7894,6 +7894,15 @@ std::unique_ptr<expr_t> hunter_t::create_expression( util::string_view expressio
     splits[ 1 ] = options.summon_pet_str;
     return player_t::create_expression( util::string_join( splits, "." ) );
   }
+  else if ( splits.size() == 1 && splits[ 0 ] == "howl_summon_ready" )
+  {
+    return make_fn_expr( expression_str,
+      [ this ] {
+        return buffs.howl_of_the_pack_leader_wyvern->check() || 
+          buffs.howl_of_the_pack_leader_boar->check() ||
+          buffs.howl_of_the_pack_leader_bear->check();
+      } );
+  }
 
   return player_t::create_expression( expression_str );
 }
