@@ -179,6 +179,7 @@ void shadow_ptr( player_t* p )
   precombat->add_action( "variable,name=is_vt_possible,default=0,op=reset" );
   precombat->add_action( "variable,name=pooling_mindblasts,default=0,op=reset" );
   precombat->add_action( "arcane_torrent" );
+  precombat->add_action( "use_item,name=ingenious_mana_battery" );
   precombat->add_action( "use_item,name=aberrant_spellforge" );
   precombat->add_action( "halo,if=!fight_style.dungeonroute&!fight_style.dungeonslice&active_enemies<=4&(fight_remains>=120|active_enemies<=2)" );
   precombat->add_action( "shadow_crash,if=raid_event.adds.in>=25&spell_targets.shadow_crash<=8&!fight_style.dungeonslice&(!set_bonus.tier31_4pc|spell_targets.shadow_crash>1)" );
