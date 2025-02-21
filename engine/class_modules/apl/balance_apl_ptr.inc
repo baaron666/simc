@@ -38,7 +38,6 @@ def->add_action( "invoke_external_buff,name=power_infusion,if=variable.cd_condit
 def->add_action( "berserking,if=variable.no_cd_talent|fight_remains<15" );
 def->add_action( "run_action_list,name=aoe,if=spell_targets>1" );
 def->add_action( "run_action_list,name=st" );
-def->add_action( "warrior_of_elune,if=talent.lunar_calling|!talent.lunar_calling&variable.eclipse_remains<=7","ST" );
 
 aoe->add_action( "wrath,if=variable.enter_lunar&variable.eclipse&variable.eclipse_remains<cast_time","AOE" );
 aoe->add_action( "starfire,if=!variable.enter_lunar&variable.eclipse&variable.eclipse_remains<cast_time" );
@@ -73,6 +72,7 @@ pre_cd->add_action( "do_treacherous_transmitter_task,if=variable.cd_condition|bu
 pre_cd->add_action( "berserking,if=variable.cd_condition" );
 pre_cd->add_action( "potion,if=variable.cd_condition" );
 
+st->add_action( "warrior_of_elune,if=talent.lunar_calling|!talent.lunar_calling&variable.eclipse_remains<=7","ST" );
 st->add_action( "wrath,if=variable.enter_lunar&variable.eclipse&variable.eclipse_remains<cast_time&!variable.cd_condition" );
 st->add_action( "starfire,if=!variable.enter_lunar&variable.eclipse&variable.eclipse_remains<cast_time&!variable.cd_condition" );
 st->add_action( "sunfire,target_if=remains<3|refreshable&(hero_tree.keeper_of_the_grove&cooldown.force_of_nature.ready|hero_tree.elunes_chosen&variable.cd_condition)" );
