@@ -6301,7 +6301,8 @@ struct flanking_strike_t: hunter_melee_attack_t
     movement_directionality = movement_direction_type::OMNI;
 
     add_child( damage );
-    add_child( damage->merciless_blow );
+    if ( damage->merciless_blow )
+      add_child( damage->merciless_blow );
 
     // Decrement after player and pet damage.
     decrements_tip_of_the_spear = false;
@@ -7655,6 +7656,7 @@ struct wildfire_bomb_base_t: public hunter_spell_t
   {
     may_miss = false;
     school = SCHOOL_FIRE; // for report coloring
+    harmful = false;
 
     impact_action = p->get_background_action<bomb_damage_t>( "wildfire_bomb_damage", this );
   }
@@ -9204,6 +9206,7 @@ void hunter_t::init_special_effects()
     auto const effect = new special_effect_t( this );
     effect->name_str = "jackpot";
     effect->spell_id = tier_set.tww_s2_bm_2pc->id();
+    effect->proc_flags2_ = PF2_ALL_HIT;
     special_effects.push_back( effect );
 
     auto cb = new jackpot_cb_t( *effect, this );
@@ -9216,6 +9219,7 @@ void hunter_t::init_special_effects()
     effect->name_str = "jackpot";
     effect->spell_id = tier_set.tww_s2_mm_2pc->id();
     effect->custom_buff = buffs.jackpot;
+    effect->proc_flags2_ = PF2_ALL_HIT;
     special_effects.push_back( effect );
 
     auto cb = new dbc_proc_callback_t( this, *effect );
@@ -9228,6 +9232,7 @@ void hunter_t::init_special_effects()
     effect->name_str = "winning_streak";
     effect->spell_id = tier_set.tww_s2_sv_2pc->id();
     effect->custom_buff = buffs.winning_streak;
+    effect->proc_flags2_ = PF2_LANDED;
     special_effects.push_back( effect );
 
     auto cb = new dbc_proc_callback_t( this, *effect );
