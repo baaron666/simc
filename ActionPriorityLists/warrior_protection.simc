@@ -15,12 +15,11 @@ actions.mitigation+=/impending_victory,if=health.pct<victory_rush_health_pct&tal
 ########################################
 
 actions.precombat=snapshot_stats
-
 actions=auto_attack
 
 ########################################
 
-actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.down
+actions+=/ignore_pain,use_off_gcd=1,if=talent.one_against_many.enabled&buff.ignore_pain.down
 
 ########################################
 
