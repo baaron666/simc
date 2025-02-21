@@ -16,14 +16,13 @@ actions.mitigation+=/impending_victory,if=health.pct<victory_rush_health_pct&tal
 
 actions.precombat=snapshot_stats
 actions=auto_attack
+actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.down&talent.one_against_many.enabled
+# actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.down&talent.demolish.enabled
 
 ########################################
 
-actions+=/ignore_pain,use_off_gcd=1,if=talent.one_against_many.enabled&buff.ignore_pain.down
-
-########################################
-
-actions.precombat+=/battle_stance,toggle=on
+actions.precombat+=/defensive_stance,toggle=on,if=talent.fight_through_the_flames.enabled
+actions.precombat+=/battle_stance,toggle=on,if=!talent.fight_through_the_flames.enabled
 actions.precombat+=/battle_shout
 
 actions+=/charge,if=time=0|movement.distance>8
@@ -38,6 +37,7 @@ actions+=/ignore_pain,use_off_gcd=1,if=cooldown.thunder_clap.remains<=gcd.remain
 
 actions+=/avatar
 actions+=/use_items
+actions+=/potion,if=buff.avatar.up
 actions+=/blood_fury
 actions+=/berserking
 actions+=/arcane_torrent
@@ -45,7 +45,6 @@ actions+=/lights_judgment
 actions+=/fireblood
 actions+=/ancestral_call
 actions+=/bag_of_tricks
-actions+=/potion,if=buff.avatar.up|target.health.pct<=20
 
 actions+=/ravager
 actions+=/demoralizing_shout,if=talent.booming_voice.enabled
