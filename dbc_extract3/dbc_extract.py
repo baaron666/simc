@@ -359,7 +359,7 @@ elif options.type == 'scale':
         'file': 'SpellScaling.txt',
         'comment': '// Spell scaling multipliers for levels 1 - %d, wow build %s\n' % (
             options.level, options.build),
-        'values': DataGenerator._class_names + [ 'Item', 'Consumable', 'Gem1', 'Gem2', 'Gem3', 'Health', 'DamageReplaceStat' ]
+        'values': DataGenerator._class_names + [ 'Item', 'Consumable', 'Gem1', 'Gem2', 'Gem3', 'Health', 'DamageReplaceStat', 'DamageSecondary', 'Mana Consumable' ]
     })
     if not g.initialize():
         sys.exit(1)
