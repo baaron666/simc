@@ -1404,7 +1404,7 @@ public:
       p()->buffs.divine_hammer->current_value = p()->buffs.divine_hammer->current_value * 1.15;
     }
 
-    if ( had_winning_streak )
+    if ( had_winning_streak && ab::harmful )
     {
       if ( ab::rng().roll( p()->buffs.winning_streak->data().effectN( 2 ).percent() ) )
       {
@@ -1863,7 +1863,7 @@ public:
       return;
 
     bool isFreeSLDPSpender = p->buffs.divine_purpose->up() || ( is_wog && p->buffs.shining_light_free->up() ) ||
-                             ( is_divine_storm && p->buffs.empyrean_power->up() );
+                             ( is_divine_storm && p->buffs.empyrean_power->up() ) || p->buffs.all_in->up();
 
     double num_hopo_spent = as<double>( holy_power_consumer_t::cost() );
     if ( is_hammer_of_light_driver && !p->buffs.templar.hammer_of_light_free->up() )

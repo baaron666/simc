@@ -1267,15 +1267,15 @@ struct divine_hammer_tick_t : public paladin_melee_attack_t
   }
 };
 
-struct divine_hammer_t : public paladin_spell_t
+struct divine_hammer_t : public holy_power_consumer_t<paladin_spell_t>
 {
-  divine_hammer_t( paladin_t* p ) : paladin_spell_t( "divine_hammer", p, p->talents.divine_hammer )
+  divine_hammer_t( paladin_t* p ) : holy_power_consumer_t<paladin_spell_t>( "divine_hammer", p, p->talents.divine_hammer )
   {
     background = true;
   }
 
   divine_hammer_t( paladin_t* p, util::string_view options_str )
-    : paladin_spell_t( "divine_hammer", p, p->talents.divine_hammer )
+    : holy_power_consumer_t<paladin_spell_t>( "divine_hammer", p, p->talents.divine_hammer )
   {
     parse_options( options_str );
 
@@ -1285,7 +1285,7 @@ struct divine_hammer_t : public paladin_spell_t
 
   void execute() override
   {
-    paladin_spell_t::execute();
+    holy_power_consumer_t<paladin_spell_t>::execute();
 
     p()->buffs.divine_hammer->trigger();
   }
@@ -1701,7 +1701,8 @@ void paladin_t::create_buffs_retribution()
   buffs.echoes_of_wrath = make_buff( this, "echoes_of_wrath", find_spell( 423590 ) );
 
   buffs.rise_from_ash = make_buff( this, "rise_from_ash", find_spell( 454693 ) );
-  buffs.winning_streak = make_buff( this, "winning_streak", find_spell( 1216828 ) );
+  buffs.winning_streak = make_buff( this, "winning_streak", find_spell( 1216828 ) )
+    ->set_default_value_from_effect( 1 );
   buffs.all_in = make_buff( this, "all_in", find_spell( 1216837 ) );
 }
 
