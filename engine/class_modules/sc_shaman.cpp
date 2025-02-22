@@ -6707,12 +6707,14 @@ struct erupting_lava_t : public shaman_spell_t
 
     double tick_base_damage = state->result_raw;
 
-    timespan_t consumed_time =
-        std::min( dot->remains(), p()->talent.erupting_lava->effectN( 2 ).time_value() );
+    timespan_t max_consumed_time = p()->talent.erupting_lava->effectN( 2 ).time_value();
     if ( is_overload )
     {
-      consumed_time *= p()->talent.erupting_lava->effectN( 3 ).percent();
+      max_consumed_time *= p()->talent.erupting_lava->effectN( 3 ).percent();
     }
+    timespan_t consumed_time =
+        std::min( dot->remains(), max_consumed_time );
+
     timespan_t dot_tick_time = dot->current_action->tick_time( state );
     double ticks_consumed    = consumed_time / dot_tick_time;
     double total_damage      = ticks_consumed * tick_base_damage;
