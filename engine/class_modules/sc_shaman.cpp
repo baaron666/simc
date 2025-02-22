@@ -3040,7 +3040,7 @@ struct shaman_spell_t : public shaman_spell_base_t<spell_t>
       p()->trigger_flowing_spirits( execute_state );
     }
 
-    if ( p()->is_ptr() && p()->sets->has_set_bonus( SHAMAN_ELEMENTAL, TWW2, B2 ) && p()->rppm.jackpot->trigger() )
+    if ( p()->sets->has_set_bonus( SHAMAN_ELEMENTAL, TWW2, B2 ) && p()->rppm.jackpot->trigger() )
     {
       p()->proc.jackpot_rppm->occur();
       p()->buff.jackpot->trigger();
@@ -9176,7 +9176,7 @@ struct ascendance_t : public shaman_spell_t
   {
     shaman_spell_t::execute();
 
-    if ( p()->is_ptr() && p()->sets->has_set_bonus( SHAMAN_ELEMENTAL, TWW2, B2 ) )
+    if ( p()->sets->has_set_bonus( SHAMAN_ELEMENTAL, TWW2, B2 ) )
     {
       p()->buff.jackpot->trigger();
       p()->proc.jackpot->occur();
@@ -9228,29 +9228,6 @@ struct ascendance_t : public shaman_spell_t
       {
         p()->trigger_secondary_flame_shock( tl[ i ], spell_variant::ASCENDANCE );
       }
-    }
-
-    if (p()->specialization() == SHAMAN_ELEMENTAL && background && p()->buff.ascendance->up() && !p()->is_ptr())
-    {
-      auto& tl    = target_list();
-      auto fs_cap = p()->action.ascendance->data().effectN( 7 ).base_value();
-      for ( size_t i = 0; i < fs_cap; i++ )
-      {
-        int index = i%tl.size();
-        p()->trigger_secondary_flame_shock( tl[ index ], spell_variant::ASCENDANCE );
-
-        p()->trigger_maelstrom_gain( lvb->maelstrom_gain );
-        p()->trigger_maelstrom_gain( lvb_ol->maelstrom_gain );
-
-        double ol_chance = overload_chance( execute_state );
-
-        if ( !rng().roll( ol_chance ) )
-        {
-          p()->trigger_maelstrom_gain( lvb_ol->maelstrom_gain );
-        }
-      }
-
-      return;
     }
 
     if ( lvb )
@@ -10575,10 +10552,7 @@ struct primordial_wave_t : public shaman_spell_t
 
     p()->buff.primordial_storm->trigger();
 
-    if ( p()->is_ptr() )
-    {
-      p()->trigger_splintered_elements( impact_action );
-    }
+    p()->trigger_splintered_elements( impact_action );
 
   }
 
@@ -12212,12 +12186,7 @@ void shaman_t::init_spells()
 
     switch ( specialization() )
     {
-      case SHAMAN_ELEMENTAL:
-      if ( is_ptr() )
-        spell.ascendance = find_spell( 1219480 );
-      else
-        spell.ascendance = find_spell( 114050 );
-        break;
+      case SHAMAN_ELEMENTAL: spell.ascendance = find_spell( 1219480 ); break;
       case SHAMAN_ENHANCEMENT: spell.ascendance = find_spell( 114051 ); break;
       case SHAMAN_RESTORATION: spell.ascendance = find_spell( 114052 ); break;
       default:                 break;
@@ -13266,10 +13235,6 @@ void shaman_t::trigger_primordial_wave_damage( shaman_spell_t* spell )
   if ( !damage_spell->target_list().empty() )
   {
     damage_spell->execute();
-  }
-  if ( !is_ptr() )
-  {
-    trigger_splintered_elements( damage_spell );
   }
 
   buff.primordial_wave->expire();
