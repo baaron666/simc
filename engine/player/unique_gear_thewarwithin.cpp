@@ -8347,57 +8347,56 @@ void the_jastor_diamond( special_effect_t& effect )
 // NYI: CDR from periodic damage taken
 void ringing_ritual_mud( special_effect_t& effect )
 {
-  struct mudborne_t : action_t
+  struct mudborne_t : absorb_t
   {
     action_t* tick;
-    buff_t* damage;
-    buff_t* absorb;
+    buff_t* damage_buff;
+    buff_t* absorb_buff;
+    double absorb_value;
 
     mudborne_t( const special_effect_t& effect )
-      : action_t( action_e::ACTION_OTHER, "ringing_ritual_mud", effect.player, effect.driver() ),
+      : absorb_t( "ringing_ritual_mud", effect.player, effect.driver() ),
         tick( nullptr ),
-        damage( nullptr ),
-        absorb( nullptr )
+        damage_buff( nullptr ),
+        absorb_buff( nullptr ),
+        absorb_value( 0 )
     {
-      callbacks = false;
-      quiet     = true;
-
       const spell_data_t* equip = effect.player->find_spell( 1221145 );
 
-      absorb = create_buff<absorb_buff_t>( effect.player, effect.driver() )
-                   ->set_default_value( equip->effectN( 3 ).average( effect.item ) );
+      absorb_value = equip->effectN( 3 ).average( effect.item );
 
-      tick = create_proc_action<generic_aoe_proc_t>( "mud_echo", effect,
-                                                     effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).trigger(), true );
+      tick = create_proc_action<generic_aoe_proc_t>(
+          "mud_echo", effect, effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).trigger(), true );
 
       double tick_count = effect.driver()->effectN( 2 ).trigger()->duration() /
                           effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).period();
 
       tick->base_dd_min = tick->base_dd_max = equip->effectN( 1 ).average( effect.item );
-
-      damage = create_buff<buff_t>( effect.player, effect.driver()->effectN( 2 ).trigger() )
-                   ->set_tick_callback( [ & ]( buff_t* self, int current_tick, timespan_t ) {
-                     tick->execute();
-                     if ( !absorb->check() && self->check() && current_tick < tick_count )
-                       self->expire();
-                   } );
+      damage_buff = unique_gear::create_buff<buff_t>( effect.player, effect.driver()->effectN( 2 ).trigger() )
+                        ->set_tick_callback( [ &, tick_count ]( buff_t* self, int current_tick, timespan_t ) {
+                          tick->execute();
+                          if ( !absorb_buff->check() && self->check() && current_tick < tick_count )
+                            // Let events clear before expiring
+                            make_event( *sim, 0_ms, [ self ] { self->expire(); } );
+                        } );
     }
 
-    result_e calculate_result( action_state_t* ) const override
+    absorb_buff_t* create_buff( const action_state_t* s ) override
     {
-      return result_e::RESULT_NONE;
+      auto b = absorb_t::create_buff( s );
+      b->set_default_value( absorb_value );
+      absorb_buff = b;
+      return b;
     }
 
     void execute() override
     {
       action_t::execute();
-
-      absorb->trigger();
-      damage->trigger();
+      damage_buff->trigger();
     }
   };
 
-  effect.execute_action = create_proc_action<mudborne_t>("ringing_ritual_mud", effect );
+  effect.execute_action = create_proc_action<mudborne_t>( "ringing_ritual_mud", effect );
 }
 
 // Gigazap's Zap-Cap
@@ -8415,7 +8414,7 @@ void gigazaps_zapcap( special_effect_t& effect )
       base_multiplier *= role_mult( effect );
       // the second impact is delayed 500ms, but snapshots multipliers as of
       // the primary execute. this is not exactly that, but somewhat close
-      aoe = 1.0 + effect.driver()->effectN( 5 ).base_value();
+      aoe = 1.0 + as<int>( effect.driver()->effectN( 5 ).base_value() );
     }
 
     double action_multiplier() const override
