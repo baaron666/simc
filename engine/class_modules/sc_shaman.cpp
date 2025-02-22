@@ -3044,13 +3044,17 @@ struct shaman_spell_t : public shaman_spell_base_t<spell_t>
     {
       p()->proc.jackpot_rppm->occur();
       p()->buff.jackpot->trigger();
+      
+      auto elemental_duration = p()->find_spell( 1215675 )->effectN( 1 ).time_value();
+      elemental_duration *= 1.0 + p()->talent.everlasting_elements->effectN( 2 ).percent();
+
       if ( p()->talent.storm_elemental->ok() )
       {
-        p()->summon_elemental( elemental::GREATER_STORM, p()->find_spell( 1215675 )->effectN(1).time_value() );
+        p()->summon_elemental( elemental::GREATER_STORM, elemental_duration );
       }
       else
       {
-        p()->summon_elemental( elemental::GREATER_FIRE, p()->find_spell( 1215675 )->effectN( 1 ).time_value() );
+        p()->summon_elemental( elemental::GREATER_FIRE, elemental_duration );
       }
     }
 
@@ -9180,27 +9184,17 @@ struct ascendance_t : public shaman_spell_t
     {
       p()->buff.jackpot->trigger();
       p()->proc.jackpot->occur();
+
+      auto elemental_duration = p()->find_spell( 1215675 )->effectN( 1 ).time_value();
+      elemental_duration *= 1.0 + p()->talent.everlasting_elements->effectN( 2 ).percent();
+
       if ( p()->talent.storm_elemental->ok() )
       {
-        p()->summon_elemental( elemental::GREATER_STORM, p()->find_spell( 1215675 )->effectN( 1 ).time_value() );
+        p()->summon_elemental( elemental::GREATER_STORM, elemental_duration );
       }
       else
       {
-        p()->summon_elemental( elemental::GREATER_FIRE, p()->find_spell( 1215675 )->effectN( 1 ).time_value() );
-      }
-
-      if ( p()->bugs )
-      {
-        p()->buff.jackpot->trigger();
-        p()->proc.jackpot->occur();
-        if ( p()->talent.storm_elemental->ok() )
-        {
-          p()->summon_elemental( elemental::GREATER_STORM, p()->find_spell( 1215675 )->effectN( 1 ).time_value() );
-        }
-        else
-        {
-          p()->summon_elemental( elemental::GREATER_FIRE, p()->find_spell( 1215675 )->effectN( 1 ).time_value() );
-        }
+        p()->summon_elemental( elemental::GREATER_FIRE, elemental_duration );
       }
     }
 
