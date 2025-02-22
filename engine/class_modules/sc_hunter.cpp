@@ -7162,7 +7162,7 @@ struct bestial_wrath_t: public hunter_spell_t
 
     precast_time = clamp( precast_time, 0_ms, data().duration() );
 
-    if ( p->tier_set.tww_s2_bm_2pc.ok() )
+    if ( p->tier_set.tww_s2_bm_2pc.ok() && p->talents.barbed_shot.ok() )
       barbed_shot_tww_s2_bm_2pc = p->get_background_action<attacks::barbed_shot_tww_s2_bm_2pc_t>( "barbed_shot_tww_s2_bm_2pc" );
   }
 
@@ -9205,7 +9205,8 @@ void hunter_t::init_special_effects()
       {
         dbc_proc_callback_t::execute( a, s );
 
-        barbed_shot->execute_on_target( s->target );
+        if ( barbed_shot && player->talents.barbed_shot.ok() )
+          barbed_shot->execute_on_target( s->target );
 
         if ( player->tier_set.tww_s2_bm_4pc.ok())
           player->pets.main->buffs.potent_mutagen->trigger();
