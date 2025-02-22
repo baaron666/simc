@@ -4278,6 +4278,11 @@ struct disintegrate_t : public essence_spell_t
   {
     channeled = tick_zero = true;
 
+    if ( p->bugs )
+    {
+      dot_duration = base_tick_time * num_ticks;
+    }
+
     auto surge = p->get_secondary_action<eternity_surge_t::eternity_surge_damage_t>( "scintillation", "scintillation" );
     surge->not_a_proc         = true;
     surge->s_data_reporting   = p->talent.scintillation;
