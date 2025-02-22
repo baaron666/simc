@@ -8364,6 +8364,7 @@ void ringing_ritual_mud( special_effect_t& effect )
       const spell_data_t* equip = effect.player->find_spell( 1221145 );
 
       absorb_value = equip->effectN( 3 ).average( effect.item );
+      base_dd_min = base_dd_max = absorb_value;
 
       tick = create_proc_action<generic_aoe_proc_t>(
           "mud_echo", effect, effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).trigger(), true );
@@ -8379,14 +8380,6 @@ void ringing_ritual_mud( special_effect_t& effect )
                             // Let events clear before expiring
                             make_event( *sim, 0_ms, [ self ] { self->expire(); } );
                         } );
-    }
-
-    absorb_buff_t* create_buff( const action_state_t* s ) override
-    {
-      auto b = absorb_t::create_buff( s );
-      b->set_default_value( absorb_value );
-      absorb_buff = b;
-      return b;
     }
 
     void execute() override
