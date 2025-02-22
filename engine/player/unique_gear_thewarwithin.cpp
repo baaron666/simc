@@ -8352,19 +8352,15 @@ void ringing_ritual_mud( special_effect_t& effect )
     action_t* tick;
     buff_t* damage_buff;
     buff_t* absorb_buff;
-    double absorb_value;
 
     mudborne_t( const special_effect_t& effect )
       : absorb_t( "mudborne", effect.player, effect.driver() ),
         tick( nullptr ),
         damage_buff( nullptr ),
-        absorb_buff( nullptr ),
-        absorb_value( 0 )
+        absorb_buff( nullptr )
     {
       const spell_data_t* equip = effect.player->find_spell( 1221145 );
-
-      absorb_value = equip->effectN( 3 ).average( effect.item );
-      base_dd_min = base_dd_max = absorb_value;
+      base_dd_min = base_dd_max = equip->effectN( 3 ).average( effect.item );
 
       tick = create_proc_action<generic_aoe_proc_t>(
           "mud_echo", effect, effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).trigger(), true );
@@ -8380,6 +8376,13 @@ void ringing_ritual_mud( special_effect_t& effect )
                             // Let events clear before expiring
                             make_event( *sim, 0_ms, [ self ] { self->expire(); } );
                         } );
+    }
+
+    absorb_buff_t* create_buff( const action_state_t* s ) override
+    {
+      auto b = absorb_t::create_buff( s );
+      absorb_buff = b;
+      return b;
     }
 
     void execute() override
@@ -8407,7 +8410,7 @@ void gigazaps_zapcap( special_effect_t& effect )
       base_multiplier *= role_mult( effect );
       // the second impact is delayed 500ms, but snapshots multipliers as of
       // the primary execute. this is not exactly that, but somewhat close
-      aoe = 1.0 + as<int>( effect.driver()->effectN( 5 ).base_value() );
+      aoe = 1 + as<int>( effect.driver()->effectN( 5 ).base_value() );
     }
 
     double action_multiplier() const override
