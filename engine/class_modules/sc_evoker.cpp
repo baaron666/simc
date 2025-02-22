@@ -4280,7 +4280,7 @@ struct disintegrate_t : public essence_spell_t
 
     if ( p->bugs )
     {
-      dot_duration = base_tick_time * num_ticks;
+      dot_duration = base_tick_time * ( num_ticks - 1 );
     }
 
     auto surge = p->get_secondary_action<eternity_surge_t::eternity_surge_damage_t>( "scintillation", "scintillation" );
