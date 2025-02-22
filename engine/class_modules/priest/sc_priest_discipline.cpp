@@ -538,9 +538,6 @@ public:
 
   void spread_shadow_word_pain( const action_state_t* state, priest_t& p ) const
   {
-    if ( !p.is_ptr() )
-      return;
-
     // Exit if PTW isn't ticking
     if ( !td( state->target )->dots.shadow_word_pain->is_ticking() )
     {
@@ -674,12 +671,7 @@ public:
   {
     priest_spell_t::impact( state );
 
-    if ( !p().is_ptr() && p().talents.discipline.purge_the_wicked.enabled() )
-    {
-      spread_purge_the_wicked( state, p() );
-    }
-
-    if ( p().is_ptr() && p().talents.discipline.encroaching_shadows.enabled() )
+    if ( p().talents.discipline.encroaching_shadows.enabled() )
     {
       spread_shadow_word_pain( state, p() );
     }

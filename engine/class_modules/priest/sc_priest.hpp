@@ -1238,7 +1238,7 @@ public:
         parse_effects( p().buffs.devouring_chorus );
       }
 
-      if ( p().is_ptr() && p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B4 ) )
+      if ( p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B4 ) )
       {
         parse_effects( ab::player->buffs.power_infusion, p().sets->set( PRIEST_SHADOW, TWW2, B4 ) );
       }

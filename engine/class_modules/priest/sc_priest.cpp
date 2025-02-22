@@ -922,8 +922,7 @@ struct smite_base_t : public priest_spell_t
               .time_value() ),
       train_of_thought_cdr( priest().talents.discipline.train_of_thought->effectN( 2 ).time_value() ),
       t31_2pc_extend( priest().sets->set( PRIEST_DISCIPLINE, T31, B2 )->effectN( 1 ).time_value() ),
-      divine_procession_extend(
-          priest().is_ptr() ? priest().talents.discipline.divine_procession->effectN( 1 ).time_value() : 0_s ),
+      divine_procession_extend( priest().talents.discipline.divine_procession->effectN( 1 ).time_value() ),
       child_holy_fire( priest().background_actions.holy_fire ),
       child_searing_light( priest().background_actions.searing_light )
 
@@ -977,11 +976,6 @@ struct smite_base_t : public priest_spell_t
 
     // Weal and Woe can be Spell Queue'd into another (instant) spell to get more effect.
     priest().buffs.weal_and_woe->expire( 250_ms );
-
-    if ( !priest().is_ptr() && priest().talents.discipline.void_summoner.enabled() )
-    {
-      priest().cooldowns.fiend->adjust( void_summoner_cdr );
-    }
 
     if ( priest().talents.discipline.train_of_thought.enabled() )
     {
@@ -1037,7 +1031,7 @@ struct smite_base_t : public priest_spell_t
       }
 
       
-      if ( priest().is_ptr() && priest().talents.discipline.divine_procession.enabled() )
+      if ( priest().talents.discipline.divine_procession.enabled() )
       {
         if ( p().allies_with_atonement.size() > 0 )
         {
