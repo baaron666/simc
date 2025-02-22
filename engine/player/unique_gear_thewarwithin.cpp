@@ -7220,7 +7220,7 @@ void junkmaestros_mega_magnet( special_effect_t& effect )
   auto equip = find_special_effect( effect.player, equip_id );
   assert( equip && "Junkmaestro's Mega Magnet missing equip effect" );
 
-  auto charging_buff = create_buff<stat_buff_t>( effect.player, effect.player->find_spell( 1219661 ) )
+  auto charging_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1219661 ) )
     ->set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
 
   equip->custom_buff = charging_buff;
