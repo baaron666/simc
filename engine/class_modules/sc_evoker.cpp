@@ -5051,12 +5051,7 @@ struct shattering_star_t : public evoker_spell_t
   {
     evoker_spell_t::execute();
 
-    if ( p()->talent.arcane_vigor.ok() && ( !background || tier_set_proc >= 2 && p()->bugs ) )
-    {
-      p()->buff.essence_burst->trigger();
-    }
-
-    if ( p()->talent.arcane_vigor.ok() && tier_set_proc >= 2 && p()->bugs && target_list().size() > 1 )
+    if ( p()->talent.arcane_vigor.ok() && !background )
     {
       p()->buff.essence_burst->trigger();
     }
@@ -5064,10 +5059,6 @@ struct shattering_star_t : public evoker_spell_t
     if ( p()->is_ptr() && p()->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ) )
     {
       p()->buff.jackpot->trigger();
-      if ( p()->bugs && tier_set_proc >= 2 )
-      {
-        p()->buff.jackpot->trigger();
-      }
     }
   }
 
