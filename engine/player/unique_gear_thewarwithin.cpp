@@ -8355,7 +8355,7 @@ void ringing_ritual_mud( special_effect_t& effect )
     double absorb_value;
 
     mudborne_t( const special_effect_t& effect )
-      : absorb_t( "ringing_ritual_mud", effect.player, effect.driver() ),
+      : absorb_t( "mudborne", effect.player, effect.driver() ),
         tick( nullptr ),
         damage_buff( nullptr ),
         absorb_buff( nullptr ),
