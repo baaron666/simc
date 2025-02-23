@@ -4271,7 +4271,7 @@ struct disintegrate_t : public essence_spell_t
     : essence_spell_t( "disintegrate", p,
                        p->talent.eruption.ok() ? spell_data_t::not_found() : p->find_class_spell( "Disintegrate" ),
                        options_str ),
-      num_ticks( as<int>( dot_duration / base_tick_time + 1 + p->talent.azure_celerity->effectN( 3 ).base_value() ) ),
+      num_ticks( as<int>( dot_duration.base / base_tick_time.base + 1 + p->talent.azure_celerity->effectN( 3 ).base_value() ) ),
       mass_disint_mult( p->talent.scalecommander.mass_disintegrate->effectN( 2 ).percent() ),
       current_dots()
   {
