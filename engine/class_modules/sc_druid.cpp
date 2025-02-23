@@ -11438,6 +11438,7 @@ void druid_t::create_actions()
     jackpot->name_str_reporting = "Jackpot!";
     jackpot->background = true;
     jackpot->proc = true;
+    jackpot->cooldown->duration = 0_ms;
     active.jackpot_mushroom = jackpot;
   }
 
