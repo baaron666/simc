@@ -1177,7 +1177,7 @@ public:
     bool avenging_wrath, judgment, blessing_of_dawn, seal_of_reprisal, divine_purpose,
       divine_purpose_cost, sacred_strength;                                                // Shared
     bool crusade, highlords_judgment, highlords_judgment_hidden, final_reckoning_st, final_reckoning_aoe,
-      blades_of_light, divine_hammer, ret_t29_2p, ret_t29_4p, rise_from_ash, winning_streak,
+      blades_of_light, ret_t29_2p, ret_t29_4p, rise_from_ash, winning_streak,
       all_in; // Ret
     bool avenging_crusader;                                                                // Holy
     bool bastion_of_light, sentinel, heightened_wrath, luck_of_the_draw;  // Prot
@@ -1226,18 +1226,6 @@ public:
           this->data().affected_by( p->sets->set( PALADIN_RETRIBUTION, T29, B4 )->effectN( 1 ) );
       this->affected_by.rise_from_ash =
           this->data().affected_by( p->find_spell( 454693 )->effectN( 1 ) );
-      if ( !p->dbc->ptr && p->talents.divine_hammer->ok() )
-      {
-        for ( auto i = 2; i < 5; i++ )
-        {
-          auto label = p->talents.divine_hammer->effectN( i );
-          if ( this->data().affected_by( label ) || this->data().affected_by_category( label ) )
-          {
-            this->affected_by.divine_hammer = true;
-            break;
-          }
-        }
-      }
 
       this->affected_by.winning_streak = this->data().affected_by( p->spells.winning_streak->effectN( 1 ) );
       this->affected_by.all_in = this->data().affected_by( p->spells.all_in->effectN( 1 ) );
@@ -1381,11 +1369,6 @@ public:
       if ( ab::id == 408385 )
         extension = 500_ms;
       p()->buffs.templar.shake_the_heavens->extend_duration( p(), extension );
-    }
-
-    if ( affected_by.divine_hammer && p()->buffs.divine_hammer->up() && !p()->dbc->ptr )
-    {
-      p()->buffs.divine_hammer->current_value = p()->buffs.divine_hammer->current_value * 1.15;
     }
 
     if ( had_winning_streak && ab::harmful )
@@ -1884,7 +1867,7 @@ public:
       }
     }
 
-    if ( p->dbc->ptr && p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && p->cooldowns.divine_hammer_icd->up() )
+    if ( p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && p->cooldowns.divine_hammer_icd->up() )
     {
       unsigned base_cost = as<int>( ab::base_cost() );
       p->buffs.divine_hammer->extend_duration( p, timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() * base_cost ) );
