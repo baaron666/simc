@@ -9404,7 +9404,7 @@ double hunter_t::composite_player_pet_damage_multiplier( const action_state_t* s
   double m = player_t::composite_player_pet_damage_multiplier( s, guardian );
 
   if ( mastery.spirit_bond->ok() )
-    m *= 1.0 + cache.mastery_value();
+    m *= 1.0 + cache.mastery_value() * ( 1 + mastery.spirit_bond_buff->effectN( 1 ).percent() );
 
   if ( mastery.master_of_beasts->ok() )
     m *= 1.0 + cache.mastery_value();
