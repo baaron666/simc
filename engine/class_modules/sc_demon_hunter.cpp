@@ -7318,6 +7318,11 @@ struct wounded_quarry_cb_t : public demon_hunter_proc_callback_t
       : demon_hunter_attack_t( name, p, p->hero_spec.wounded_quarry_damage )
     {
       chance = p->hero_spec.wounded_quarry_proc_rate;
+      // 2025-02-23 -- WQ seems to proc things like Chaotic Disposition
+      if ( p->bugs )
+      {
+        allow_class_ability_procs = true;
+      }
     }
 
     void impact( action_state_t* s ) override
