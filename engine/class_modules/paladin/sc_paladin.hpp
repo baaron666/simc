@@ -1823,12 +1823,6 @@ public:
     // p variable just to make this look neater
     paladin_t* p = ab::p();
 
-    ab::execute();
-
-    // if this is a vanq-hammer-based DS, don't do this stuff
-    if ( ab::background && is_divine_storm )
-      return;
-
     bool isFreeSLDPSpender = p->buffs.divine_purpose->up() || ( is_wog && p->buffs.shining_light_free->up() ) ||
                              ( is_divine_storm && p->buffs.empyrean_power->up() ) || p->buffs.all_in->up();
 
@@ -1850,6 +1844,18 @@ public:
         num_hopo_spent = 5.0;
       }
     }
+
+    // Hammer of Light specifically gets benefit from Crusade stacks that it applies
+    if ( is_hammer_of_light_driver && num_hopo_spent > 0 && p->buffs.crusade->check() )
+    {
+      p->buffs.crusade->trigger( as<int>( num_hopo_spent ) );
+    }
+
+    ab::execute();
+
+    // if this is a vanq-hammer-based DS, don't do this stuff
+    if ( ab::background && is_divine_storm )
+      return;
 
     if ( p->talents.righteous_cause->ok() && p->cooldowns.righteous_cause_icd->up() )
     {
@@ -1877,8 +1883,7 @@ public:
     if ( p->talents.relentless_inquisitor->ok() && !ab::background )
       p->buffs.relentless_inquisitor->trigger();
 
-    // ToDo (Fluttershy): Check if this correctly increases Hammer of Light damage
-    if ( num_hopo_spent > 0 && p->buffs.crusade->check() )
+    if ( num_hopo_spent > 0 && p->buffs.crusade->check() && !is_hammer_of_light_driver )
     {
       p->buffs.crusade->trigger( as<int>( num_hopo_spent ) );
     }
