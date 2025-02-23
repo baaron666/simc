@@ -982,7 +982,8 @@ struct retribution_aura_t : public paladin_aura_base_t
   {
     parse_options( options_str );
 
-    if ( !p->talents.auras_of_swift_vengeance->ok() )
+    // Placeholder to not remove Retribution Aura completely
+    if ( !p->talents.auras_of_the_resolute->ok() )
       background = true;
 
     aura_buff = p->buffs.retribution_aura;
@@ -4013,6 +4014,27 @@ void paladin_t::create_buffs()
     buffs.templar.lights_deliverance->apply_affecting_aura( spec.retribution_paladin_2 );
     buffs.templar.undisputed_ruling->apply_affecting_aura( spec.retribution_paladin_2 );
     buffs.templar.sanctification->apply_affecting_aura( spec.retribution_paladin_2 );
+  }
+
+  if ( bugs && specialization() == PALADIN_PROTECTION && talents.of_dusk_and_dawn->ok() && talents.templar.undisputed_ruling->ok() && talents.eye_of_tyr->ok() )
+  {
+    buffs.blessing_of_dusk->set_stack_change_callback( [ this ]( buff_t* b, int, int new_ ) {
+      for ( auto a : action_list )
+      {
+        if ( a->id != 387174 )
+          continue;
+
+        if ( new_ == 1 )
+          a->dynamic_recharge_multiplier *= .9;
+        else
+          a->dynamic_recharge_multiplier /= .9;
+
+        if ( a->cooldown->action == a )
+          a->cooldown->adjust_recharge_multiplier();
+        if ( a->internal_cooldown->action == a )
+          a->internal_cooldown->adjust_recharge_multiplier();
+      }
+    } );
   }
 }
 

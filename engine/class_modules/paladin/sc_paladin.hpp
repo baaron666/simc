@@ -772,22 +772,6 @@ public:
 
       const spell_data_t* suns_avatar;
     } herald_of_the_sun;
-
-    // Remove after 11.0.5
-    const spell_data_t* auras_of_swift_vengeance;
-    const spell_data_t* seasoned_warhorse;
-    const spell_data_t* justification;
-    const spell_data_t* seal_of_mercy;
-    const spell_data_t* crusaders_reprieve;
-    const spell_data_t* strength_of_conviction;
-    const spell_data_t* seal_of_alacrity;
-    const spell_data_t* incandescence;
-    const spell_data_t* touch_of_light;
-    const spell_data_t* seal_of_order;
-    const spell_data_t* fading_light;
-
-    
-
   } talents;
 
   // Paladin options
@@ -1190,7 +1174,7 @@ public:
   // Damage increase whitelists
   struct affected_by_t
   {
-    bool avenging_wrath, judgment, blessing_of_dawn, seal_of_reprisal, seal_of_order, divine_purpose,
+    bool avenging_wrath, judgment, blessing_of_dawn, seal_of_reprisal, divine_purpose,
       divine_purpose_cost, sacred_strength;                                                // Shared
     bool crusade, highlords_judgment, highlords_judgment_hidden, final_reckoning_st, final_reckoning_aoe,
       blades_of_light, divine_hammer, ret_t29_2p, ret_t29_4p, rise_from_ash, winning_streak,
