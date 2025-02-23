@@ -2841,8 +2841,6 @@ struct kill_command_sv_t : public hunter_pet_attack_t<hunter_main_pet_t>
   {
     if ( !o()->talents.bloodseeker.ok() )
       dot_duration = 0_ms;
-
-    base_multiplier *= 1 + o()->talents.alpha_predator->effectN( 2 ).percent();
   }
 
   double composite_da_multiplier( const action_state_t* s ) const override
@@ -3593,8 +3591,11 @@ int hunter_t::ticking_dots( hunter_td_t* td )
   dots += hunter_dots.merciless_blow->is_ticking();
   dots += hunter_dots.spearhead->is_ticking();
 
-  auto pet_dots = pets.main->get_target_data( td->target )->dots;
-  dots += pet_dots.bloodseeker->is_ticking();
+  if ( pets.main )
+  {
+    auto pet_dots = pets.main->get_target_data( td->target )->dots;
+    dots += pet_dots.bloodseeker->is_ticking();
+  }
 
   if ( auto bear = pets.bear.active_pet() )
     dots += bear->get_target_data( td->target )->dots.rend_flesh->is_ticking();
@@ -6266,18 +6267,6 @@ struct flanking_strike_t: hunter_melee_attack_t
 
       if ( p->talents.merciless_blow.ok() )
         merciless_blow = p->get_background_action<merciless_blow_t>( "flanking_strike_merciless_blow" );
-    }
-
-    double composite_da_multiplier( const action_state_t* s ) const override
-    {
-      double am = hunter_melee_attack_t::composite_da_multiplier( s );
-
-      double bonus = p() -> cache.mastery() * p() -> mastery.spirit_bond -> effectN( affected_by.spirit_bond.direct ).mastery_value();
-      bonus *= 1 + p()->mastery.spirit_bond_buff->effectN( 1 ).percent();
-      
-      am *= 1 + bonus;
-
-      return am;
     }
 
     void execute() override
