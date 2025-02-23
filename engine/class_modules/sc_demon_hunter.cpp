@@ -3182,15 +3182,11 @@ struct fel_desolation_t : public demonsurge_trigger_t<demonsurge_ability::FEL_DE
   fel_desolation_t( demon_hunter_t* p, util::string_view options_str )
     : base_t( "fel_desolation", p, p->hero_spec.fel_desolation, options_str )
   {
+    cooldown = p->cooldown.fel_devastation;
     // 2024-07-07 -- Fel Desolation doesn't benefit from DGB CDR
-    // 2024-07-07 -- Fel Desolation doesn't share a cooldown with Fel Devastation
     if ( p->bugs )
     {
       benefits_from_dgb_cdr = false;
-    }
-    else
-    {
-      cooldown = p->cooldown.fel_devastation;
     }
   }
 
@@ -5830,7 +5826,7 @@ struct felblade_t : public inertia_trigger_t<demon_hunter_attack_t>
       event_t::cancel( p()->soul_fragment_pick_up );
       p()->consume_soul_fragments( soul_fragment::ANY, false, max_fragments_consumed );
     }
-      p()->buff.unbound_chaos->expire();
+    p()->buff.unbound_chaos->expire();
   }
 
   bool ready() override
