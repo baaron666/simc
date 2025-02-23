@@ -679,8 +679,6 @@ public:
     buff_t* matted_fur;
     buff_t* moonkin_form;
     buff_t* natures_vigil;
-    buff_t* rising_light_falling_night_day;  // TODO: remove in 11.1
-    buff_t* rising_light_falling_night_night;  // TODO: remove in 11.1
     buff_t* tiger_dash;
     buff_t* ursine_vigor;
     buff_t* wild_charge_movement;
@@ -877,9 +875,7 @@ public:
     player_talent_t gale_winds;
     player_talent_t grievous_wounds;
     player_talent_t improved_barkskin;
-    player_talent_t improved_rejuvenation;  // TODO: remove in 11.1
     player_talent_t improved_stampeding_roar;
-    player_talent_t improved_sunfire;  // TODO: remove in 11.1
     player_talent_t incapacitating_roar;
     player_talent_t incessant_tempest;
     player_talent_t innervate;
@@ -904,7 +900,6 @@ public:
     player_talent_t rejuvenation;
     player_talent_t remove_corruption;
     player_talent_t renewal;
-    player_talent_t rising_light_falling_night;  // TODO: remove in 11.1
     player_talent_t rip;
     player_talent_t skull_bash;
     player_talent_t soothe;
@@ -1043,7 +1038,6 @@ public:
     player_talent_t incarnation_bear;
     player_talent_t infected_wounds_bear;
     player_talent_t innate_resolve;
-    player_talent_t layered_mane;  // TODO: remove in 11.1
     player_talent_t lunar_beam;
     player_talent_t mangle;
     player_talent_t maul;
@@ -1227,7 +1221,6 @@ public:
     const spell_data_t* full_moon;
     const spell_data_t* half_moon;
     const spell_data_t* incarnation_moonkin;
-    const spell_data_t* moonkin_form;  // TODO: remove in 11.1
     const spell_data_t* shooting_stars_dmg;
     const spell_data_t* starfall;
     const spell_data_t* stellar_amplification;
@@ -3186,7 +3179,7 @@ struct cat_form_buff_t final : public druid_buff_t, public swap_melee_t
 // Moonkin Form =============================================================
 struct moonkin_form_buff_t final : public druid_buff_t
 {
-  moonkin_form_buff_t( druid_t* p ) : base_t( p, "moonkin_form", p->spec.moonkin_form )
+  moonkin_form_buff_t( druid_t* p ) : base_t( p, "moonkin_form", p->talent.moonkin_form )
   {
     add_invalidate( CACHE_ARMOR );
     add_invalidate( CACHE_EXP );
@@ -3671,7 +3664,7 @@ struct cat_form_t final : public trigger_call_of_the_elder_druid_t<druid_form_t>
 // Moonkin Form Spell =======================================================
 struct moonkin_form_t final : public druid_form_t
 {
-  DRUID_ABILITY( moonkin_form_t, druid_form_t, "moonkin_form", p->spec.moonkin_form )
+  DRUID_ABILITY( moonkin_form_t, druid_form_t, "moonkin_form", p->talent.moonkin_form )
   {
     set_form( MOONKIN_FORM );
   }
@@ -5415,11 +5408,9 @@ struct ironfur_t final : public rage_spender_t<>
 
   action_t* thorns = nullptr;
   timespan_t goe_ext;
-  double lm_chance;
 
   DRUID_ABILITY( ironfur_t, base_t, "ironfur", p->talent.ironfur ),
-    goe_ext( find_effect( p->buff.guardian_of_elune, A_ADD_FLAT_MODIFIER, P_DURATION ).time_value() ),
-    lm_chance( p->talent.layered_mane->effectN( 1 ).percent() )
+    goe_ext( find_effect( p->buff.guardian_of_elune, A_ADD_FLAT_MODIFIER, P_DURATION ).time_value() )
   {
     use_off_gcd = true;
     harmful = may_miss = may_dodge = may_parry = may_block = false;
@@ -5432,12 +5423,6 @@ struct ironfur_t final : public rage_spender_t<>
   {
     base_t::execute();
 
-    int stack = 1;
-
-    // TODO: does guardian of elune also apply to the extra application from layered mane?
-    if ( p()->talent.layered_mane.ok() && rng().roll( lm_chance ) )
-      stack++;
-
     auto dur = p()->buff.ironfur->buff_duration();
 
     if ( p()->buff.guardian_of_elune->check() )
@@ -5446,7 +5431,7 @@ struct ironfur_t final : public rage_spender_t<>
       p()->buff.guardian_of_elune->expire( this );
     }
 
-    p()->buff.ironfur->trigger( stack, dur );
+    p()->buff.ironfur->trigger( dur );
 
     if ( thorns && !proc )
       thorns->execute();
@@ -5723,7 +5708,7 @@ struct raze_t final : public trigger_aggravate_wounds_t<DRUID_GUARDIAN,
     parse_effect_direct_mods( data().effectN( 1 ), false );
 
     aoe = -1;  // actually a frontal cone
-    reduced_aoe_targets = !p->is_ptr() ? 5.0 : data().effectN( 3 ).base_value();
+    reduced_aoe_targets = data().effectN( 3 ).base_value();
   }
 
   double attack_direct_power_coefficient( const action_state_t* s ) const
@@ -6629,19 +6614,13 @@ struct yseras_gift_t final : public druid_heal_t
 // NOTE: this msut come after regrowth and rejuvenation due to reinvigoration
 struct frenzied_regeneration_t final : public bear_attacks::rage_spender_t<druid_heal_t>
 {
-  cooldown_t* dummy_cd;
-  cooldown_t* orig_cd;
   action_t* regrowth = nullptr;
   action_t* rejuvenation = nullptr;
   double goe_mul = 0.0;
   double ir_mul;
-  double lm_pct;
 
   DRUID_ABILITY( frenzied_regeneration_t, base_t, "frenzied_regeneration", p->talent.frenzied_regeneration ),
-    dummy_cd( p->get_cooldown( "dummy_cd" ) ),
-    orig_cd( cooldown ),
-    ir_mul( p->talent.innate_resolve->effectN( 1 ).percent() ),
-    lm_pct( p->talent.layered_mane->effectN( 2 ).percent() )
+    ir_mul( p->talent.innate_resolve->effectN( 1 ).percent() )
   {
     target = p;
 
@@ -6685,12 +6664,7 @@ struct frenzied_regeneration_t final : public bear_attacks::rage_spender_t<druid
 
   void execute() override
   {
-    if ( rng().roll( lm_pct ) )
-      cooldown = dummy_cd;
-
     base_t::execute();
-
-    cooldown = orig_cd;
 
     p()->buff.guardian_of_elune->expire( this );
 
@@ -8175,11 +8149,7 @@ struct shooting_stars_t final : public druid_spell_t
 // Skull Bash ===============================================================
 struct skull_bash_t final : public use_fluid_form_t<DRUID_FERAL, druid_interrupt_t>
 {
-  DRUID_ABILITY( skull_bash_t, base_t, "skull_bash", p->talent.skull_bash )
-  {
-    if ( !p->is_ptr() )
-      base_t::autoshift = nullptr;
-  }
+  DRUID_ABILITY( skull_bash_t, base_t, "skull_bash", p->talent.skull_bash ) {}
 };
 
 // Solar Beam ===============================================================
@@ -8629,7 +8599,7 @@ struct sunfire_t final : public druid_spell_t
     sunfire_damage_t( druid_t* p, flag_e f ) : base_t( "sunfire_dmg", p, p->spec.sunfire_dmg, f )
     {
       dual = background = proc = true;
-      aoe = p->talent.improved_sunfire.ok() || p->is_ptr() ? -1 : 0;
+      aoe = -1;
       base_aoe_multiplier = 0;
 
       dot_name = "sunfire";
@@ -10058,9 +10028,7 @@ void druid_t::init_spells()
   talent.gale_winds                     = CT( "Gale Winds" );
   talent.grievous_wounds                = CT( "Grievous Wounds" );
   talent.improved_barkskin              = CT( "Improved Barkskin" );
-  talent.improved_rejuvenation          = CT( "Improved Rejuvenation" );  // TODO: remove in 11.1
   talent.improved_stampeding_roar       = CT( "Improved Stampeding Roar");
-  talent.improved_sunfire               = CT( "Improved Sunfire" );
   talent.incapacitating_roar            = CT( "Incapacitating Roar" );
   talent.incessant_tempest              = CT( "Incessant Tempest" );
   talent.innervate                      = CT( "Innervate" );
@@ -10085,7 +10053,6 @@ void druid_t::init_spells()
   talent.rejuvenation                   = CT( "Rejuvenation" );
   talent.remove_corruption              = CT( "Remove Corruption" );
   talent.renewal                        = CT( "Renewal" );
-  talent.rising_light_falling_night     = CT( "Rising Light, Falling Night" );
   talent.rip                            = CT( "Rip" );
   talent.skull_bash                     = CT( "Skull Bash" );
   talent.soothe                         = CT( "Soothe" );
@@ -10227,7 +10194,6 @@ void druid_t::init_spells()
   talent.incarnation_bear               = ST( "Incarnation: Guardian of Ursoc" );
   talent.infected_wounds_bear           = STS( "Infected Wounds", DRUID_GUARDIAN );
   talent.innate_resolve                 = ST( "Innate Resolve" );
-  talent.layered_mane                   = ST( "Layered Mane" );
   talent.lunar_beam                     = ST( "Lunar Beam" );
   talent.mangle                         = ST( "Mangle" );
   talent.maul                           = ST( "Maul" );
@@ -10411,7 +10377,6 @@ void druid_t::init_spells()
   spec.full_moon                = check( talent.new_moon, 274283 );
   spec.half_moon                = check( talent.new_moon, 274282 );
   spec.incarnation_moonkin      = check( talent.incarnation_moonkin, 102560 );
-  spec.moonkin_form             = !is_ptr() ? find_specialization_spell( "Moonkin Form" ) : talent.moonkin_form;
   spec.shooting_stars_dmg       = check( talent.shooting_stars, 202497 );  // shooting stars damage
   spec.starfall                 = find_specialization_spell( "Starfall" );
   spec.stellar_amplification    = check( talent.stellar_amplification, 450214 );
@@ -10683,20 +10648,12 @@ void druid_t::create_buffs()
 
   buff.matted_fur = make_fallback<matted_fur_buff_t>( talent.matted_fur.ok(), this, "matted_fur" );
 
-  buff.moonkin_form = make_fallback<moonkin_form_buff_t>( spec.moonkin_form->ok(), this, "moonkin_form" );
+  buff.moonkin_form = make_fallback<moonkin_form_buff_t>( talent.moonkin_form.ok(), this, "moonkin_form" );
 
   buff.natures_vigil = make_fallback( talent.natures_vigil.ok(), this, "natures_vigil", talent.natures_vigil )
     ->set_default_value( 0 )
     ->set_cooldown( 0_ms )
     ->set_freeze_stacks( true );
-
-  buff.rising_light_falling_night_day = make_fallback( talent.rising_light_falling_night.ok(),
-    this, "rising_light_falling_night__day", find_spell( 417714 ) );
-
-  buff.rising_light_falling_night_night = make_fallback( talent.rising_light_falling_night.ok(),
-    this, "rising_light_falling_night__night", find_spell( 417715 ) )
-      ->set_default_value_from_effect_type( A_MOD_VERSATILITY_PCT )
-      ->set_pct_buff_type( STAT_PCT_BUFF_VERSATILITY );
 
   buff.tiger_dash = make_fallback( talent.tiger_dash.ok(), this, "tiger_dash", talent.tiger_dash )
     ->set_cooldown( 0_ms )
@@ -10822,7 +10779,7 @@ void druid_t::create_buffs()
     ->set_quiet( true )
     ->set_max_stack( std::max( 1, as<int>( talent.orbit_breaker->effectN( 1 ).base_value() ) ) );
 
-  buff.owlkin_frenzy = make_fallback( specialization() == DRUID_BALANCE && spec.moonkin_form->ok(),
+  buff.owlkin_frenzy = make_fallback( specialization() == DRUID_BALANCE && talent.moonkin_form.ok(),
     this, "owlkin_frenzy", find_spell( 157228 ) );
 
   buff.shooting_stars_moonfire = make_fallback<shooting_stars_buff_t>( talent.shooting_stars.ok(),
@@ -11391,7 +11348,7 @@ void druid_t::create_actions()
   active.shift_to_cat = get_secondary_action<cat_form_t>( "cat_form_shift" );
   active.shift_to_cat->dual = true;
 
-  if ( spec.moonkin_form->ok() )
+  if ( talent.moonkin_form.ok() )
   {
     active.shift_to_moonkin = get_secondary_action<moonkin_form_t>( "moonkin_form_shift" );
     active.shift_to_moonkin->dual = true;
@@ -12034,7 +11991,7 @@ void druid_t::init_special_effects()
     new denizen_of_the_dream_cb_t( this, *driver );
   }
 
-  if ( specialization() == DRUID_BALANCE && spec.moonkin_form->ok() )
+  if ( specialization() == DRUID_BALANCE && talent.moonkin_form.ok() )
   {
     struct owlkin_frenzy_cb_t final : public druid_cb_t
     {
@@ -12049,7 +12006,7 @@ void druid_t::init_special_effects()
 
     const auto driver = new special_effect_t( this );
     driver->name_str = buff.owlkin_frenzy->name();
-    driver->spell_id = spec.moonkin_form->id();
+    driver->spell_id = talent.moonkin_form->id();
     driver->proc_chance_ =
       find_effect( find_specialization_spell( "Owlkin Frenzy" ), A_ADD_FLAT_MODIFIER, P_PROC_CHANCE ).percent();
     driver->custom_buff = buff.owlkin_frenzy;
@@ -12582,14 +12539,6 @@ void druid_t::precombat_init()
 
     if ( stacks )
       buff.orbit_breaker->trigger( stacks );
-  }
-
-  if ( talent.rising_light_falling_night.ok() )
-  {
-    if ( timeofday == timeofday_e::DAY_TIME )
-      buff.rising_light_falling_night_day->trigger();
-    else
-      buff.rising_light_falling_night_night->trigger();
   }
 
   auto start_buff = [ this ]( buff_t* b ) {
@@ -13990,7 +13939,6 @@ void druid_t::apply_affecting_auras( action_t& a )
   a.apply_affecting_aura( talent.astral_influence );
   a.apply_affecting_aura( talent.gale_winds );
   a.apply_affecting_aura( talent.grievous_wounds );
-  a.apply_affecting_aura( talent.improved_rejuvenation );  // TODO: remove in 11.1
   a.apply_affecting_aura( talent.improved_stampeding_roar );
   a.apply_affecting_aura( talent.incessant_tempest );
   a.apply_affecting_aura( talent.instincts_of_the_claw );
@@ -14119,7 +14067,6 @@ void druid_t::parse_action_effects( action_t* action )
   _a->parse_effects( spec.cat_form_passive_2, talent.hunt_beneath_the_open_skies,
                      [ this ] { return buff.cat_form->check(); } );
   _a->parse_effects( buff.moonkin_form );
-  _a->parse_effects( buff.rising_light_falling_night_day );
 
   auto hotw_mask = effect_mask_t( true );
   switch( specialization() )
@@ -14241,17 +14188,9 @@ void druid_t::parse_action_effects( action_t* action )
   _a->parse_effects( spec.fury_of_nature, &_a->ta_multiplier_effects, effect_mask_t( false ).enable( 1 ),
                      talent.fury_of_nature->effectN( 1 ).percent() );
 
-  if ( !is_ptr() )
-    _a->parse_effects( spec.fury_of_nature, effect_mask_t( false ).enable( 2, 3 ), talent.fury_of_nature->effectN( 1 ).percent() );
-  else
-    _a->parse_effects( spec.fury_of_nature, effect_mask_t( true ).disable( 1 ), talent.lunar_calling );
-
+  _a->parse_effects( spec.fury_of_nature, effect_mask_t( true ).disable( 1 ), talent.lunar_calling );
   _a->parse_effects( buff.gory_fur, EXPIRE_BUFF );
   _a->parse_effects( buff.rage_of_the_sleeper );
-
-  if ( !is_ptr() )
-    _a->parse_effects( talent.reinvigoration, effect_mask_t( true ).disable( talent.innate_resolve.ok() ? 1 : 2 ) );
-
   _a->parse_effects( buff.tooth_and_claw );
   _a->parse_effects( buff.vicious_cycle_mangle, USE_DEFAULT, EXPIRE_BUFF );
   _a->parse_effects( buff.vicious_cycle_maul, USE_DEFAULT, EXPIRE_BUFF );
