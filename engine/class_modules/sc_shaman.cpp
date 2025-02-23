@@ -724,7 +724,7 @@ public:
   /// Flowing Spirits tracking
   size_t active_flowing_spirits_proc;
   // Attempts, successes
-  std::vector<std::tuple<simple_sample_data_t, simple_sample_data_t>> flowing_spirits_procs;
+  std::vector<std::tuple<simple_sample_data_t, simple_sample_data_t, simple_sample_data_t>> flowing_spirits_procs;
 
   /// Molten Thunder 11.1
   double molten_thunder_chance;
@@ -981,8 +981,11 @@ public:
     // Surging totem whiff
     double surging_totem_miss_chance = 0.1;
 
-    // 11.1 feral spirit cap
-    unsigned max_flowing_spirit_procs = 5U;
+    // 11.1 Flowing Spirits proc modeling tweaks
+    unsigned max_flowing_spirits = 8;        // Maximum number of Flowing Spirits procced wolves
+    double flowing_spirits_floor = 0.025;    // Minimum probability of proccing
+    double flowing_spirits_step = 0.025;     // Reduced probability per active wolf/proc
+    bool   flowing_spirits_per_wolf = false; // Reduce proc rate based on active wolf/proc
   } options;
 
   // Cooldowns
@@ -11658,8 +11661,14 @@ void shaman_t::create_options()
     }
   ) );
 
-  add_option( opt_uint( "shaman.max_flowing_spirit_procs",
-    options.max_flowing_spirit_procs , 0, std::numeric_limits<unsigned>::max() ) );
+  add_option( opt_uint( "shaman.max_flowing_spirits",
+    options.max_flowing_spirits, 0, std::numeric_limits<unsigned>::max() ) );
+  add_option( opt_float( "shaman.flowing_spirits_floor",
+    options.flowing_spirits_floor, 0.0, 1.0 ) );
+  add_option( opt_float( "shaman.flowing_spirits_step",
+    options.flowing_spirits_step, 0.0, 1.0 ) );
+  add_option( opt_bool( "shaman.flowing_spirits_per_wolf",
+    options.flowing_spirits_per_wolf ) );
 }
 
 // shaman_t::create_profile ================================================
@@ -11711,7 +11720,10 @@ void shaman_t::copy_from( player_t* source )
 
   options.surging_totem_miss_chance = p->options.surging_totem_miss_chance;
 
-  options.max_flowing_spirit_procs = p->options.max_flowing_spirit_procs;
+  options.max_flowing_spirits= p->options.max_flowing_spirits;
+  options.flowing_spirits_floor = p->options.flowing_spirits_floor;
+  options.flowing_spirits_step = p->options.flowing_spirits_step;
+  options.flowing_spirits_per_wolf = p->options.flowing_spirits_per_wolf;
 }
 
 // shaman_t::create_special_effects ========================================
@@ -13595,15 +13607,35 @@ void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfu
   double chance = 0.0;
   auto n_summons = 1U +
     as<unsigned>( sets->set( SHAMAN_ENHANCEMENT, TWW1, B4 )->effectN( 1 ).base_value() );
+  bool record_by_wolf = dbc->ptr && options.flowing_spirits_per_wolf;
+  unsigned record_index = record_by_wolf
+    ? pet.all_wolves.size()
+    : active_flowing_spirits_proc * n_summons;
+
+  if ( flowing_spirits_procs.size() <= record_index )
+  {
+    flowing_spirits_procs.resize( record_index + 1 );
+  }
 
   if ( dbc->ptr )
   {
-    if ( active_flowing_spirits_proc == options.max_flowing_spirit_procs )
+    // Apparently in-game, Flowing Spirits generated wolves cannot cause the total number of Spirit
+    // Wolves to exceed 8.
+
+    if ( pet.all_wolves.size() + n_summons > options.max_flowing_spirits )
     {
+      std::get<2>( flowing_spirits_procs[ record_index ] ).add( 1.0 );
       return;
     }
 
-    chance = talent.flowing_spirits->effectN( 1 ).percent();
+    unsigned mul = options.flowing_spirits_per_wolf
+      ? pet.all_wolves.size()
+      : active_flowing_spirits_proc;
+
+    chance = std::max(
+      options.flowing_spirits_floor,
+      talent.flowing_spirits->effectN( 1 ).percent() - mul * options.flowing_spirits_step
+    );
   }
   else
   {
@@ -13621,19 +13653,14 @@ void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfu
     name(), windfurySourceTrigger ? "windfury_attack" : state->action->name(),
     active_flowing_spirits_proc, chance, triggered );
 
-  if ( flowing_spirits_procs.size() <= active_flowing_spirits_proc * n_summons )
-  {
-    flowing_spirits_procs.resize( active_flowing_spirits_proc * n_summons + 1 );
-  }
-
-  std::get<0>( flowing_spirits_procs[ active_flowing_spirits_proc * n_summons ] ).add( 1.0 );
+  std::get<0>( flowing_spirits_procs[ record_index ] ).add( 1.0 );
 
   if ( !triggered )
   {
     return;
   }
 
-  std::get<1>( flowing_spirits_procs[ active_flowing_spirits_proc * n_summons ] ).add( 1.0 );
+  std::get<1>( flowing_spirits_procs[ record_index ] ).add( 1.0 );
 
   auto duration = spell.flowing_spirits_feral_spirit->duration();
 
@@ -15218,6 +15245,7 @@ void shaman_t::merge( player_t& other )
   {
     std::get<0>( flowing_spirits_procs[ idx ] ).merge( std::get<0>( s.flowing_spirits_procs[ idx ] ) );
     std::get<1>( flowing_spirits_procs[ idx ] ).merge( std::get<1>( s.flowing_spirits_procs[ idx ] ) );
+    std::get<2>( flowing_spirits_procs[ idx ] ).merge( std::get<2>( s.flowing_spirits_procs[ idx ] ) );
   }
 }
 
@@ -15297,10 +15325,11 @@ public:
        << "</tr>\n"
        << "<tr>\n"
        << "<th class=\"left\"># of wolves</th>"
-       << "<th class=\"left\">Proc chance%</th>"
+       << "<th class=\"left\">Proc chance%<br/>(actual)</th>"
        << "<th class=\"left\"># of attempts<br/>(per iteration)</th>"
        << "<th class=\"left\"># of procs<br/>(per iteration)</th>"
        << "<th class=\"left\">% of procs</th>\n"
+       << "<th class=\"left\">Attempts@<br/>max wolves (per iteration)</th>\n"
        << "</tr>\n"
        << "</thead>\n";
   }
@@ -15319,24 +15348,34 @@ public:
     {
       const auto& attempts = std::get<0>( p.flowing_spirits_procs[ idx ] );
       const auto& procs = std::get<1>( p.flowing_spirits_procs[ idx ] );
-      if ( attempts.count() == 0 && procs.count() == 0 )
+      const auto& max_wolf = std::get<2>( p.flowing_spirits_procs[ idx ] );
+      if ( attempts.count() == 0 && procs.count() == 0 && max_wolf.count() == 0 )
       {
         continue;
       }
 
       os << fmt::format( "<tr class=\"{}\">\n", row++ & 1 ? "odd" : "even" );
       os << fmt::format( "<td class=\"left\">{}</td>", idx );
-      os << fmt::format( "<td class=\"left\">{:.3f}%</td>",
+      os << fmt::format( "<td class=\"left\">{:.3f}% ({:.3f}%)</td>",
         100.0 * ( p.dbc->ptr
-          ? p.talent.flowing_spirits->effectN( 1 ).percent()
+          ? std::max( p.options.flowing_spirits_floor,
+              p.talent.flowing_spirits->effectN( 1 ).percent() -
+              p.options.flowing_spirits_step * ( p.sets->has_set_bonus( SHAMAN_ENHANCEMENT, TWW1, B4 )
+                ? idx / 2
+                : idx ) )
           : p.options.flowing_spirits_chances[ active_proc ]
-      ) );
+        ),
+        util::round( 100.0 * ( attempts.count() > 0 ? procs.count() / as<double>( attempts.count() + max_wolf.count() ) : 0.0 ), 3 )
+      );
       os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>", attempts.count(),
         util::round( attempts.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>", procs.count(),
         util::round( procs.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << fmt::format( "<td class=\"left\">{:.3f}%</td>",
         util::round( 100.0 * procs.count() / total_procs, 3 ) );
+      os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>",
+        max_wolf.count(),
+        util::round( max_wolf.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << "</tr>\n";
 
       ++active_proc;
