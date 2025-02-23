@@ -13736,9 +13736,11 @@ void eclipse_handler_t::advance_eclipse( bool active )
 
     get_boat<E>()->trigger();
     p->buff.parting_skies->trigger();
-    p->buff.solstice->trigger();
     p->buff.cenarius_might->trigger();
     p->buff.astral_communion->trigger();
+    // NOTE: solstice can trigger after a spender queued immeidately before entering eclipse, so queue up solstice
+    // application so it overwrite hail of stars
+    make_event( *p->sim, 1_ms, [ this ] { p->buff.solstice->trigger(); } );
   }
   else
   {
