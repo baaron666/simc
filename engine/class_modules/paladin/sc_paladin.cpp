@@ -2281,8 +2281,9 @@ struct hammer_of_light_t : public holy_power_consumer_t<paladin_melee_attack_t>
       p()->buffs.shield_of_the_righteous->execute();
     }
    }
-   void impact(action_state_t* s) override
+   void impact( action_state_t* s ) override
    {
+     holy_power_consumer_t<paladin_melee_attack_t>::impact( s );
      if ( p()->talents.templar.undisputed_ruling->ok() )
        p()->buffs.templar.undisputed_ruling->execute();
    }
