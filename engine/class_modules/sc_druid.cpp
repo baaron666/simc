@@ -223,6 +223,7 @@ struct druid_action_data_t  // variables that need to be accessed from action_t*
   uint32_t action_flags = 0;
   // form spell to automatically cast
   action_t* autoshift = nullptr;
+  bool delayed_autoshift = false;
 
   bool has_flag( uint32_t f ) const { return action_flags & f; }
   bool is_flag( flag_e f ) const { return ( action_flags & f ) == f; }
@@ -1828,7 +1829,8 @@ public:
 
   void schedule_execute( action_state_t* s = nullptr ) override
   {
-    check_autoshift();
+    if ( !delayed_autoshift )
+      check_autoshift();
 
     ab::schedule_execute( s );
   }
@@ -1836,7 +1838,7 @@ public:
   void execute() override
   {
     // offgcd actions bypass schedule_execute so check for autoshift
-    if ( ab::use_off_gcd )
+    if ( ab::use_off_gcd || delayed_autoshift )
       check_autoshift();
 
     ab::execute();
@@ -8411,6 +8413,8 @@ struct starfire_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
 
     base_aoe_multiplier = 1.0 / ( 1.0 + find_effect( p->talent.lunar_calling, &data() ).percent() );
 
+    delayed_autoshift = true;
+
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->talent.wild_surges )
       ->parse_effects( p->buff.eclipse_lunar, p->talent.umbral_intensity )
@@ -8935,6 +8939,8 @@ struct wrath_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
     : base_t( n, p, s, f ), smolder_mul( p->talent.astral_smolder->effectN( 1 ).percent() )
   {
     form_mask = NO_FORM | MOONKIN_FORM;
+
+    delayed_autoshift = true;
 
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->spec.astral_power )
