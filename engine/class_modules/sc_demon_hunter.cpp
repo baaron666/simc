@@ -6700,7 +6700,8 @@ struct preemptive_strike_t : public demon_hunter_ranged_attack_t
   preemptive_strike_t( util::string_view name, demon_hunter_t* p )
     : demon_hunter_ranged_attack_t( name, p, p->talent.aldrachi_reaver.preemptive_strike->effectN( 1 ).trigger() )
   {
-    background = dual = aoe = true;
+    background = dual = true;
+    aoe = -1;
   }
 
   // 2025-02-19 -- Preemptive Strike does not hit the primary target
