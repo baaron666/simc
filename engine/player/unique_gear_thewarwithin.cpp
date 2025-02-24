@@ -5737,15 +5737,10 @@ void eye_of_kezan( special_effect_t& effect )
         return;
       }
 
-      switch ( s->target->is_enemy() )
-      {
-        case true:
-          damage->execute();
-          break;
-        case false:
-          heal->execute_on_target( s->target );
-          break;
-      }
+      if ( s->target->is_enemy() )
+        damage->execute();
+      else
+        heal->execute_on_target( s->target );
     }
   };
   effect.proc_flags2_ = PF2_ALL_HIT;
@@ -5988,16 +5983,10 @@ void mechanocore_amplifier( special_effect_t& effect )
 
     void execute( action_t*, action_state_t* ) override
     {
-      bool highest = rng().roll( 0.5 );
-      switch ( highest )
-      {
-        case true:
-          buffs.at( util::highest_stat( listener, secondary_ratings ) )->trigger_high();
-          break;
-        case false:
-          buffs.at( util::lowest_stat( listener, secondary_ratings ) )->trigger_low();
-          break;
-      }
+      if ( rng().roll( 0.5 ) )
+        buffs.at( util::highest_stat( listener, secondary_ratings ) )->trigger_high();
+      else
+        buffs.at( util::lowest_stat( listener, secondary_ratings ) )->trigger_low();
     }
   };
 
@@ -6300,16 +6289,11 @@ void funhouse_lens( special_effect_t& effect )
     void execute() override
     {
       spell_t::execute();
-      bool crit = rng().roll( 0.5 );
-      switch ( crit )
-      {
-        case true:
-          crit_buff->trigger();
-          break;
-        case false:
-          haste_buff->trigger();
-          break;
-      }
+
+      if ( rng().roll( 0.5 ) )
+        crit_buff->trigger();
+      else
+        haste_buff->trigger();
     }
   };
 
@@ -6377,7 +6361,7 @@ void mugs_moxie_jug( special_effect_t& effect )
 
   effect.proc_flags2_ = PF2_ALL_HIT;
   effect.custom_buff   = crit_buff;
-  auto main_proc = new dbc_proc_callback_t( effect.player, effect );
+  new dbc_proc_callback_t( effect.player, effect );
 }
 
 // Flarendo's Pilot Light
@@ -6505,16 +6489,10 @@ void amorphous_relic( special_effect_t& effect )
 
       if ( player->in_combat )
       {
-        bool haste = player->rng().roll( 0.5 );
-        switch ( haste )
-        {
-          case true:
-            haste_buff->trigger();
-            break;
-          case false:
-            crit_buff->trigger();
-            break;
-        }
+        if ( rng().roll( 0.5 ) )
+          haste_buff->trigger();
+        else
+          crit_buff->trigger();
       }
     }
   };
@@ -7793,7 +7771,6 @@ void capos_molten_knuckles( special_effect_t& effect )
 
   effect.execute_action->execute_action->tick_action =
     create_proc_action<generic_proc_t>( "molten_gold_tick", effect, effect.player->find_spell( 473704 ) );
-  double tick_count = dot_spell->duration() / dot_spell->effectN( 1 ).period();
 
   effect.execute_action->execute_action->tick_action->base_dd_min =
     effect.execute_action->execute_action->tick_action->base_dd_max =
@@ -8924,8 +8901,12 @@ struct stat_buff_current_value_t : stat_buff_t
     if ( skipper_proc )
       amount *= skipper_mult;
     // Windsingers Mastery proc doesnt seem to be affected by this... for reasons?
-    if ( is_proc && ( data().id() == 465963 && util::highest_stat( source, secondary_ratings ) != STAT_MASTERY_RATING || data().id() != 465963 ) )
+    if ( ( is_proc && data().id() == 465963 &&
+           util::highest_stat( source, secondary_ratings ) != STAT_MASTERY_RATING ) ||
+         data().id() != 465963 )
+    {
       amount *= proc_mult;
+    }
 
     return amount;
   }
@@ -9248,7 +9229,7 @@ struct roaring_warqueen_citrine_t : public spell_t
     singing_citrines_drivers_e citrine = CITRINE_DRIVER_NONE;
     for ( auto& d : CITRINE_DRIVERS )
     {
-      if ( auto eff = unique_gear::find_special_effect( t, d ) )
+      if ( unique_gear::find_special_effect( t, d ) )
       {
         citrine = d;
         break;
@@ -9883,8 +9864,8 @@ void legendary_skippers_citrine( special_effect_t& effect )
     auto cb = new skippers_roaring_warqueens_estimate_cb_t( *skipper_rwq_estimate );
 
     effect.player->register_combat_begin( [ cb ]( player_t* p ) {
-      if ( ( !p->sim->single_actor_batch && p->sim->player_no_pet_list.size() > 1 ) &&
-               !p->thewarwithin_opts.force_estimate_skippers_group_benefit ||
+      if ( ( !p->sim->single_actor_batch && p->sim->player_no_pet_list.size() > 1 &&
+             !p->thewarwithin_opts.force_estimate_skippers_group_benefit ) ||
            p->thewarwithin_opts.personal_estimate_skippers_group_benefit )
         cb->deactivate();
     } );
