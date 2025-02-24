@@ -354,37 +354,36 @@ struct simplified_player_t : public player_t
     int item_level = 639;
     std::string variant = "default";
   } option;
-
   
   std::map<std::string, bob_settings_t> bob_settings = {
-      { "default", { ROLE_SPELL, is_ptr() ? 12.1  : 10.3 , true, 1.5_s, 0.40, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } }, // 250.9k
-      { "tank",    { ROLE_TANK,   6.1 , true, 1.5_s, 0.45, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } },      // 157.4k
-      { "healer",  { ROLE_HEAL,   1.8 , true, 1.5_s, 0.25, -1, 5, 1, 0.0, 20000.0, 0.0011, {} } },      // 78k
-      { "shadow",  { ROLE_SPELL,  is_ptr() ? 8.36 : 6.45, true, 1.5_s, 0.45, -1, 8, 1, -0.55, 20000.0, 0.0011, {       // 244.8k
-          { "two_mins_cds",      0.4, is_ptr() ? 40_s : 15_s, 120_s, 3_s },
-          { "one_mins_cds",      0.3, 15_s,  60_s, 3_s },
-          { "one_mins_cds_lingering",      0.25, 30_s,  60_s, 3_s },
-          { "two_mins_cds_two",  0.4, is_ptr() ? 65_s : 45_s, 120_s, 3_s } } } },
-      { "bm",      { ROLE_SPELL,  is_ptr() ? 6.9 : 6.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
+      { "default", { ROLE_SPELL, 12.1,  true, 1.5_s, 0.40, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } }, // 250.9k
+      { "tank",    { ROLE_TANK,   6.1,  true, 1.5_s, 0.45, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } },      // 157.4k
+      { "healer",  { ROLE_HEAL,   1.8,  true, 1.5_s, 0.25, -1, 5, 1, 0.0, 20000.0, 0.0011, {} } },      // 78k
+      { "shadow",  { ROLE_SPELL,  8.36, true, 1.5_s, 0.45, -1, 8, 1, -0.55, 20000.0, 0.0011, {       // 244.8k
+          { "two_mins_cds",           0.4,  40_s, 120_s, 3_s },
+          { "one_mins_cds",           0.3,  15_s, 60_s, 3_s },
+          { "one_mins_cds_lingering", 0.25, 30_s, 60_s, 3_s },
+          { "two_mins_cds_two",       0.4,  65_s, 120_s, 3_s } } } },
+      { "bm",      { ROLE_SPELL,      6.9,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
           { "two_mins_cds",           0.3,   20_s, 120_s, 3_s },
           { "two_mins_cds_lingering", 0.15,  30_s, 120_s, 3_s },
-          { "30s_cds",                0.35,  15_s, is_ptr() ? 18_s : 30_s, 3_s },
-          { "30s_cds_two",            0.08,   4_s, is_ptr() ? 18_s : 30_s, 3_s },
-          { "30s_cds_three",          0.06,   8_s, is_ptr() ? 18_s : 30_s, 3_s } } } },
-      { "assa",    { ROLE_SPELL, is_ptr() ? 5.17 : 4.65, false,   1_s, 0.5,  -1, 8, 1, 0.8, 11100.0, 0.0011, {              // 234.6k
+          { "30s_cds",                0.35,  15_s, 18_s , 3_s },
+          { "30s_cds_two",            0.08,   4_s, 18_s,  3_s },
+          { "30s_cds_three",          0.06,   8_s, 18_s,  3_s } } } },
+      { "assa",    { ROLE_SPELL, 5.17, false,   1_s, 0.5,  -1, 8, 1, 0.8, 11100.0, 0.0011, {              // 234.6k
           { "two_mins_cds", 0.9 , 20_s, 120_s, 6_s },
           { "one_mins_cds", 0.65, 14_s,  60_s, 8_s } } } },
-      { "unh",     { ROLE_SPELL, is_ptr() ? 7.0 : 5.7,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 18000.0, 0.0011, {             // 251.4k
+      { "unh",     { ROLE_SPELL, 7.0,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 18000.0, 0.0011, {             // 251.4k
           { "90s_cds",      1.1, 20_s,  90_s, 7_s },
           { "45s_cds",      0.6, 20_s,  45_s, 8_s } } } },
       // Could probably use some RNG in the 40s cds to better emulate the 30-40s variance in use timing
-      { "dk_frost",{ ROLE_SPELL,  is_ptr() ? 7.55 : 8.4,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 13900.0, 0.0011, {             // 262.4k
-          { "breath_of_sindragosa", 0.45,  20_s, 45_s*3, 3_s },
-          { "empower_rune_weapon", 0.2, 20_s, 45_s * 3, 3_s },
-          { "pillar_of_frost",    0.4, 12_s, 45_s, 2_s },
-          { "reapers_mark",        0.75,  6_s, 45_s, 4_s },
-          { "reapers_mark_cascade", 0.4, 6_s, 45_s, 10_s },
-          { "reapers_mark_cascade2", 0.1, 6_s, 45_s, 16_s }
+      { "dk_frost",{ ROLE_SPELL,  7.55,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 13900.0, 0.0011, {             // 262.4k
+          { "breath_of_sindragosa",  0.45,  20_s, 45_s*3, 3_s },
+          { "empower_rune_weapon",   0.2,  20_s, 135_s,  3_s },
+          { "pillar_of_frost",       0.4,  12_s,  45_s,  2_s },
+          { "reapers_mark",          0.75,  6_s,  45_s,  4_s },
+          { "reapers_mark_cascade",  0.4,   6_s,  45_s, 10_s },
+          { "reapers_mark_cascade2", 0.1,   6_s,  45_s, 16_s }
       } } },
   };
 
@@ -2033,7 +2032,7 @@ public:
       parse_target_effects( d_fn( &evoker_td_t::debuffs_t::melt_armor ), p()->talent.scalecommander.melt_armor_debuff );
     }
     
-    if ( p()->talent.scorching_embers.ok() && !p()->is_ptr() )
+    if ( p()->talent.scorching_embers.ok() )
     {
       parse_target_effects(
           []( actor_target_data_t* t ) {
@@ -2088,7 +2087,7 @@ public:
       mul *= p()->get_molten_embers_multiplier( t );
     }
 
-    if ( p()->is_ptr() && p()->talent.scorching_embers.ok() && spell_color == SPELL_RED )
+    if ( p()->talent.scorching_embers.ok() && spell_color == SPELL_RED )
     {
       mul *= p()->get_molten_embers_multiplier( t );
     }
@@ -3122,7 +3121,7 @@ struct empowered_release_spell_t : public empowered_release_t<evoker_spell_t>
   {
     auto m = empowered_release_t::composite_persistent_multiplier( s );
     
-    if ( p()->is_ptr() && !background && p()->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ) )
+    if ( !background && p()->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ) )
     {
       m *= 1 + p()->buff.jackpot->check_stack_value();
     }
@@ -3137,7 +3136,7 @@ struct empowered_release_spell_t : public empowered_release_t<evoker_spell_t>
     if ( background )
       return;
 
-    if ( p()->is_ptr() && p()->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ) )
+    if ( p()->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ) )
     {
       p()->buff.jackpot->expire();
     }
@@ -3508,7 +3507,7 @@ public:
 
     for ( auto& t : p()->allies_with_my_prescience )
     {
-      if ( t == player || p()->is_ptr() && ( t->role == ROLE_TANK || t->role == ROLE_HEAL ) ||
+      if ( t == player || ( t->role == ROLE_TANK || t->role == ROLE_HEAL ) ||
            ( std::count_if( p()->allied_augmentations.begin(), p()->allied_augmentations.end(),
                             [ t ]( evoker_t* e ) { return e->get_target_data( t )->buffs.ebon_might->up(); } ) +
              p()->get_target_data( t )->buffs.ebon_might->up() ) >= 2 )
@@ -3523,7 +3522,7 @@ public:
 
     for ( const auto& t : sim->player_no_pet_list )
     {
-      if ( t->is_sleeping() || p()->get_target_data( t )->buffs.ebon_might->up() || t == player || p()->is_ptr() && ( t->role == ROLE_TANK || t->role == ROLE_HEAL ) )
+      if ( t->is_sleeping() || p()->get_target_data( t )->buffs.ebon_might->up() || t == player || ( t->role == ROLE_TANK || t->role == ROLE_HEAL ) )
         continue;
 
       if ( range::find( p()->allies_with_my_prescience, t ) == p()->allies_with_my_prescience.end() )
@@ -3891,7 +3890,7 @@ struct fire_breath_t : public empowered_charge_spell_t
       base_t::trigger_dot( state );
       p()->get_target_data( state->target )->dots.fire_breath_traveling_flame->cancel();
 
-      if ( p()->talent.molten_embers.enabled() || p()->is_ptr() && p()->talent.scorching_embers.enabled() )
+      if ( p()->talent.molten_embers.enabled() || p()->talent.scorching_embers.enabled() )
       {
         auto td = p()->get_target_data( state->target );
         if ( td )
@@ -3924,7 +3923,7 @@ struct fire_breath_t : public empowered_charge_spell_t
     {
       empowered_release_spell_t::last_tick( d );
 
-      if ( p()->talent.molten_embers.enabled() || p()->talent.scorching_embers.enabled() && p()->is_ptr() )
+      if ( p()->talent.molten_embers.enabled() || p()->talent.scorching_embers.enabled() )
       {
         auto td = p()->get_target_data( d->target );
         if ( td )
@@ -5055,7 +5054,7 @@ struct shattering_star_t : public evoker_spell_t
       p()->buff.essence_burst->trigger();
     }
 
-    if ( p()->is_ptr() && p()->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ) )
+    if ( p()->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ) )
     {
       p()->buff.jackpot->trigger();
     }
@@ -5348,7 +5347,7 @@ struct dragonrage_t : public evoker_spell_t
 
     school = damage->school;
 
-    if ( p->is_ptr() && p->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B2 ) )
+    if ( p->sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B2 ) )
     {
       shattering_star = p->get_secondary_action<spells::shattering_star_t>( "shattering_star_2pc_dragonrage", "shattering_star_2pc_dragonrage",
                                                                          1 );
@@ -5418,7 +5417,7 @@ struct eruption_t : public essence_spell_t
 
     eruption_mass_eruption_t( evoker_t* p, std::string_view n )
       : evoker_spell_t( n, p, p->talent.scalecommander.mass_eruption_damage ),
-        tww2_4pc_mult( p->is_ptr() && p->sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B4 )
+        tww2_4pc_mult( p->sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B4 )
                            ? p->sets->set( EVOKER_AUGMENTATION, TWW2, B4 )->effectN( 2 ).percent()
                            : 0.0 )
     {
@@ -5473,7 +5472,7 @@ struct eruption_t : public essence_spell_t
       mass_eruption_max_targets( as<int>( p->talent.scalecommander.mass_eruption_buff->effectN( 1 ).base_value() ) ),
       motes_chance( p->talent.motes_of_possibility->proc_chance() ),
       is_overlord( false ),
-      tww2_4pc_mult( p->is_ptr() && p->sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B4 )
+      tww2_4pc_mult( p->sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B4 )
                          ? p->sets->set( EVOKER_AUGMENTATION, TWW2, B4 )->effectN( 2 ).percent()
                          : 0.0 )
   {
@@ -6213,7 +6212,7 @@ struct breath_of_eons_t : public evoker_spell_t
       add_child( melt_armor_dot );
     }
 
-    if ( p->is_ptr() && p->sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B2 ) )
+    if ( p->sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B2 ) )
     {
       upheaval_set = p->get_secondary_action<spells::upheaval_t::upheaval_damage_t>(
           "upheaval_tww2_2pc_eons", "upheaval_tww2_2pc_eons", false, true );
@@ -8565,7 +8564,7 @@ void evoker_t::init_special_effects()
 
   player_t::init_special_effects();
 
-  if ( is_ptr() && sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B2 ) )
+  if ( sets->has_set_bonus( EVOKER_AUGMENTATION, TWW2, B2 ) )
   {
     struct augmentation_tww2_2pc : public dbc_proc_callback_t
     {
@@ -8612,7 +8611,7 @@ void evoker_t::init_special_effects()
   }
 
   
-  if ( is_ptr() && sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B2 ) )
+  if ( sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B2 ) )
   {
     struct devastation_tww2_2pc : public dbc_proc_callback_t
     {
@@ -8888,7 +8887,7 @@ void evoker_t::create_buffs()
           } )
           ->set_freeze_stacks( true );
 
-  buff.jackpot = MBF( is_ptr() && sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ), this, "jackpot", find_spell( 1217769 ) )
+  buff.jackpot = MBF( sets->has_set_bonus( EVOKER_DEVASTATION, TWW2, B4 ), this, "jackpot", find_spell( 1217769 ) )
                      ->set_default_value_from_effect( 1, 0.01 );
 
   // Preservation
@@ -9113,7 +9112,7 @@ void evoker_t::reset()
     }
   }
 
-  if ( talent.molten_embers.enabled() || talent.scorching_embers.enabled() && is_ptr() )
+  if ( talent.molten_embers.enabled() || talent.scorching_embers.enabled() )
   {
     for ( evoker_td_t* td : target_data.get_entries() )
     {
@@ -9614,7 +9613,7 @@ void evoker_t::extend_ebon( timespan_t extend )
 
 double evoker_t::get_molten_embers_multiplier( player_t* target, bool recalculate ) const
 {
-  if ( !( talent.molten_embers.enabled() || is_ptr() && talent.scorching_embers.enabled() ) )
+  if ( !( talent.molten_embers.enabled() || talent.scorching_embers.enabled() ) )
     return 1.0;
 
   auto td = get_target_data( target );
@@ -9635,8 +9634,7 @@ double evoker_t::get_molten_embers_multiplier( player_t* target, bool recalculat
 
     mul *= 1 + 2.4_s / firebreath_duration;
 
-    if ( is_ptr() )
-      mul = std::min( 1.4, mul );
+    mul = std::min( 1.4, mul );
 
     sim->print_debug( "{} set molten_embers_multiplier on {} to {} from {}", this->name_str, target->name_str, mul,
                       td->molten_embers_multiplier );
