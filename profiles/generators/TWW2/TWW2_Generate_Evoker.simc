@@ -14,7 +14,7 @@
 # hands=rippers_of_the_destroyer,id=212030,bonus_id=6652/10376/10354/10273/1498/10255,ilevel=639
 # waist=core_of_the_destroyer,id=212026,bonus_id=1540/10299/1808,gem_id=213497
 # legs=liquified_defectors_leggings,id=212435,bonus_id=1540/10299/10376,enchant=sunset_spellthread_3
-# feet=rashanans_grotesque_talons,id=225586,bonus_id=1540/10299/10376,enchant_id=7424
+# feet=rashanans_grotesque_talons,id=225586,bonus_id=1540/10299/10376,enchant=defenders_march_3
 # finger1=seal_of_the_poisoned_pact,id=225578,bonus_id=6652/10354/10268/1514/10255/10394/10879,ilevel=639,gem_id=213494/213494,enchant=radiant_critical_strike_3
 # finger2=devout_zealots_ring,id=221136,bonus_id=3131/10299/10376/8781,gem_id=213494/213494,enchant=radiant_critical_strike_3
 # trinket1=arakara_sacbrood,id=219314,bonus_id=10273/10390/6652/10383/1632/10255,ilevel=639
@@ -23,3 +23,51 @@
 # off_hand=vagabonds_torch,id=222566,bonus_id=10421/9633/8902/11144/10222/1485/11300/8960,crafted_stats=32/36
 
 # save=TWW2_Evoker_Devastation.simc
+
+evoker="TWW2_Evoker_Devastation_SC"
+spec=devastation
+level=80
+race=dracthyr
+role=spell
+position=back
+talents=CsbBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAzMzMYmNzYmBMYMTzYmJz2YZYmZmZMzyMgZMzGzMLzMgBGDWglxox2AyMIYDD
+
+head=,id=228859,bonus_id=1808,gem_id=213743,ilevel=678
+neck=,id=228841,bonus_id=8781,gem_id=213467/213467,ilevel=678
+shoulder=,id=229278,ilevel=678
+back=,id=222817,bonus_id=10421/9633/8902/12043/12040/1485/8790/11303/8960,enchant=chant_of_winged_grace_3,crafted_stats=32/49
+chest=,id=229283,enchant=crystalline_radiance_3,ilevel=678
+wrist=,id=219342,bonus_id=10421/9633/8902/12043/12040/1485/8790/11303/8960/1808,enchant=chant_of_armored_leech_3,gem_id=213467,crafted_stats=32/49
+hands=,id=229281,ilevel=678
+waist=,id=228877,bonus_id=1808,gem_id=213467,ilevel=678
+legs=,id=229279,enchant=sunset_spellthread_3,ilevel=678
+feet=,id=228862,enchant=defenders_march_3,ilevel=678
+finger1=,id=231265,bonus_id=8781,enchant=radiant_critical_strike_3,gem_id=213467/213491,ilevel=678
+finger2=,id=178871,bonus_id=8781,enchant=radiant_critical_strike_3,gem_id=213479/213455,ilevel=678
+trinket1=,id=230198,ilevel=678
+trinket2=,id=230192,ilevel=678
+main_hand=,id=232805,enchant=authority_of_radiant_power_3,ilevel=678
+
+evoker="TWW2_Evoker_Devastation_FS"
+spec=devastation
+level=80
+race=dracthyr
+role=spell
+position=back
+talents=CsbBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAzYmhZmFzYmBMYMTzYmJz2YZYmZYegZWmBMjZ2YmZZmBmBmxMwCYBMDTglglhB
+
+head=,id=228859,bonus_id=1808,gem_id=213743,ilevel=678
+neck=,id=228841,bonus_id=8781,gem_id=213467/213467,ilevel=678
+shoulder=,id=229278,ilevel=678
+back=,id=222817,bonus_id=10421/9633/8902/12043/12040/1485/8790/11303/8960,enchant=chant_of_winged_grace_3,crafted_stats=32/49
+chest=,id=229283,enchant=crystalline_radiance_3,ilevel=678
+wrist=,id=219342,bonus_id=10421/9633/8902/12043/12040/1485/8790/11303/8960/1808,enchant=chant_of_armored_leech_3,gem_id=213467,crafted_stats=32/49
+hands=,id=229281,ilevel=678
+waist=,id=228877,bonus_id=1808,gem_id=213467,ilevel=678
+legs=,id=229279,enchant=sunset_spellthread_3,ilevel=678
+feet=,id=228862,enchant=defenders_march_3,ilevel=678
+finger1=,id=231265,bonus_id=8781,enchant=radiant_critical_strike_3,gem_id=213467/213491,ilevel=678
+finger2=,id=178871,bonus_id=8781,enchant=radiant_critical_strike_3,gem_id=213479/213455,ilevel=678
+trinket1=,id=230198,ilevel=678
+trinket2=,id=230192,ilevel=678
+main_hand=,id=232805,enchant=authority_of_radiant_power_3,ilevel=678
