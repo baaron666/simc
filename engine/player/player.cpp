@@ -6727,6 +6727,9 @@ void player_t::enter_combat()
   if ( in_combat )
     return;
 
+  if ( sim->target_non_sleeping_list.size() == 0 )
+    return;
+
   in_combat = true;
 
   sim->print_log( "{} enters combat.", *this );
