@@ -5699,15 +5699,14 @@ void eye_of_kezan( special_effect_t& effect )
       : dbc_proc_callback_t( e.player, e ), stat_buff( nullptr ), damage( nullptr ), heal( nullptr )
     {
       stat_buff = create_buff<stat_buff_t>( e.player, e.player->find_spell( 469889 ) )
-                      ->add_stat_from_effect_type( A_MOD_STAT, e.driver()->effectN( 1 ).average( e ) );
+                      ->set_stat_from_effect_type( A_MOD_STAT, e.driver()->effectN( 1 ).average( e ) )
+                      ->set_period( 0_ms ); // Disable Ticking on the in combat buff, its not used.
 
       auto out_of_combat_buff =
           create_buff<stat_buff_t>( e.player, "eye_of_kezan_out_of_combat", e.player->find_spell( 469889 ) )
-              ->add_stat_from_effect_type( A_MOD_STAT, e.driver()->effectN( 1 ).average( e ) )
-              ->set_tick_callback(
-                  []( buff_t* b, int, timespan_t ) { make_event( *b->source->sim, 0_ms, [ b ] { b->decrement(); } ); } )
-              ->set_duration( 20_s )  // Doesnt appear to be in data
-              ->set_freeze_stacks( true );
+              ->set_stat_from_effect_type( A_MOD_STAT, e.driver()->effectN( 1 ).average( e ) )
+              ->set_reverse( true )
+              ->set_duration( 20_s );  // Doesnt appear to be in data
 
       e.player->register_on_combat_state_callback( [ &, out_of_combat_buff ]( player_t* p, bool c ) {
         if ( c && !stat_buff->check() && out_of_combat_buff->check() )
@@ -5739,7 +5738,7 @@ void eye_of_kezan( special_effect_t& effect )
       }
 
       if ( s->target->is_enemy() )
-        damage->execute();
+        damage->execute_on_target( s->target );
       else
         heal->execute_on_target( s->target );
     }
