@@ -204,6 +204,18 @@ struct brews_t
   void insert_cooldown( action_t *action );
   void adjust( timespan_t reduction );
 };
+
+namespace attacks
+{
+struct flight_of_the_red_crane_t
+{
+  action_t *base;
+  action_t *celestial;
+
+  flight_of_the_red_crane_t();
+  void init( monk_t *player );
+};
+}  // namespace attacks
 }  // namespace actions
 
 namespace buffs
@@ -434,10 +446,7 @@ public:
 
     // Conduit of the Celestials
     propagate_const<action_t *> courage_of_the_white_tiger;
-    propagate_const<action_t *> flight_of_the_red_crane_damage;
-    propagate_const<action_t *> flight_of_the_red_crane_heal;
-    propagate_const<action_t *> flight_of_the_red_crane_celestial_damage;
-    propagate_const<action_t *> flight_of_the_red_crane_celestial_heal;
+    actions::attacks::flight_of_the_red_crane_t flight_of_the_red_crane;
     propagate_const<action_t *> strength_of_the_black_ox_dmg;
     propagate_const<action_t *> strength_of_the_black_ox_absorb;
 
@@ -660,8 +669,6 @@ public:
     propagate_const<buff_t *> courage_of_the_white_tiger;
     propagate_const<buff_t *> flight_of_the_red_crane;
     propagate_const<buff_t *> heart_of_the_jade_serpent_stack_mw;
-    propagate_const<buff_t *> heart_of_the_jade_serpent_stack_ww;
-    propagate_const<buff_t *> heart_of_the_jade_serpent;
     propagate_const<buff_t *> heart_of_the_jade_serpent_cdr_celestial;
     propagate_const<buff_t *> heart_of_the_jade_serpent_cdr;
     propagate_const<buff_t *> inner_compass_crane_stance;
@@ -1390,6 +1397,7 @@ public:
   double composite_dodge() const override;
   double non_stacking_movement_modifier() const override;
   double composite_player_target_armor( player_t *target ) const override;
+  double resource_regen_per_second( resource_e ) const override;
   void create_pets() override;
   void init_spells() override;
   void init_background_actions() override;
