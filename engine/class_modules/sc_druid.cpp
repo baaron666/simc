@@ -3651,6 +3651,7 @@ struct druid_form_t : public druid_spell_t
       case CAT_FORM:     return p()->buff.cat_form;
       case MOONKIN_FORM: return p()->buff.moonkin_form;
       case NO_FORM:      return nullptr;
+      default:           assert( false ); return nullptr;
     }
   }
 
@@ -4743,7 +4744,7 @@ struct ferocious_bite_t final : public ferocious_bite_base_t
       if ( big_winner )
         big_winner->execute_on_target( target );
 
-        return;
+      return;
     }
 
     if ( ravage && p()->buff.ravage_fb->check() )
@@ -5781,7 +5782,7 @@ struct raze_t final : public trigger_aggravate_wounds_t<DRUID_GUARDIAN,
     reduced_aoe_targets = data().effectN( 3 ).base_value();
   }
 
-  double attack_direct_power_coefficient( const action_state_t* s ) const
+  double attack_direct_power_coefficient( const action_state_t* s ) const override
   {
     return s->chain_target == 0 ? base_t::attack_direct_power_coefficient( s ) : aoe_coeff;
   }
@@ -14118,6 +14119,7 @@ void druid_t::parse_action_effects( action_t* action )
     case DRUID_FERAL:
     case DRUID_GUARDIAN:    circle_mask.disable( 3, 4 ); break;
     case DRUID_RESTORATION: circle_mask.disable( 1, 2 ); break;
+    default: break;
   }
 
   _a->parse_effects( talent.circle_of_the_heavens, circle_mask );
