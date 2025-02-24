@@ -6603,14 +6603,14 @@ void zees_thug_hotline( special_effect_t& effect )
     double composite_da_multiplier( const action_state_t* s ) const override
     {
       double m = melee_attack_t::composite_da_multiplier( s );
-      m *= this->player->cast_pet()->owner->composite_player_pet_damage_multiplier( s, type == PLAYER_GUARDIAN );
+      m *= this->player->cast_pet()->owner->composite_player_pet_damage_multiplier( s, player->type == PLAYER_GUARDIAN );
       return m;
     }
 
     double composite_target_multiplier( player_t* p ) const override
     {
       double m = melee_attack_t::composite_target_multiplier( p );
-      m *= this->player->cast_pet()->owner->composite_player_target_pet_damage_multiplier( p, type == PLAYER_GUARDIAN );
+      m *= this->player->cast_pet()->owner->composite_player_target_pet_damage_multiplier( p, player->type == PLAYER_GUARDIAN );
       return m;
     }
 
