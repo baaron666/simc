@@ -2031,16 +2031,6 @@ public:
     {
       parse_target_effects( d_fn( &evoker_td_t::debuffs_t::melt_armor ), p()->talent.scalecommander.melt_armor_debuff );
     }
-    
-    if ( p()->talent.scorching_embers.ok() )
-    {
-      parse_target_effects(
-          []( actor_target_data_t* t ) {
-            return static_cast<evoker_td_t*>( t )->dots.fire_breath->is_ticking() ||
-                   static_cast<evoker_td_t*>( t )->dots.fire_breath_traveling_flame->is_ticking();
-          },
-          p()->spec.fire_breath_damage );
-    }
   }
 
   template <typename... Ts>
