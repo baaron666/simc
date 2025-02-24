@@ -6647,7 +6647,7 @@ struct chain_lightning_t : public chained_base_t
     }
 
     // Chain Lightning Arc Discharge actually targets the last target hit, not the first one.
-    if ( as<unsigned>( state->chain_target ) == state->n_targets - 1 && exec_type == spell_variant::NORMAL )
+    if ( as<unsigned>( state->chain_target ) == state->n_targets - 1 && ( exec_type == spell_variant::NORMAL || exec_type == spell_variant::THORIMS_INVOCATION ) )
     {
       p()->trigger_arc_discharge( state );
     }
