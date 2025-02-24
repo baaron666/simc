@@ -4759,7 +4759,7 @@ void items::ingenious_mana_battery( special_effect_t& effect )
 
       mana_buff->trigger( -1, mana_drained, -1.0, timespan_t::min() );
 
-      if ( mana_buff->current_value = mana_buff->max_stored )
+      if ( mana_buff->current_value == mana_buff->max_stored )
         cancel();
     }
 
