@@ -9480,7 +9480,7 @@ struct use_item_t : public action_t
       return false;
     }
 
-    if ( !if_expr->success() )
+    if ( if_expr && !if_expr->success() )
       return false;
 
     return action_t::ready();
