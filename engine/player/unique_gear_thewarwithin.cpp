@@ -5706,7 +5706,8 @@ void eye_of_kezan( special_effect_t& effect )
               ->add_stat_from_effect_type( A_MOD_STAT, e.driver()->effectN( 1 ).average( e ) )
               ->set_tick_callback(
                   []( buff_t* b, int, timespan_t ) { make_event( *b->source->sim, 0_ms, [ b ] { b->decrement(); } ); } )
-              ->set_duration( 20_s );  // Doesnt appear to be in data
+              ->set_duration( 20_s )  // Doesnt appear to be in data
+              ->set_freeze_stacks( true );
 
       e.player->register_on_combat_state_callback( [ &, out_of_combat_buff ]( player_t* p, bool c ) {
         if ( c && !stat_buff->check() && out_of_combat_buff->check() )
