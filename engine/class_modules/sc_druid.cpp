@@ -8366,9 +8366,9 @@ struct starfire_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
           .set_value( eff.base_value() )
           .set_eff( &eff );
       }
-
-      touch_pct = p->talent.touch_the_cosmos->effectN( 2 ).percent();
     }
+
+    touch_pct = p->talent.touch_the_cosmos->effectN( 2 ).percent();
 
     // parse this last as it's percent bonus
     m_data->parse_effects( p->buff.warrior_of_elune );
