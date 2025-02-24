@@ -16,8 +16,9 @@ actions.mitigation+=/impending_victory,if=health.pct<victory_rush_health_pct&tal
 
 actions.precombat=snapshot_stats
 actions=auto_attack
-actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.down&talent.one_against_many.enabled
+# actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.down&talent.one_against_many.enabled
 # actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.down&talent.demolish.enabled
+# actions+=/ignore_pain,use_off_gcd=1,if=buff.ignore_pain.remains<=0
 
 ########################################
 
@@ -32,8 +33,8 @@ actions+=/ignore_pain,use_off_gcd=1,if=cooldown.ravager.remains<=gcd.remains&rag
 actions+=/ignore_pain,use_off_gcd=1,if=cooldown.demoralizing_shout.remains<=gcd.remains&talent.booming_voice.enabled&rage.deficit<=10+30*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
 actions+=/ignore_pain,use_off_gcd=1,if=cooldown.champions_spear.remains<=gcd.remains&rage.deficit<=10+10*(1+talent.piercing_challenge.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
 actions+=/ignore_pain,use_off_gcd=1,if=cooldown.shield_charge.remains<=gcd.remains&rage.deficit<=10+(20+20*talent.champions_bulwark.enabled)*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-actions+=/ignore_pain,use_off_gcd=1,if=cooldown.shield_slam.remains<=gcd.remains&rage.deficit<=10+(15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap<11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
-actions+=/ignore_pain,use_off_gcd=1,if=cooldown.thunder_clap.remains<=gcd.remains&rage.deficit<=10+(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap>=11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=cooldown.shield_slam.remains<=gcd.remains&(!talent.demolish.enabled|!(!(buff.violent_outburst.up&spell_targets.thunder_clap>=11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled)&(talent.sudden_death.enabled&talent.lightning_strikes.enabled|talent.juggernaut.enabled|spell_targets.revenge>=3&talent.one_against_many.enabled)))&rage.deficit<=10+(15+2*talent.heavy_repercussions.enabled+4*talent.impenetrable_wall.enabled)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap<11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
+actions+=/ignore_pain,use_off_gcd=1,if=cooldown.thunder_clap.remains<=gcd.remains&(!talent.demolish.enabled|!((buff.thunder_blast.stack=2|spell_targets.thunder_clap>=11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled)&(talent.juggernaut.enabled&cooldown.execute.remains<=gcd.remains|spell_targets.revenge>=3&talent.one_against_many.enabled)|!buff.violent_outburst.up&spell_targets.thunder_clap<11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled&(cooldown.execute.remains<=gcd.remains|spell_targets.revenge>=5-(buff.colossal_might.stack>=3)-(buff.colossal_might.stack>=9)|spell_targets.revenge>=3&talent.one_against_many.enabled)))&rage.deficit<=10+(5+(3+3*talent.thorims_might.enabled*talent.flashing_skies.enabled)*buff.thunder_blast.up)*(1+buff.violent_outburst.up*(spell_targets.thunder_clap>=11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled))*(1+0.5*buff.last_stand.up*talent.unnerving_focus.enabled)
 
 actions+=/avatar
 actions+=/use_items
@@ -59,9 +60,9 @@ actions+=/execute,if=talent.juggernaut.enabled
 actions+=/thunder_blast,if=buff.thunder_blast.stack=2
 actions+=/thunder_blast,if=spell_targets.thunder_clap>=11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled
 actions+=/thunder_clap,if=spell_targets.thunder_clap>=11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled
-actions+=/execute,if=talent.lightning_strikes.enabled&talent.sudden_death.enabled
+actions+=/execute,if=talent.sudden_death.enabled&talent.lightning_strikes.enabled
 actions+=/shield_slam,if=!(buff.violent_outburst.up&spell_targets.thunder_clap>=11-6*talent.crashing_thunder.enabled-1*buff.thunder_blast.up-1*buff.avatar.up*talent.unstoppable_force.enabled)
-actions+=/revenge,if=spell_targets.revenge>=5
+actions+=/revenge,if=spell_targets.revenge>=5-(buff.colossal_might.stack>=3)-(buff.colossal_might.stack>=9)
 actions+=/execute
 actions+=/thunder_blast,if=!buff.violent_outburst.up
 actions+=/thunder_clap,if=!buff.violent_outburst.up
