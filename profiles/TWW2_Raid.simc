@@ -26,12 +26,12 @@ TWW2_Death_Knight_Unholy_Rider.simc
 # TWW2_Hunter_Marksmanship_Dark_Ranger.simc
 # TWW2_Hunter_Survival_Sentinel.simc
 
-# TWW2_Mage_Arcane.simc
-# TWW2_Mage_Arcane_Sunfury.simc
-# TWW2_Mage_Fire_Sunfury.simc
-# TWW2_Mage_Fire.simc
-# TWW2_Mage_Frost.simc
-# TWW2_Mage_Frost_Frostfire.simc
+TWW2_Mage_Arcane.simc
+TWW2_Mage_Arcane_Sunfury.simc
+TWW2_Mage_Fire.simc
+TWW2_Mage_Fire_Sunfury.simc
+TWW2_Mage_Frost.simc
+TWW2_Mage_Frost_Spellslinger.simc
 
 # TWW2_Monk_Brewmaster.simc
 # TWW2_Monk_Windwalker.simc

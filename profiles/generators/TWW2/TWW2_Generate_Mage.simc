@@ -4,7 +4,7 @@ level=80
 race=void_elf
 role=spell
 position=back
-talents=C4DAAAAAAAAAAAAAAAAAAAAAAYMMbzCmxMmFPAjZGGTzMmBAAAAAgBAABMzstssMzELAAAAAAAglhhZmZmxMMzYMzMmZmxYGD
+talents=C4DAAAAAAAAAAAAAAAAAAAAAAYMMbzCmxMmFPAjZGGTzMmBAAAAAgBAABMzstssMzELAAAAAAAgFGmZWmlxMjZmZMzMzMjhxYA
 
 potion=tempered_potion_3
 flask=flask_of_alchemical_chaos_3
@@ -27,7 +27,6 @@ finger2=miniature_roulette_wheel,id=228843,ilevel=678,gem_id=213485/213470,encha
 trinket2=eye_of_kezan,id=230198,ilevel=678
 trinket1=mugs_moxie_jug,id=230192,ilevel=678
 main_hand=neural_synapse_enhancer,id=168973,ilevel=678,enchant_id=7460
-off_hand=
 
 save=TWW2_Mage_Arcane.simc
 
@@ -127,7 +126,6 @@ finger2=wicks_golden_loop,id=221099,ilevel=678,gem_id=213485/213485,enchant_id=7
 trinket1=eye_of_kezan,id=230198,bonus_id=6652/10356/11996/1527/10255,ilevel=678
 trinket2=mugs_moxie_jug,id=230192,bonus_id=6652/10356/11996/1527/10255,ilevel=678
 main_hand=neural_synapse_enhancer,id=168973,ilevel=678,enchant_id=7460
-off_hand=null
 
 save=TWW2_Mage_Fire.simc
 
@@ -162,7 +160,7 @@ trinket2=synergistic_brewterializer,id=219299,bonus_id=3170/11996/11964
 main_hand=blastfurious_machete,id=231268,bonus_id=1527/11996/11964,enchant_id=7460
 off_hand=vagabonds_torch,id=222566,bonus_id=10421/9633/8902/9627/10222/11300/8960/8795/11144,ilevel=675,crafted_stats=40/32
 
-save=TWW2_Mage_Frost.simc
+save=TWW2_Mage_Frost_Spellslinger.simc
 
 mage="TWW2_Mage_Frost_Frostfire"
 spec=frost
@@ -195,4 +193,4 @@ trinket2=synergistic_brewterializer,id=219299,bonus_id=3170/11996/11964
 main_hand=blastfurious_machete,id=231268,bonus_id=1527/11996/11964,enchant_id=7460
 off_hand=vagabonds_torch,id=222566,bonus_id=10421/9633/8902/9627/10222/11300/8960/11144/8792,ilevel=675,crafted_stats=40/32
 
-save=TWW2_Mage_Frost_Frostfire.simc
+save=TWW2_Mage_Frost.simc
