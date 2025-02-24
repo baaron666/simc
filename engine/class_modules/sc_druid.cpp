@@ -8414,7 +8414,8 @@ struct starfire_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
 
     base_aoe_multiplier = 1.0 / ( 1.0 + find_effect( p->talent.lunar_calling, &data() ).percent() );
 
-    delayed_autoshift = true;
+    if ( !is_free() )
+      delayed_autoshift = true;
 
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->talent.wild_surges )
@@ -8941,7 +8942,8 @@ struct wrath_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
   {
     form_mask = NO_FORM | MOONKIN_FORM;
 
-    delayed_autoshift = true;
+    if ( !is_free() )
+      delayed_autoshift = true;
 
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->spec.astral_power )
