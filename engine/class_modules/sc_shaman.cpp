@@ -1598,8 +1598,7 @@ public:
   // Legendary
   void trigger_legacy_of_the_frost_witch( const action_state_t* state, unsigned consumed_stacks );
   void trigger_elemental_equilibrium( const action_state_t* state );
-  void trigger_deeply_rooted_elements( const action_state_t* state );
-  void trigger_deeply_rooted_elements1101( const action_state_t* state ); // 11.1 version
+  void trigger_deeply_rooted_elements( const action_state_t* state ); // 11.1 version
 
   void trigger_secondary_flame_shock( player_t* target, spell_variant variant = spell_variant::NORMAL ) const;
   void trigger_secondary_flame_shock( const action_state_t* state, spell_variant variant = spell_variant::NORMAL ) const;
@@ -2878,7 +2877,7 @@ public:
 
     if ( this->last_resource_cost > 0 && this->current_resource() == RESOURCE_MAELSTROM )
     {
-      this->p()->trigger_deeply_rooted_elements1101( this->execute_state );
+      this->p()->trigger_deeply_rooted_elements( this->execute_state );
     }
   }
 
@@ -4799,22 +4798,15 @@ struct sundering_reactivity_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_flametongue = may_proc_windfury = may_proc_stormsurge = player->dbc->ptr;
+    may_proc_flametongue = may_proc_windfury = may_proc_stormsurge = true;
     may_proc_flowing_spirits = false;
-    if ( ! p()->dbc->ptr )
-    {
-      p()->set_mw_proc_state( this, mw_proc_state::DISABLED );
-    }
   }
 
   void execute() override
   {
     shaman_attack_t::execute();
 
-    if ( p()->dbc->ptr )
-    {
-      p()->trigger_earthsurge( execute_state, p()->talent.reactivity->effectN( 1 ).percent() );
-    }
+    p()->trigger_earthsurge( execute_state, p()->talent.reactivity->effectN( 1 ).percent() );
   }
 };
 
@@ -5638,8 +5630,7 @@ struct stormstrike_base_t : public shaman_attack_t
 struct stormstrike_t : public stormstrike_base_t
 {
   stormstrike_t( shaman_t* player, util::string_view options_str, strike_variant sf = strike_variant::NORMAL )
-    : stormstrike_base_t( player, "stormstrike",
-      player->dbc->ptr ? player->spec.stormstrike : player->talent.stormstrike, options_str, sf )
+    : stormstrike_base_t( player, "stormstrike", player->spec.stormstrike, options_str, sf )
   {
     // Actual damaging attacks are done by stormstrike_attack_t
     mh = new stormstrike_attack_t( "stormstrike_mh", player, data().effectN( 1 ).trigger(),
@@ -5763,14 +5754,7 @@ struct ice_strike_t : public shaman_attack_t
   {
     shaman_attack_t::execute();
 
-    if ( player->dbc->ptr )
-    {
-      p()->generate_maelstrom_weapon( this, as<int>( data().effectN( 4 ).base_value() ) );
-    }
-    else
-    {
-      p()->trigger_swirling_maelstrom( execute_state );
-    }
+    p()->generate_maelstrom_weapon( this, as<int>( data().effectN( 4 ).base_value() ) );
     p()->buff.ice_strike->trigger();
 
     if ( result_is_hit( execute_state->result ) && p()->buff.crash_lightning->up() )
@@ -5827,33 +5811,30 @@ struct sundering_t : public shaman_attack_t
 
     p()->trigger_earthsurge( execute_state );
 
-    if ( p()->dbc->ptr )
+    // Calculate multiplier to start proc chain
+    if ( p()->molten_thunder_chance == -1.0 )
     {
-      // Calculate multiplier to start proc chain
-      if ( p()->molten_thunder_chance == -1.0 )
-      {
-        p()->molten_thunder_chance = p()->talent.molten_thunder->effectN( 2 ).percent();
-        p()->molten_thunder_chance += p()->talent.molten_thunder->effectN( 3 ).percent() *
-          std::min( num_targets_hit,
-            as<int>( p()->talent.molten_thunder->effectN( 4 ).base_value() ) );
-      }
+      p()->molten_thunder_chance = p()->talent.molten_thunder->effectN( 2 ).percent();
+      p()->molten_thunder_chance += p()->talent.molten_thunder->effectN( 3 ).percent() *
+        std::min( num_targets_hit,
+          as<int>( p()->talent.molten_thunder->effectN( 4 ).base_value() ) );
+    }
 
-      sim->print_debug( "{} molten_thunder chance={}", player->name(),
-        p()->molten_thunder_chance );
+    sim->print_debug( "{} molten_thunder chance={}", player->name(),
+      p()->molten_thunder_chance );
 
-      if ( p()->rng().roll( p()->molten_thunder_chance ) )
-      {
-        cooldown->reset( true );
-        p()->proc.molten_thunder->occur();
+    if ( p()->rng().roll( p()->molten_thunder_chance ) )
+    {
+      cooldown->reset( true );
+      p()->proc.molten_thunder->occur();
 
-        // Proc success, cut chance in half
-        p()->molten_thunder_chance *= 0.5;
-      }
-      // Proc failure, reset chance on next go
-      else
-      {
-        p()->molten_thunder_chance = -1.0;
-      }
+      // Proc success, cut chance in half
+      p()->molten_thunder_chance *= 0.5;
+    }
+    // Proc failure, reset chance on next go
+    else
+    {
+      p()->molten_thunder_chance = -1.0;
     }
   }
 
@@ -5861,10 +5842,7 @@ struct sundering_t : public shaman_attack_t
   {
     shaman_attack_t::impact( s );
 
-    if ( p()->dbc->ptr )
-    {
-      td( s->target )->debuff.lashing_flames->trigger();
-    }
+    td( s->target )->debuff.lashing_flames->trigger();
   }
 };
 
@@ -6460,24 +6438,17 @@ struct chain_lightning_t : public chained_base_t
       return;
     }
 
-    if ( !p()->dbc->ptr )
+    auto t = target_list()[ 0 ];
+    for ( size_t i = 0; i < std::min( as<size_t>( n_targets() ), target_list().size() ); ++i )
     {
-      trigger_lightning_rod_debuff( target_list()[ 0 ] );
-    }
-    else
-    {
-      auto t = target_list()[ 0 ];
-      for ( size_t i = 0; i < std::min( as<size_t>( n_targets() ), target_list().size() ); ++i )
+      if ( !td( target_list()[ i ] )->debuff.lightning_rod->check() )
       {
-        if ( !td( target_list()[ i ] )->debuff.lightning_rod->check() )
-        {
-          t = target_list()[ i ];
-          break;
-        }
+        t = target_list()[ i ];
+        break;
       }
-
-      trigger_lightning_rod_debuff( t );
     }
+
+    trigger_lightning_rod_debuff( t );
   }
 
   size_t available_targets( std::vector<player_t*>& tl ) const override
@@ -6627,11 +6598,6 @@ struct chain_lightning_t : public chained_base_t
     }
 
     p()->trigger_thunderstrike_ward( execute_state );
-
-    if ( p()->specialization() == SHAMAN_ENHANCEMENT )
-    {
-      p()->trigger_deeply_rooted_elements( execute_state );
-    }
 
     proc_lightning_rod();
   }
@@ -7517,11 +7483,6 @@ struct lightning_bolt_t : public shaman_spell_t
       p()->trigger_arc_discharge( execute_state );
     }
 
-    if ( p()->specialization() == SHAMAN_ENHANCEMENT )
-    {
-      p()->trigger_deeply_rooted_elements( execute_state );
-    }
-
     p()->trigger_totemic_rebound( execute_state );
 
     if ( exec_type == spell_variant::NORMAL || exec_type == spell_variant::THORIMS_INVOCATION )
@@ -7787,12 +7748,6 @@ struct elemental_blast_t : public shaman_spell_t
       if ( p()->talent.surge_of_power->ok() )
       {
         p()->buff.surge_of_power->trigger();
-      }
-
-      if ( p()->specialization() == SHAMAN_ELEMENTAL )
-      {
-        // Elemental Blast can trigger DRE on PTR
-        p()->trigger_deeply_rooted_elements( execute_state );
       }
 
       p()->trigger_totemic_rebound( execute_state );
@@ -8330,7 +8285,6 @@ struct earthquake_t : public earthquake_base_t
     if ( exec_type == spell_variant::NORMAL )
     {
       p()->buff.storm_frenzy->trigger();
-      p()->trigger_deeply_rooted_elements( execute_state );
     }
   }
 };
@@ -8572,8 +8526,6 @@ struct earth_shock_t : public shaman_spell_t
     p()->track_magma_chamber();
     p()->buff.magma_chamber->expire();
     p()->buff.storm_frenzy->trigger();
-
-    p()->trigger_deeply_rooted_elements( execute_state );
   }
 
   void impact( action_state_t* state ) override
@@ -10184,7 +10136,7 @@ struct surging_totem_pulse_t : public spell_totem_action_t
 
     if ( o()->buff.ascendance->up() && o()->talent.oversurge.ok() )
     {
-      m *= 1.0 + o()->talent.oversurge->effectN( o()->dbc->ptr ? 2 : 1 ).percent();
+      m *= 1.0 + o()->talent.oversurge->effectN( 2 ).percent();
     }
 
     if ( variant == spell_variant::EARTHSURGE )
@@ -10218,7 +10170,7 @@ struct surging_bolt_t : public spell_totem_action_t
 
     if ( o()->buff.ascendance->up() && o()->talent.oversurge.ok() )
     {
-      m *= 1.0 + o()->talent.oversurge->effectN( o()->dbc->ptr ? 2 : 1 ).percent();
+      m *= 1.0 + o()->talent.oversurge->effectN( 2 ).percent();
     }
 
     return m;
@@ -10467,15 +10419,7 @@ struct primordial_wave_t : public shaman_spell_t
     {
       shaman_spell_t::impact( s );
 
-      if ( ! p()->dbc->ptr )
-      {
-        p()->buff.primordial_wave->trigger();
-
-        p()->trigger_secondary_flame_shock( s, spell_variant::PRIMORDIAL_WAVE );
-      }
-
-      if ( p()->dbc->ptr && p()->specialization() == SHAMAN_ENHANCEMENT &&
-        p()->talent.conductive_energy.ok() )
+      if ( p()->specialization() == SHAMAN_ENHANCEMENT && p()->talent.conductive_energy.ok() )
       {
         trigger_lightning_rod_debuff( s->target );
       }
@@ -10487,10 +10431,7 @@ struct primordial_wave_t : public shaman_spell_t
   {
     parse_options( options_str );
 
-    if ( player->dbc->ptr )
-    {
-      aoe = -1;
-    }
+    aoe = -1;
 
     impact_action = new primordial_wave_damage_t( player );
     add_child( impact_action );
@@ -10516,10 +10457,7 @@ struct primordial_wave_t : public shaman_spell_t
   {
     shaman_spell_t::available_targets( tl );
 
-    if ( p()->dbc->ptr )
-    {
-      p()->regenerate_flame_shock_dependent_target_list( this );
-    }
+    p()->regenerate_flame_shock_dependent_target_list( this );
 
     return tl.size();
   }
@@ -10531,12 +10469,7 @@ struct primordial_wave_t : public shaman_spell_t
 
     shaman_spell_t::execute();
 
-    if ( p()->talent.primal_maelstrom.ok() )
-    {
-      p()->generate_maelstrom_weapon( execute_state,
-                                      as<int>( p()->talent.primal_maelstrom->effectN( 1 ).base_value() ) );
-    }
-    else if ( p()->specialization() == SHAMAN_ENHANCEMENT && p()->dbc->ptr )
+    if ( p()->specialization() == SHAMAN_ENHANCEMENT )
     {
       p()->generate_maelstrom_weapon( execute_state,
                                       as<int>( p()->talent.primordial_wave->effectN( 5 ).base_value() ) );
@@ -10560,8 +10493,7 @@ struct primordial_wave_t : public shaman_spell_t
       return false;
     }
 
-    if ( player->dbc->ptr &&
-      player->get_active_dots( p()->action.flame_shock->get_dot( target ) ) == 0 )
+    if ( player->get_active_dots( p()->action.flame_shock->get_dot( target ) ) == 0 )
     {
       return false;
     }
@@ -10769,10 +10701,7 @@ struct tempest_t : public shaman_spell_t
     aoe = -1;
     reduced_aoe_targets = data().effectN( 3 ).base_value();
     base_aoe_multiplier = data().effectN( 2 ).percent();
-    if ( player->dbc->ptr )
-    {
-      base_aoe_multiplier += player->spec.enhancement_shaman2->effectN( 10 ).percent();
-    }
+    base_aoe_multiplier += player->spec.enhancement_shaman2->effectN( 10 ).percent();
 
     if ( player->mastery.elemental_overload->ok() )
     {
@@ -10867,11 +10796,6 @@ struct tempest_t : public shaman_spell_t
       {
         p()->action.ti_trigger = p()->action.chain_lightning_ti;
       }
-    }
-
-    if ( p()->specialization() == SHAMAN_ENHANCEMENT )
-    {
-      p()->trigger_deeply_rooted_elements( execute_state );
     }
   }
 
@@ -11760,9 +11684,7 @@ struct maelstrom_weapon_cb_t : public dbc_proc_callback_t
       return;
     }
 
-    double proc_chance = shaman->dbc->ptr
-      ? shaman->talent.maelstrom_weapon->proc_chance()
-      : shaman->spec.maelstrom_weapon->proc_chance();
+    double proc_chance = shaman->talent.maelstrom_weapon->proc_chance();
     proc_chance += shaman->buff.witch_doctors_ancestry->stack_value();
 
     auto triggered = rng().roll( proc_chance );
@@ -11788,7 +11710,7 @@ void shaman_t::create_special_effects()
   if ( spec.maelstrom_weapon->ok() || talent.maelstrom_weapon->ok() )
   {
     auto mw_effect = new special_effect_t( this );
-    mw_effect->spell_id = dbc->ptr ? talent.maelstrom_weapon->id() : spec.maelstrom_weapon->id();
+    mw_effect->spell_id = talent.maelstrom_weapon->id();
     mw_effect->proc_flags2_ = PF2_ALL_HIT;
 
     special_effects.push_back( mw_effect );
@@ -12235,15 +12157,7 @@ void shaman_t::init_spells()
   }
 
   // Add enhancement Lightning Rod modifier
-  if ( dbc->ptr )
-  {
-    constant.mul_lightning_rod += spec.enhancement_shaman2->effectN( 8 ).percent();
-  }
-  else
-  {
-    constant.mul_lightning_rod += spec.enhancement_shaman->effectN( 27 ).percent();
-  }
-
+  constant.mul_lightning_rod += spec.enhancement_shaman2->effectN( 8 ).percent();
 
   parse_player_effects_t::init_spells();
 }
@@ -12581,12 +12495,6 @@ void shaman_t::trigger_stormbringer( const action_state_t* state, double overrid
 
   if ( triggered )
   {
-    if ( ! dbc->ptr && rng().roll( talent.molten_thunder->effectN( 2 ).percent() ) )
-    {
-      cooldown.sundering->reset( true );
-      proc.molten_thunder->occur();
-    }
-
     buff.stormblast->trigger();
   }
 }
@@ -12692,9 +12600,9 @@ void shaman_t::trigger_elemental_equilibrium( const action_state_t* state )
   }
 }
 
-void shaman_t::trigger_deeply_rooted_elements1101( const action_state_t* state )
+void shaman_t::trigger_deeply_rooted_elements( const action_state_t* state )
 {
-  if ( !talent.deeply_rooted_elements.ok() || !dbc->ptr )
+  if ( !talent.deeply_rooted_elements.ok() )
   {
     return;
   }
@@ -12738,61 +12646,6 @@ void shaman_t::trigger_deeply_rooted_elements1101( const action_state_t* state )
     action.dre_ascendance->execute_on_target( state->target );
     proc.deeply_rooted_elements->occur();
   }
-}
-
-void shaman_t::trigger_deeply_rooted_elements( const action_state_t* state )
-{
-  if ( !talent.deeply_rooted_elements.ok() || dbc->ptr )
-  {
-    return;
-  }
-
-  double proc_chance = 0.0;
-
-  if ( specialization() == SHAMAN_ELEMENTAL )
-  {
-    // We can no longer assume this is only a Lava Burst entering on state
-    // So we check if spell_variant::NORMAL at the call site instead of
-    // doing reflection on the state here
-
-    proc_chance = talent.deeply_rooted_elements->effectN( 2 ).percent();
-  }
-  else if ( specialization() == SHAMAN_ENHANCEMENT )
-  {
-  }
-  // No resto support for now
-  else
-  {
-    return;
-  }
-
-  dre_attempts++;
-  if ( specialization() == SHAMAN_ELEMENTAL )
-  {
-    if ( options.dre_flat_chance == -1.0 )
-    {
-      // per attempt there exists an ever growing 1% chance
-      // proc curve is pushed down by 2%, so the first two attempts have a 0% chance to occur
-      proc_chance = dre_attempts * 0.01 - 0.01 * options.dre_forced_failures;
-    }
-
-    if ( !rng().roll( proc_chance ) )
-    {
-      return;
-    }
-  }
-  // Enhancement transitions to use a new formula that's modeled with accumulated_rng_t
-  else if ( !rng_obj.dre_enhancement->trigger() )
-  {
-    return;
-  }
-
-  dre_samples.add( as<double>( dre_attempts ) );
-  dre_attempts = 0U;
-
-  action.dre_ascendance->set_target( state->target );
-  action.dre_ascendance->execute();
-  proc.deeply_rooted_elements->occur();
 }
 
 void shaman_t::trigger_secondary_flame_shock( player_t* target, spell_variant variant ) const
@@ -12884,7 +12737,7 @@ void shaman_t::consume_maelstrom_weapon( const action_state_t* state, int stacks
       buff.ice_strike_cast->trigger();
     }
 
-    trigger_deeply_rooted_elements1101( state );
+    trigger_deeply_rooted_elements( state );
   }
 
   if ( buff.tww2_enh_2pc->check() &&
@@ -13615,8 +13468,7 @@ void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfu
   double chance = 0.0;
   auto n_summons = 1U +
     as<unsigned>( sets->set( SHAMAN_ENHANCEMENT, TWW1, B4 )->effectN( 1 ).base_value() );
-  bool record_by_wolf = dbc->ptr && options.flowing_spirits_per_wolf;
-  unsigned record_index = record_by_wolf
+  unsigned record_index = options.flowing_spirits_per_wolf
     ? pet.all_wolves.size()
     : active_flowing_spirits_proc * n_summons;
 
@@ -13625,35 +13477,23 @@ void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfu
     flowing_spirits_procs.resize( record_index + 1 );
   }
 
-  if ( dbc->ptr )
+  // Apparently in-game, Flowing Spirits generated wolves cannot cause the total number of Spirit
+  // Wolves to exceed 8.
+
+  if ( pet.all_wolves.size() + n_summons > options.max_flowing_spirits )
   {
-    // Apparently in-game, Flowing Spirits generated wolves cannot cause the total number of Spirit
-    // Wolves to exceed 8.
-
-    if ( pet.all_wolves.size() + n_summons > options.max_flowing_spirits )
-    {
-      std::get<2>( flowing_spirits_procs[ record_index ] ).add( 1.0 );
-      return;
-    }
-
-    unsigned mul = options.flowing_spirits_per_wolf
-      ? pet.all_wolves.size()
-      : active_flowing_spirits_proc;
-
-    chance = std::max(
-      options.flowing_spirits_floor,
-      talent.flowing_spirits->effectN( 1 ).percent() - mul * options.flowing_spirits_step
-    );
+    std::get<2>( flowing_spirits_procs[ record_index ] ).add( 1.0 );
+    return;
   }
-  else
-  {
-    if ( active_flowing_spirits_proc >= options.flowing_spirits_chances.size() )
-    {
-      return;
-    }
 
-    chance = options.flowing_spirits_chances[ active_flowing_spirits_proc ];
-  }
+  unsigned mul = options.flowing_spirits_per_wolf
+    ? pet.all_wolves.size()
+    : active_flowing_spirits_proc;
+
+  chance = std::max(
+    options.flowing_spirits_floor,
+    talent.flowing_spirits->effectN( 1 ).percent() - mul * options.flowing_spirits_step
+  );
 
   triggered = rng().roll( chance );
 
@@ -13806,11 +13646,7 @@ void shaman_t::create_buffs()
     ->set_pct_buff_type( STAT_PCT_BUFF_HASTE )
     ->set_refresh_behavior( buff_refresh_behavior::DISABLED );
   buff.arc_discharge = make_buff( this, "arc_discharge", find_spell( 455097 ) )
-    ->set_max_stack(
-      specialization() == SHAMAN_ELEMENTAL || dbc->ptr
-      ? find_spell( 455097 )->max_stacks()
-      : as<int>( find_spell( 455097 ) -> effectN( 3 ).base_value() )
-    )
+    ->set_max_stack( find_spell( 455097 )->max_stacks() )
     ->set_default_value_from_effect( 2 );
 
   buff.storm_swell = make_buff( this, "storm_swell", find_spell( 455089 ) )
@@ -14036,10 +13872,6 @@ void shaman_t::create_buffs()
 
   buff.voltaic_blaze = make_buff( this, "voltaic_blaze", find_spell( 470058 ) )
     ->set_trigger_spell( talent.voltaic_blaze );
-  if ( !dbc->ptr )
-  {
-    buff.voltaic_blaze->set_chance( talent.voltaic_blaze->effectN( 1 ).percent() );
-  }
 
   buff.stormblast = make_buff( this, "stormblast", find_spell( 470466 ) )
     ->set_cooldown( 0_ms ) // Stormblast uses ICD for something else than applications
@@ -15195,10 +15027,7 @@ void shaman_t::reset()
 
   active_flowing_spirits_proc = 0U;
 
-  if ( dbc->ptr )
-  {
-    molten_thunder_chance = -1.0;
-  }
+  molten_thunder_chance = -1.0;
 }
 
 
@@ -15350,7 +15179,6 @@ public:
       total_procs += std::get<1>( pair ).count();
     }
     unsigned row = 0;
-    unsigned active_proc = 0;
 
     for ( auto idx = 0U; idx < p.flowing_spirits_procs.size(); ++idx )
     {
@@ -15365,13 +15193,11 @@ public:
       os << fmt::format( "<tr class=\"{}\">\n", row++ & 1 ? "odd" : "even" );
       os << fmt::format( "<td class=\"left\">{}</td>", idx );
       os << fmt::format( "<td class=\"left\">{:.3f}% ({:.3f}%)</td>",
-        100.0 * ( p.dbc->ptr
-          ? std::max( p.options.flowing_spirits_floor,
-              p.talent.flowing_spirits->effectN( 1 ).percent() -
-              p.options.flowing_spirits_step * ( p.sets->has_set_bonus( SHAMAN_ENHANCEMENT, TWW1, B4 )
-                ? idx / 2
-                : idx ) )
-          : p.options.flowing_spirits_chances[ active_proc ]
+        100.0 * ( std::max( p.options.flowing_spirits_floor,
+            p.talent.flowing_spirits->effectN( 1 ).percent() -
+            p.options.flowing_spirits_step * ( p.sets->has_set_bonus( SHAMAN_ENHANCEMENT, TWW1, B4 )
+              ? idx / 2
+              : idx ) )
         ),
         util::round( 100.0 * ( attempts.count() > 0 ? procs.count() / as<double>( attempts.count() + max_wolf.count() ) : 0.0 ), 3 )
       );
@@ -15385,8 +15211,6 @@ public:
         max_wolf.count(),
         util::round( max_wolf.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << "</tr>\n";
-
-      ++active_proc;
     }
   }
 
