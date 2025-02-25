@@ -492,14 +492,11 @@ struct consecration_t : public paladin_spell_t
     if ( p->specialization() == PALADIN_RETRIBUTION )
       background = true;
 
-    if ( source_type == HAMMER_OF_LIGHT )
-      background = true;
-
     add_child( damage_tick );
     if ( p->talents.lightsmith.divine_guidance->ok() )
     {
-      dg_damage = new divine_guidance_damage_t( "_divine_guidance", p );
-      dg_heal   = new divine_guidance_heal_t( "_divine_guidance_heal", p );
+      dg_damage = new divine_guidance_damage_t( "consecration_divine_guidance", p );
+      dg_heal   = new divine_guidance_heal_t( "consecration_divine_guidance_heal", p );
       add_child( dg_damage );
       // Maybe later: Heal?
     }
@@ -508,13 +505,23 @@ struct consecration_t : public paladin_spell_t
   consecration_t( paladin_t* p, util::string_view source_name, consecration_source source )
     : paladin_spell_t( std::string(source_name) + "_consecration", p, p->find_spell( 26573 ) ),
       damage_tick( new consecration_tick_t( std::string(source_name) + "_consecration_tick", p ) ),
-      source_type( source )
+      source_type( source ),
+      dg_damage( nullptr ),
+      dg_heal( nullptr ),
+      precombat_time( 0.0 )
   {
     dot_duration = 0_ms;  // the periodic event is handled by ground_aoe_event_t
     may_miss = harmful = false;
     background = true;
 
     add_child( damage_tick );
+    if ( p->talents.lightsmith.divine_guidance->ok() )
+    {
+      dg_damage = new divine_guidance_damage_t( std::string(source_name) + "_divine_guidance", p );
+      dg_heal   = new divine_guidance_heal_t( std::string(source_name) + "_divine_guidance_heal", p );
+      add_child( dg_damage );
+      // Maybe later: Heal?
+    }
   }
 
   void init_finished() override
