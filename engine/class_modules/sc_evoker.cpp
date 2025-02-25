@@ -5585,8 +5585,8 @@ struct upheaval_t : public empowered_charge_spell_t
   using periodic_base_t = residual_action::residual_periodic_action_t<evoker_spell_t>;
   struct reverberations_t : public periodic_base_t
   {
-    reverberations_t( evoker_t* p )
-      : residual_action_t( "upheaval_dot", p, p->talent.chronowarden.reverberations_upheaval )
+    reverberations_t( evoker_t* p, std::string_view n )
+      : residual_action_t( n, p, p->talent.chronowarden.reverberations_upheaval )
     {
     }
 
@@ -5630,7 +5630,8 @@ struct upheaval_t : public empowered_charge_spell_t
 
       if ( p->talent.chronowarden.reverberations.enabled() )
       {
-        reverberations = p->get_secondary_action<reverberations_t>( fmt::format( "{}_dot", name ) );
+        auto reverb_name = fmt::format( "{}_dot", name );
+        reverberations = p->get_secondary_action<reverberations_t>( reverb_name, reverb_name );
       }
 
       if ( is_rumbling_earth )
@@ -5760,7 +5761,7 @@ struct upheaval_t : public empowered_charge_spell_t
 
     if ( p->talent.chronowarden.reverberations.enabled() )
     {
-      add_child( p->get_secondary_action<reverberations_t>( "upheaval_damage_dot" ) );
+      add_child( p->get_secondary_action<reverberations_t>( "upheaval_damage_dot", "upheaval_damage_dot" ) );
     }
 
     if ( p->talent.rumbling_earth.enabled() )
