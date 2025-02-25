@@ -1084,6 +1084,9 @@ public:
     // TWW Trackers
     proc_t* tempest_awakening_storms;
     proc_t* lively_totems;
+
+    // Bug trackers
+    proc_t* hot_hand_duration;
   } proc;
 
   // Class Specializations
@@ -12520,7 +12523,28 @@ void shaman_t::trigger_hot_hand( const action_state_t* state )
     return;
   }
 
-  if ( buff.hot_hand->trigger() )
+  // [BUG] 2025-02-25: Normal Hot Hand trigger will overwrite a Whirling Fire extended Hot Hand buff
+  // down to 6 seconds. Presumed that a non-bugged version would not overwrite a longer duration
+  // buff.
+  bool triggered = false;
+  if ( bugs )
+  {
+    auto rem_duration = buff.hot_hand->remains();
+    triggered = buff.hot_hand->trigger();
+    if ( triggered && rem_duration > buff.hot_hand->buff_duration() )
+    {
+      proc.hot_hand_duration->occur();
+    }
+  }
+  else
+  {
+    if ( buff.hot_hand->remains() < buff.hot_hand->buff_duration() )
+    {
+      triggered = buff.hot_hand->trigger();
+    }
+  }
+
+  if ( triggered )
   {
     if ( attack->proc_hh )
     {
@@ -13990,6 +14014,8 @@ void shaman_t::init_procs()
 
   proc.molten_thunder = get_proc( "Molten Thunder" );
   proc.lively_totems = get_proc( "Lively Totems" );
+
+  proc.hot_hand_duration = get_proc( "Hot Hand duration clip" );
 }
 
 // shaman_t::init_uptimes ====================================================
