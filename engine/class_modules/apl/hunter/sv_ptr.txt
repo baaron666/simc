@@ -1,23 +1,24 @@
 # Executed before combat begins. Accepts non-harmful actions only.
-actions.precombat+=/summon_pet
+actions.precombat=summon_pet
 # Snapshot raid buffed stats before combat begins.
 actions.precombat+=/snapshot_stats
+# Determine which trinket would make for the strongest cooldown sync. In descending priority: buff effects > damage effects, longer > shorter cooldowns, longer > shorter cast times.
+actions.precombat+=/variable,name=stronger_trinket_slot,op=setif,value=1,value_else=2,condition=!trinket.2.is.house_of_cards&(trinket.1.is.house_of_cards|!trinket.2.has_cooldown|trinket.1.has_use_buff&(!trinket.2.has_use_buff|trinket.2.cooldown.duration<trinket.1.cooldown.duration|trinket.2.cast_time<trinket.1.cast_time|trinket.2.cast_time=trinket.1.cast_time&trinket.2.cooldown.duration=trinket.1.cooldown.duration)|!trinket.1.has_use_buff&(!trinket.2.has_use_buff&(trinket.2.cooldown.duration<trinket.1.cooldown.duration|trinket.2.cast_time<trinket.1.cast_time|trinket.2.cast_time=trinket.1.cast_time&trinket.2.cooldown.duration=trinket.1.cooldown.duration)))
 
 # Executed every time the actor is available.
 actions=auto_attack
 actions+=/call_action_list,name=cds
+actions+=/call_action_list,name=trinkets
 actions+=/call_action_list,name=plst,if=active_enemies<3&talent.howl_of_the_pack_leader
 actions+=/call_action_list,name=plcleave,if=active_enemies>2&talent.howl_of_the_pack_leader
 actions+=/call_action_list,name=sentst,if=active_enemies<3&!talent.howl_of_the_pack_leader
 actions+=/call_action_list,name=sentcleave,if=active_enemies>2&!talent.howl_of_the_pack_leader
-
-#simply fires off if there is absolutely nothing else to press.
+# simply fires off if there is absolutely nothing else to press.
 actions+=/arcane_torrent
 actions+=/bag_of_tricks
 actions+=/lights_judgment
 
-
-#COOLDOWNS ACTIONLIST 
+# COOLDOWNS ACTIONLIST
 actions.cds=blood_fury,if=buff.coordinated_assault.up|!talent.coordinated_assault&cooldown.spearhead.remains|!talent.spearhead&!talent.coordinated_assault
 actions.cds+=/invoke_external_buff,name=power_infusion,if=buff.coordinated_assault.up|!talent.coordinated_assault&cooldown.spearhead.remains|!talent.spearhead&!talent.coordinated_assault
 actions.cds+=/harpoon,if=prev.kill_command
@@ -26,12 +27,26 @@ actions.cds+=/fireblood,if=buff.coordinated_assault.up|!talent.coordinated_assau
 actions.cds+=/berserking,if=buff.coordinated_assault.up|!talent.coordinated_assault&cooldown.spearhead.remains|!talent.spearhead&!talent.coordinated_assault|time_to_die<13
 actions.cds+=/muzzle
 actions.cds+=/potion,if=target.time_to_die<25|buff.coordinated_assault.up|!talent.coordinated_assault&cooldown.spearhead.remains|!talent.spearhead&!talent.coordinated_assault
-actions.cds+=/use_item,use_off_gcd=1,slot=trinket1,if=buff.coordinated_assault.up&trinket.1.has_use_buff|cooldown.coordinated_assault.remains>31|!trinket.1.has_use_buff&cooldown.coordinated_assault.remains>20|time_to_die<cooldown.coordinated_assault.remains
-actions.cds+=/use_item,use_off_gcd=1,slot=trinket2,if=buff.coordinated_assault.up&trinket.2.has_use_buff|cooldown.coordinated_assault.remains>31|!trinket.2.has_use_buff&cooldown.coordinated_assault.remains>20|time_to_die<cooldown.coordinated_assault.remains
+#actions.cds+=/use_item,use_off_gcd=1,slot=trinket1,if=buff.coordinated_assault.up&trinket.1.has_use_buff|cooldown.coordinated_assault.remains>31|!trinket.1.has_use_buff&cooldown.coordinated_assault.remains>20|time_to_die<cooldown.coordinated_assault.remains
+#actions.cds+=/use_item,use_off_gcd=1,slot=trinket2,if=buff.coordinated_assault.up&trinket.2.has_use_buff|cooldown.coordinated_assault.remains>31|!trinket.2.has_use_buff&cooldown.coordinated_assault.remains>20|time_to_die<cooldown.coordinated_assault.remains
 actions.cds+=/aspect_of_the_eagle,if=target.distance>=6
 
+# PACK LEADER | AOE ACTIONLIST
+actions.plcleave=spearhead,if=cooldown.coordinated_assault.remains
+actions.plcleave+=/raptor_bite,target_if=max:dot.serpent_sting.remains,if=buff.strike_it_rich.up&buff.strike_it_rich.remains<gcd|buff.hogstrider.remains
+actions.plcleave+=/kill_command,target_if=min:bloodseeker.remains,if=buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1
+actions.plcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9|cooldown.coordinated_assault.remains<2*gcd|talent.butchery&cooldown.butchery.remains<gcd|buff.howl_of_the_pack_leader_wyvern.remains|buff.howl_of_the_pack_leader_boar.remains|buff.howl_of_the_pack_leader_bear.remains
+actions.plcleave+=/flanking_strike,if=buff.tip_of_the_spear.stack=2|buff.tip_of_the_spear.stack=1
+actions.plcleave+=/butchery
+actions.plcleave+=/coordinated_assault,if=!talent.bombardier|talent.bombardier&cooldown.wildfire_bomb.charges_fractional<1
+actions.plcleave+=/fury_of_the_eagle,if=buff.tip_of_the_spear.stack>0
+actions.plcleave+=/kill_command,target_if=min:bloodseeker.remains,if=focus+cast_regen<focus.max
+actions.plcleave+=/explosive_shot
+actions.plcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0
+actions.plcleave+=/kill_shot,if=buff.deathblow.remains&talent.sic_em
+actions.plcleave+=/raptor_bite
 
-#PACK LEADER | SINGLE TARGET ACTIONLIST. 
+# PACK LEADER | SINGLE TARGET ACTIONLIST.
 actions.plst=kill_command,target_if=min:bloodseeker.remains,if=(buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1)|(buff.howl_of_the_pack_leader_wyvern.remains|buff.howl_of_the_pack_leader_boar.remains|buff.howl_of_the_pack_leader_bear.remains)&time_to_die<20
 actions.plst+=/explosive_shot,if=cooldown.coordinated_assault.remains&cooldown.coordinated_assault.remains<gcd
 actions.plst+=/spearhead,if=cooldown.coordinated_assault.remains
@@ -52,23 +67,23 @@ actions.plst+=/raptor_bite,target_if=max:dot.serpent_sting.remains
 actions.plst+=/kill_shot
 actions.plst+=/explosive_shot
 
-#PACK LEADER | AOE ACTIONLIST
-actions.plcleave=spearhead,if=cooldown.coordinated_assault.remains
-actions.plcleave+=/raptor_bite,target_if=max:dot.serpent_sting.remains,if=buff.strike_it_rich.up&buff.strike_it_rich.remains<gcd|buff.hogstrider.remains
-actions.plcleave+=/kill_command,target_if=min:bloodseeker.remains,if=buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1
-actions.plcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9|cooldown.coordinated_assault.remains<2*gcd|talent.butchery&cooldown.butchery.remains<gcd|buff.howl_of_the_pack_leader_wyvern.remains|buff.howl_of_the_pack_leader_boar.remains|buff.howl_of_the_pack_leader_bear.remains
-actions.plcleave+=/flanking_strike,if=buff.tip_of_the_spear.stack=2|buff.tip_of_the_spear.stack=1
-actions.plcleave+=/butchery
-actions.plcleave+=/coordinated_assault,if=!talent.bombardier|talent.bombardier&cooldown.wildfire_bomb.charges_fractional<1
-actions.plcleave+=/fury_of_the_eagle,if=buff.tip_of_the_spear.stack>0
-actions.plcleave+=/kill_command,target_if=min:bloodseeker.remains,if=focus+cast_regen<focus.max
-actions.plcleave+=/explosive_shot
-actions.plcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0
-actions.plcleave+=/kill_shot,if=buff.deathblow.remains&talent.sic_em
-actions.plcleave+=/raptor_bite
+# SENTINEL | DEFAULT AOE ACTIONLIST
+actions.sentcleave=wildfire_bomb,if=!buff.lunar_storm_cooldown.remains
+actions.sentcleave+=/kill_command,target_if=min:bloodseeker.remains,if=buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1
+actions.sentcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9|(talent.bombardier&cooldown.coordinated_assault.remains<2*gcd)|talent.butchery&cooldown.butchery.remains<gcd
+actions.sentcleave+=/raptor_bite,target_if=max:dot.serpent_sting.remains,if=buff.strike_it_rich.up&buff.strike_it_rich.remains<gcd
+actions.sentcleave+=/butchery
+actions.sentcleave+=/coordinated_assault,if=!talent.bombardier|talent.bombardier&cooldown.wildfire_bomb.charges_fractional<1
+actions.sentcleave+=/fury_of_the_eagle,if=buff.tip_of_the_spear.stack>0
+actions.sentcleave+=/flanking_strike,if=(buff.tip_of_the_spear.stack=2|buff.tip_of_the_spear.stack=1)
+actions.sentcleave+=/kill_command,target_if=min:bloodseeker.remains,if=focus+cast_regen<focus.max
+actions.sentcleave+=/explosive_shot
+actions.sentcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0
+actions.sentcleave+=/kill_shot,if=buff.deathblow.remains&talent.sic_em
+actions.sentcleave+=/raptor_bite,target_if=min:dot.serpent_sting.remains,if=!talent.contagious_reagents
+actions.sentcleave+=/raptor_bite,target_if=max:dot.serpent_sting.remains
 
-
-#SENTINEL | DEFAULT SINGLE TARGET ACTIONLIST.
+# SENTINEL | DEFAULT SINGLE TARGET ACTIONLIST.
 actions.sentst=wildfire_bomb,if=!buff.lunar_storm_cooldown.remains
 actions.sentst+=/kill_command,target_if=min:bloodseeker.remains,if=(buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1)
 actions.sentst+=/spearhead,if=cooldown.coordinated_assault.remains
@@ -89,18 +104,20 @@ actions.sentst+=/kill_shot
 actions.sentst+=/raptor_bite,target_if=min:dot.serpent_sting.remains,if=!talent.contagious_reagents
 actions.sentst+=/raptor_bite,target_if=max:dot.serpent_sting.remains
 
-#SENTINEL | DEFAULT AOE ACTIONLIST
-actions.sentcleave=wildfire_bomb,if=!buff.lunar_storm_cooldown.remains
-actions.sentcleave+=/kill_command,target_if=min:bloodseeker.remains,if=buff.relentless_primal_ferocity.up&buff.tip_of_the_spear.stack<1
-actions.sentcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0&cooldown.wildfire_bomb.charges_fractional>1.7|cooldown.wildfire_bomb.charges_fractional>1.9|(talent.bombardier&cooldown.coordinated_assault.remains<2*gcd)|talent.butchery&cooldown.butchery.remains<gcd
-actions.sentcleave+=/raptor_bite,target_if=max:dot.serpent_sting.remains,if=buff.strike_it_rich.up&buff.strike_it_rich.remains<gcd
-actions.sentcleave+=/butchery
-actions.sentcleave+=/coordinated_assault,if=!talent.bombardier|talent.bombardier&cooldown.wildfire_bomb.charges_fractional<1
-actions.sentcleave+=/fury_of_the_eagle,if=buff.tip_of_the_spear.stack>0
-actions.sentcleave+=/flanking_strike,if=(buff.tip_of_the_spear.stack=2|buff.tip_of_the_spear.stack=1)
-actions.sentcleave+=/kill_command,target_if=min:bloodseeker.remains,if=focus+cast_regen<focus.max
-actions.sentcleave+=/explosive_shot
-actions.sentcleave+=/wildfire_bomb,if=buff.tip_of_the_spear.stack>0
-actions.sentcleave+=/kill_shot,if=buff.deathblow.remains&talent.sic_em
-actions.sentcleave+=/raptor_bite,target_if=min:dot.serpent_sting.remains,if=!talent.contagious_reagents
-actions.sentcleave+=/raptor_bite,target_if=max:dot.serpent_sting.remains
+
+# True if effects that are desirable to sync a trinket buff with are ready.
+actions.trinkets=/variable,name=buff_sync_ready,value=buff.coordinated_assault.up
+
+# Time until the effects that are desirable to sync a trinket buff with will be ready.
+actions.trinkets+=/variable,name=buff_sync_remains,value=cooldown.coordinated_assault.remains
+
+# True if effecs that are desirable to sync a trinket buff with are active.
+actions.trinkets+=/variable,name=buff_sync_active,value=buff.coordinated_assault.up
+
+# True if effects that are desirable to sync trinket damage with are active.
+actions.trinkets+=/variable,name=damage_sync_active,value=1
+
+# Time until the effects that are desirable to sync trinket damage with will be ready.
+actions.trinkets+=/variable,name=damage_sync_remains,value=0
+
+actions.trinkets+=/use_items,slots=trinket1:trinket2,if=this_trinket.has_use_buff&(variable.buff_sync_ready&(variable.stronger_trinket_slot=this_trinket_slot|other_trinket.cooldown.remains)|!variable.buff_sync_ready&(variable.stronger_trinket_slot=this_trinket_slot&(variable.buff_sync_remains>this_trinket.cooldown.duration%3&fight_remains>this_trinket.cooldown.duration+20|other_trinket.has_use_buff&other_trinket.cooldown.remains>variable.buff_sync_remains-15&other_trinket.cooldown.remains-5<variable.buff_sync_remains&variable.buff_sync_remains+45>fight_remains)|variable.stronger_trinket_slot!=this_trinket_slot&(other_trinket.cooldown.remains&(other_trinket.cooldown.remains-5<variable.buff_sync_remains&variable.buff_sync_remains>=20|other_trinket.cooldown.remains-5>=variable.buff_sync_remains&(variable.buff_sync_remains>this_trinket.cooldown.duration%3|this_trinket.cooldown.duration<fight_remains&(variable.buff_sync_remains+this_trinket.cooldown.duration>fight_remains)))|other_trinket.cooldown.ready&variable.buff_sync_remains>20&variable.buff_sync_remains<other_trinket.cooldown.duration%3)))|!this_trinket.has_use_buff&(this_trinket.cast_time=0|!variable.buff_sync_active|variable.damage_sync_active)&(!this_trinket.is.junkmaestros_mega_magnet|buff.junkmaestros_mega_magnet.stack>10)&(!other_trinket.has_cooldown&(variable.damage_sync_active|this_trinket.is.junkmaestros_mega_magnet&buff.junkmaestros_mega_magnet.stack>29|!this_trinket.is.junkmaestros_mega_magnet&variable.damage_sync_remains>this_trinket.cooldown.duration%3)|other_trinket.has_cooldown&(!other_trinket.has_use_buff&(variable.stronger_trinket_slot=this_trinket_slot|other_trinket.cooldown.remains)&(variable.damage_sync_active|this_trinket.is.junkmaestros_mega_magnet&buff.junkmaestros_mega_magnet.stack>25|variable.damage_sync_remains>this_trinket.cooldown.duration%3&!this_trinket.is.junkmaestros_mega_magnet|other_trinket.cooldown.remains-5<variable.damage_sync_remains&variable.damage_sync_remains>=20)|other_trinket.has_use_buff&(variable.damage_sync_active|this_trinket.is.junkmaestros_mega_magnet&buff.junkmaestros_mega_magnet.stack>29|!this_trinket.is.junkmaestros_mega_magnet&variable.damage_sync_remains>this_trinket.cooldown.duration%3)&(other_trinket.cooldown.remains>20|other_trinket.cooldown.remains-5>variable.buff_sync_remains)))|fight_remains<25&(variable.stronger_trinket_slot=this_trinket_slot|other_trinket.cooldown.remains)
