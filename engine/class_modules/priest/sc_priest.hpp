@@ -858,15 +858,15 @@ public:
 
     // Chance for Entropic Rift ticks to miss all targets and deal no damage
     // Can be used to account for boss movement
-    double entropic_rift_miss_percent           = 0.05;
+    double entropic_rift_miss_percent = 0.05;
     // Can be used to account for add movement
     double entropic_rift_miss_percent_secondary = 0.1;
     // Can be used to limit the number of enemies hit
-    int entropic_rift_miss_target_cap           = 0;
+    int entropic_rift_miss_target_cap = 0;
 
     // Additional Crystalline Reflection Damage Multiplier (Because its bugged and doesnt always do full damage)
     double crystalline_reflection_damage_mult = 0.5;
-    bool no_channel_macro_mfi = false;
+    bool no_channel_macro_mfi                 = false;
 
     // Controls whether Discipline is "in a raid" or not.
     bool discipline_in_raid = false;
@@ -1244,7 +1244,8 @@ public:
 
       if ( p().sets->has_set_bonus( PRIEST_SHADOW, TWW2, B4 ) )
       {
-        parse_effects( ab::player->buffs.power_infusion, p().sets->set( PRIEST_SHADOW, TWW2, B4 ) );
+        parse_effects( ab::player->buffs.power_infusion,
+                       p().sets->set( PRIEST_SHADOW, TWW2, B4 )->effectN( 2 ).percent() );
       }
     }
 
