@@ -5044,15 +5044,6 @@ void torqs_big_red_button( special_effect_t& effect )
 
       return v;
     }
-
-    void execute() override
-    {
-      if ( stack_buff->check() )
-        stack_buff->decrement();
-      else
-        return;
-      generic_proc_t::execute();
-    }
   };
 
   struct torqs_big_red_button_t : public generic_proc_t
@@ -5066,7 +5057,7 @@ void torqs_big_red_button( special_effect_t& effect )
       auto value_spell = e.player->find_spell( 470042 );
       assert( value_spell && "Torq's Big Red Button missing value spell" );
 
-      stat_buff        = create_buff<stat_buff_t>( e.player, e.driver(), e.item )
+      stat_buff = create_buff<stat_buff_t>( e.player, e.driver(), e.item )
                       ->add_stat_from_effect( 1, value_spell->effectN( 1 ).average( e ) );
 
       stack_buff = create_buff<buff_t>( e.player, e.player->find_spell( 472787 ) )->set_reverse( true );
@@ -5075,14 +5066,26 @@ void torqs_big_red_button( special_effect_t& effect )
 
       add_child( damage );
 
-      auto on_next            = new special_effect_t( e.player );
-      on_next->name_str       = stack_buff->name();
-      on_next->spell_id       = stack_buff->data().id();
-      on_next->execute_action = damage;
+      auto on_next      = new special_effect_t( e.player );
+      on_next->name_str = stack_buff->name();
+      on_next->spell_id = stack_buff->data().id();
       e.player->special_effects.push_back( on_next );
 
       auto cb = new dbc_proc_callback_t( e.player, *on_next );
       cb->activate_with_buff( stack_buff );
+
+      e.player->callbacks.register_callback_trigger_function(
+          stack_buff->data().id(), dbc_proc_callback_t::trigger_fn_type::CONDITION,
+          [ & ]( const dbc_proc_callback_t*, action_t*, const action_state_t* ) { return stack_buff->check(); } );
+
+      e.player->callbacks.register_callback_execute_function(
+          stack_buff->data().id(), [ &, damage ]( const dbc_proc_callback_t*, action_t*, const action_state_t* s ) {
+            if ( stack_buff->check() )
+            {
+              damage->execute_on_target( s->target );
+              stack_buff->decrement();
+            }
+          } );
     }
 
     void execute() override
