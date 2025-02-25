@@ -235,7 +235,7 @@ public:
 
   timespan_t remains() const;
   timespan_t tick_time_remains() const;
-  timespan_t elapsed( timespan_t t ) const { return t - last_start; }
+  timespan_t elapsed( timespan_t t ) const { return last_start == timespan_t::min() ? 0_ms : t - last_start; }
   timespan_t last_trigger_time() const { return last_trigger; }
   timespan_t last_expire_time() const { return last_expire; }
   bool remains_gt( timespan_t time ) const;
