@@ -14991,7 +14991,7 @@ void shaman_t::reset()
 
   if ( options.init_tempest_counter == -1 )
   {
-    tempest_counter = static_cast<unsigned>( rng().range( 0U, tempest_threshold ) );
+    tempest_counter = 0U;
   }
   else
   {
