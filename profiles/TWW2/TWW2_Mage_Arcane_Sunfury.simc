@@ -1,3 +1,18 @@
+mage="TWW2_Mage_Arcane_Sunfury"
+source=default
+spec=arcane
+level=80
+race=void_elf
+role=spell
+position=back
+talents=C4DAAAAAAAAAAAAAAAAAAAAAAYMMbzCmxDMmFDjZGGTzMmBAAAAAgBAMzMtMbLzAAxGAAAAAAAYhBzsMLzDMzYmZGzMzMzYYMG
+
+# Default consumables
+potion=tempered_potion_3
+flask=flask_of_alchemical_chaos_3
+food=feast_of_the_midnight_masquerade
+augmentation=crystallized
+temporary_enchant=main_hand:algari_mana_oil_3
 
 # This default action priority list is automatically created based on your character.
 # It is a attempt to provide you with a action list that is both simple and practicable,
@@ -153,3 +168,33 @@ actions.sunfury+=/presence_of_mind,if=(buff.arcane_charge.stack=3|buff.arcane_ch
 actions.sunfury+=/arcane_explosion,if=buff.arcane_charge.stack<2&active_enemies>1
 actions.sunfury+=/arcane_blast
 actions.sunfury+=/arcane_barrage
+
+head=aspectral_emissarys_crystalline_cowl,id=229343,ilevel=678,gem_id=213743
+neck=semicharmed_amulet,id=228841,ilevel=678,gem_id=213485/213485
+shoulders=underbosss_tailored_mantle,id=228870,ilevel=678
+back=trashmasters_mantle,id=168970,ilevel=678,enchant_id=7415
+chest=aspectral_emissarys_primal_robes,id=229346,ilevel=678,enchant_id=7364
+wrists=consecrated_cuffs,id=222815,bonus_id=11109,ilevel=675,gem_id=213470,enchant_id=7397,crafted_stats=36/40
+hands=aspectral_emissarys_hardened_grasp,id=229344,ilevel=678
+waist=tuneup_toolbelt,id=228861,ilevel=678,gem_id=213494
+legs=aspectral_emissarys_trousers,id=229342,ilevel=678,enchant_id=7534
+feet=hyperthread_boots,id=168964,ilevel=678
+finger1=the_jastor_diamond,id=231265,ilevel=678,gem_id=213455/213485,enchant_id=7340
+finger2=miniature_roulette_wheel,id=228843,ilevel=678,gem_id=213470/213470,enchant_id=7352,crafted_stats=40/36
+trinket1=eye_of_kezan,id=230198,bonus_id=6652/10356/11996/1527/10255
+trinket2=spymasters_web,id=220202,ilevel=639
+main_hand=fleshcrafters_knife,id=178789,ilevel=678,enchant_id=7460
+off_hand=vagabonds_torch,id=222566,bonus_id=10421/9633/8902/9627/10222/11300/8960/8792/11144,ilevel=675,crafted_stats=40/32
+
+# Gear Summary
+# gear_ilvl=675.19
+# gear_stamina=391616
+# gear_intellect=64685
+# gear_crit_rating=6586
+# gear_haste_rating=17022
+# gear_mastery_rating=12949
+# gear_versatility_rating=11918
+# gear_speed_rating=1250
+# gear_armor=20744
+# set_bonus=thewarwithin_season_2_2pc=1
+# set_bonus=thewarwithin_season_2_4pc=1
