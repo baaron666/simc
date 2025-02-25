@@ -5047,8 +5047,11 @@ void torqs_big_red_button( special_effect_t& effect )
 
     void execute() override
     {
+      if ( stack_buff->check() )
+        stack_buff->decrement();
+      else
+        return;
       generic_proc_t::execute();
-      stack_buff->decrement();
     }
   };
 
