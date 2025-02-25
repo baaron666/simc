@@ -5133,16 +5133,15 @@ void house_of_cards( special_effect_t& effect )
     {
       add_stat_from_effect_type( A_MOD_RATING, s->effectN( 1 ).average( e ) );
       default_value  = s->effectN( 1 ).average( e );
-      range_min      = 1.0 - ( s->effectN( 2 ).base_value() / 100 );
-      range_max      = 1.0 + ( s->effectN( 2 ).base_value() / 100 );
-      stack_buff_mod = default_value * ( s->effectN( 2 ).base_value() / 100 / 3 );
+      range_min      = 1.0 - ( s->effectN( 2 ).percent() );
+      range_max      = 1.0 + ( s->effectN( 2 ).percent() );
+      stack_buff_mod = s->effectN( 2 ).percent() / 3;
     }
 
     double randomize_stat_value()
     {
-      double val = default_value * rng().range( range_min, range_max );
-      if ( stack_buff->check() )
-        val += stack_buff_mod * stack_buff->check();
+      double min = range_min + stack_buff_mod * stack_buff->check();
+      double val = default_value * rng().range( min, range_max );
 
       for ( auto& buff_stat : stats )
       {
@@ -5162,15 +5161,10 @@ void house_of_cards( special_effect_t& effect )
       return val;
     }
 
-    void start( int s, double, timespan_t d ) override
-    {
-      buff_t::start( s, randomize_stat_value(), d );
-      stack_buff->trigger();
-    }
-
     void bump( int stacks, double ) override
     {
       buff_t::bump( stacks, randomize_stat_value() );
+      stack_buff->trigger();
     }
 
     void expire_override( int s, timespan_t d ) override
@@ -7326,6 +7320,283 @@ void junkmaestros_mega_magnet( special_effect_t& effect )
   effect.execute_action = create_proc_action<recycle_garbage_t>( "recycle_garbage", effect, charging_buff, equip->driver() );
 }
 
+void imperfect_ascendancy_serum( special_effect_t& effect )
+{
+  struct ascension_channel_t : public proc_spell_t
+  {
+    buff_t* buff;
+    action_t* use_action;  // if this exists, then we're prechanneling via the APL
+
+    ascension_channel_t( const special_effect_t& e, buff_t* ascension )
+      : proc_spell_t( "ascension_channel", e.player, e.driver(), e.item )
+    {
+      channeled = hasted_ticks = hasted_dot_duration = true;
+      harmful                                        = false;
+      dot_duration = base_tick_time = base_execute_time;
+      base_execute_time             = 0_s;
+      buff                          = ascension;
+      effect                        = &e;
+      interrupt_auto_attack         = false;
+
+      for ( auto a : player->action_list )
+      {
+        if ( a->action_list && a->action_list->name_str == "precombat" && a->name_str == "use_item_" + item->name_str )
+        {
+          a->harmful = harmful;  // pass down harmful to allow action_t::init() precombat check bypass
+          use_action = a;
+          use_action->base_execute_time = base_tick_time;
+          break;
+        }
+      }
+    }
+
+    void execute() override
+    {
+      if ( !player->in_combat )  // if precombat...
+      {
+        if ( use_action )  // ...and use_item exists in the precombat apl
+        {
+          precombat_buff();
+        }
+      }
+      else
+      {
+        proc_spell_t::execute();
+        event_t::cancel( player->readying );
+        player->delay_ranged_auto_attacks( composite_dot_duration( execute_state ) );
+      }
+    }
+
+    void last_tick( dot_t* d ) override
+    {
+      bool was_channeling = player->channeling == this;
+
+      cooldown->adjust( d->duration() );
+
+      auto cdgrp = player->get_cooldown( effect->cooldown_group_name() );
+      cdgrp->adjust( d->duration() );
+
+      proc_spell_t::last_tick( d );
+      buff->trigger();
+
+      if ( was_channeling && !player->readying )
+        player->schedule_ready();
+    }
+
+    void precombat_buff()
+    {
+      timespan_t time = 0_ms;
+
+      if ( time == 0_ms )  // No global override, check for an override from an APL variable
+      {
+        for ( auto v : player->variables )
+        {
+          if ( v->name_ == "imperfect_ascendancy_precombat_cast" )
+          {
+            time = timespan_t::from_seconds( v->value() );
+            break;
+          }
+        }
+      }
+
+      // shared cd (other trinkets & on-use items)
+      auto cdgrp = player->get_cooldown( effect->cooldown_group_name() );
+
+      if ( time == 0_ms )  // No hardcoded override, so dynamically calculate timing via the precombat APL
+      {
+        time            = data().cast_time();
+        const auto& apl = player->precombat_action_list;
+
+        auto it = range::find( apl, use_action );
+        if ( it == apl.end() )
+        {
+          sim->print_debug(
+              "WARNING: Precombat /use_item for Imperfect Ascendancy Serum exists but not found in precombat APL!" );
+          return;
+        }
+
+        cdgrp->start( 1_ms );  // tap the shared group cd so we can get accurate action_ready() checks
+
+        // add cast time or gcd for any following precombat action
+        std::for_each( it + 1, apl.end(), [ &time, this ]( action_t* a ) {
+          if ( a->action_ready() )
+          {
+            timespan_t delta =
+                std::max( std::max( a->base_execute_time.value(), a->trigger_gcd ) * a->composite_haste(), a->min_gcd );
+            sim->print_debug( "PRECOMBAT: Imperfect Ascendancy Serum precast timing pushed by {} for {}", delta,
+                              a->name() );
+            time += delta;
+
+            return a->harmful;  // stop processing after first valid harmful spell
+          }
+          return false;
+        } );
+      }
+      else if ( time < base_tick_time )  // If APL variable can't set to less than cast time
+      {
+        time = base_tick_time;
+      }
+
+      // how long you cast for
+      auto cast = base_tick_time;
+      // total duration of the buff
+      auto total = buff->buff_duration();
+      // actual duration of the buff you'll get in combat
+      auto actual = total + cast - time;
+      // cooldown on effect/trinket at start of combat
+      auto cd_dur = cooldown->duration + cast - time;
+      // shared cooldown at start of combat
+      auto cdgrp_dur = std::max( 0_ms, effect->cooldown_group_duration() + cast - time );
+
+      sim->print_debug( "PRECOMBAT: Imperfect Ascendency Serum started {}s before combat via {}, {}s in-combat buff",
+                        time, use_action ? "APL" : "TWW_OPT", actual );
+
+      buff->trigger( 1, buff_t::DEFAULT_VALUE(), 1.0, actual );
+
+      if ( use_action )  // from the apl, so cooldowns will be started by use_item_t. adjust. we are still in precombat.
+      {
+        make_event( *sim, [ this, cast, time, cdgrp ] {  // make an event so we adjust after cooldowns are started
+          cooldown->adjust( cast - time );
+
+          if ( use_action )
+            use_action->cooldown->adjust( cast - time );
+
+          cdgrp->adjust( cast - time );
+        } );
+      }
+      else  // via bfa. option override, start cooldowns. we are in-combat.
+      {
+        cooldown->start( cd_dur );
+
+        if ( use_action )
+          use_action->cooldown->start( cd_dur );
+
+        if ( cdgrp_dur > 0_ms )
+          cdgrp->start( cdgrp_dur );
+      }
+    }
+  };
+
+  auto buff_spell = effect.driver();
+  buff_t* buff    = create_buff<stat_buff_t>( effect.player, buff_spell )
+                     ->add_stat_from_effect( 1, effect.driver()->effectN( 1 ).average( effect ) )
+                     ->add_stat_from_effect( 2, effect.driver()->effectN( 2 ).average( effect ) )
+                     ->add_stat_from_effect( 4, effect.driver()->effectN( 4 ).average( effect ) )
+                     ->add_stat_from_effect( 5, effect.driver()->effectN( 5 ).average( effect ) )
+                     ->set_cooldown( 0_ms );
+
+  auto action           = new ascension_channel_t( effect, buff );
+  effect.execute_action = action;
+  effect.disable_buff();
+}
+
+// Ringing Ritual Mud
+// NYI: CDR from periodic damage taken
+void ringing_ritual_mud( special_effect_t& effect )
+{
+  struct mudborne_t : absorb_t
+  {
+    action_t* tick;
+    buff_t* damage_buff;
+    buff_t* absorb_buff;
+
+    mudborne_t( const special_effect_t& effect )
+      : absorb_t( "mudborne", effect.player, effect.driver() ),
+        tick( nullptr ),
+        damage_buff( nullptr ),
+        absorb_buff( nullptr )
+    {
+      const spell_data_t* equip = effect.player->find_spell( 1221145 );
+      base_dd_min = base_dd_max = equip->effectN( 3 ).average( effect.item );
+
+      tick = create_proc_action<generic_aoe_proc_t>(
+          "mud_echo", effect, effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).trigger(), true );
+
+      double tick_count = effect.driver()->effectN( 2 ).trigger()->duration() /
+                          effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).period();
+
+      tick->base_dd_min = tick->base_dd_max = equip->effectN( 1 ).average( effect.item );
+      damage_buff = unique_gear::create_buff<buff_t>( effect.player, effect.driver()->effectN( 2 ).trigger() )
+                        ->set_tick_callback( [ &, tick_count ]( buff_t* self, int current_tick, timespan_t ) {
+                          tick->execute();
+                          if ( !absorb_buff->check() && self->check() && current_tick < tick_count )
+                            // Let events clear before expiring
+                            make_event( *sim, 0_ms, [ self ] { self->expire(); } );
+                        } );
+    }
+
+    absorb_buff_t* create_buff( const action_state_t* s ) override
+    {
+      auto b      = absorb_t::create_buff( s );
+      absorb_buff = b;
+      return b;
+    }
+
+    void execute() override
+    {
+      action_t::execute();
+      damage_buff->trigger();
+    }
+  };
+
+  effect.execute_action = create_proc_action<mudborne_t>( "ringing_ritual_mud", effect );
+}
+
+// Gigazap's Zap-Cap
+void gigazaps_zapcap( special_effect_t& effect )
+{
+  struct zap_t : generic_proc_t
+  {
+    buff_t* max_stack;
+    const special_effect_t& effect;
+
+    zap_t( const special_effect_t& effect, buff_t* max_stack )
+      : generic_proc_t( effect, "zap", effect.player->find_spell( 1220419 ) ), max_stack( max_stack ), effect( effect )
+    {
+      base_dd_min = base_dd_max = effect.driver()->effectN( 1 ).average( effect.item );
+      base_multiplier *= role_mult( effect );
+      // the second impact is delayed 500ms, but snapshots multipliers as of
+      // the primary execute. this is not exactly that, but somewhat close
+      aoe = 1 + as<int>( effect.driver()->effectN( 5 ).base_value() );
+    }
+
+    double action_multiplier() const override
+    {
+      double m = generic_proc_t::action_multiplier();
+
+      if ( max_stack->check() )
+        m *= effect.driver()->effectN( 4 ).base_value();
+
+      return m;
+    }
+  };
+
+  auto max_stack_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1220413 ) );
+
+  auto ramp_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1220415 ) )
+                       ->set_expire_at_max_stack( true )
+                       ->set_stack_change_callback( [ max_stack_buff ]( buff_t*, int old_, int new_ ) {
+                         if ( old_ && !new_ )
+                           max_stack_buff->trigger();
+                       } );
+
+  effect.custom_buff = ramp_buff;
+  new dbc_proc_callback_t( effect.player, effect );
+
+  auto zap = create_proc_action<zap_t>( "zap", effect, max_stack_buff );
+
+  effect.player->register_combat_begin( [ effect, zap, max_stack_buff ]( player_t* player ) {
+    make_repeating_event( *player->sim, effect.driver()->effectN( 1 ).period(), [ player, zap, max_stack_buff ] {
+      if ( player->in_combat && !max_stack_buff->check() )
+        zap->execute();
+    } );
+    make_repeating_event( *player->sim, effect.driver()->effectN( 1 ).period() / 2.0, [ player, zap, max_stack_buff ] {
+      if ( player->in_combat && max_stack_buff->check() )
+        zap->execute();
+    } );
+  } );
+}
+
 // Weapons
 
 // 443384 driver
@@ -7865,175 +8136,6 @@ void seal_of_the_poisoned_pact( special_effect_t& effect )
   new dbc_proc_callback_t( effect.player, *nature );
 }
 
-void imperfect_ascendancy_serum( special_effect_t& effect )
-{
-  struct ascension_channel_t : public proc_spell_t
-  {
-    buff_t* buff;
-    action_t* use_action;  // if this exists, then we're prechanneling via the APL
-
-    ascension_channel_t( const special_effect_t& e, buff_t* ascension )
-      : proc_spell_t( "ascension_channel", e.player, e.driver(), e.item )
-    {
-      channeled = hasted_ticks = hasted_dot_duration = true;
-      harmful                                        = false;
-      dot_duration = base_tick_time = base_execute_time;
-      base_execute_time             = 0_s;
-      buff                          = ascension;
-      effect                        = &e;
-      interrupt_auto_attack         = false;
-
-      for ( auto a : player->action_list )
-      {
-        if ( a->action_list && a->action_list->name_str == "precombat" && a->name_str == "use_item_" + item->name_str )
-        {
-          a->harmful = harmful;  // pass down harmful to allow action_t::init() precombat check bypass
-          use_action = a;
-          use_action->base_execute_time = base_tick_time;
-          break;
-        }
-      }
-    }
-
-    void execute() override
-    {
-      if ( !player->in_combat )  // if precombat...
-      {
-        if ( use_action )  // ...and use_item exists in the precombat apl
-        {
-          precombat_buff();
-        }
-      }
-      else
-      {
-        proc_spell_t::execute();
-        event_t::cancel( player->readying );
-        player->delay_ranged_auto_attacks( composite_dot_duration( execute_state ) );
-      }
-    }
-
-    void last_tick( dot_t* d ) override
-    {
-      bool was_channeling = player->channeling == this;
-
-      cooldown->adjust( d->duration() );
-
-      auto cdgrp = player->get_cooldown( effect->cooldown_group_name() );
-      cdgrp->adjust( d->duration() );
-
-      proc_spell_t::last_tick( d );
-      buff->trigger();
-
-      if ( was_channeling && !player->readying )
-        player->schedule_ready();
-    }
-
-    void precombat_buff()
-    {
-      timespan_t time = 0_ms;
-
-      if ( time == 0_ms )  // No global override, check for an override from an APL variable
-      {
-        for ( auto v : player->variables )
-        {
-          if ( v->name_ == "imperfect_ascendancy_precombat_cast" )
-          {
-            time = timespan_t::from_seconds( v->value() );
-            break;
-          }
-        }
-      }
-
-      // shared cd (other trinkets & on-use items)
-      auto cdgrp = player->get_cooldown( effect->cooldown_group_name() );
-
-      if ( time == 0_ms )  // No hardcoded override, so dynamically calculate timing via the precombat APL
-      {
-        time            = data().cast_time();
-        const auto& apl = player->precombat_action_list;
-
-        auto it = range::find( apl, use_action );
-        if ( it == apl.end() )
-        {
-          sim->print_debug(
-              "WARNING: Precombat /use_item for Imperfect Ascendancy Serum exists but not found in precombat APL!" );
-          return;
-        }
-
-        cdgrp->start( 1_ms );  // tap the shared group cd so we can get accurate action_ready() checks
-
-        // add cast time or gcd for any following precombat action
-        std::for_each( it + 1, apl.end(), [ &time, this ]( action_t* a ) {
-          if ( a->action_ready() )
-          {
-            timespan_t delta =
-                std::max( std::max( a->base_execute_time.value(), a->trigger_gcd ) * a->composite_haste(), a->min_gcd );
-            sim->print_debug( "PRECOMBAT: Imperfect Ascendancy Serum precast timing pushed by {} for {}", delta, a->name() );
-            time += delta;
-
-            return a->harmful;  // stop processing after first valid harmful spell
-          }
-          return false;
-        } );
-      }
-      else if ( time < base_tick_time )  // If APL variable can't set to less than cast time
-      {
-        time = base_tick_time;
-      }
-
-      // how long you cast for
-      auto cast = base_tick_time;
-      // total duration of the buff
-      auto total = buff->buff_duration();
-      // actual duration of the buff you'll get in combat
-      auto actual = total + cast - time;
-      // cooldown on effect/trinket at start of combat
-      auto cd_dur = cooldown->duration + cast - time;
-      // shared cooldown at start of combat
-      auto cdgrp_dur = std::max( 0_ms, effect->cooldown_group_duration() + cast - time );
-
-      sim->print_debug( "PRECOMBAT: Imperfect Ascendency Serum started {}s before combat via {}, {}s in-combat buff", time,
-                        use_action ? "APL" : "TWW_OPT", actual );
-
-      buff->trigger( 1, buff_t::DEFAULT_VALUE(), 1.0, actual );
-
-      if ( use_action )  // from the apl, so cooldowns will be started by use_item_t. adjust. we are still in precombat.
-      {
-        make_event( *sim, [ this, cast, time, cdgrp ] {  // make an event so we adjust after cooldowns are started
-          cooldown->adjust( cast - time );
-
-          if ( use_action )
-            use_action->cooldown->adjust( cast - time );
-
-          cdgrp->adjust( cast - time );
-        } );
-      }
-      else  // via bfa. option override, start cooldowns. we are in-combat.
-      {
-        cooldown->start( cd_dur );
-
-        if ( use_action )
-          use_action->cooldown->start( cd_dur );
-
-        if ( cdgrp_dur > 0_ms )
-          cdgrp->start( cdgrp_dur );
-      }
-    }
-  };
-
-  auto buff_spell = effect.driver();
-  buff_t* buff    = create_buff<stat_buff_t>( effect.player, buff_spell )
-                     ->add_stat_from_effect( 1, effect.driver()->effectN( 1 ).average( effect ) )
-                     ->add_stat_from_effect( 2, effect.driver()->effectN( 2 ).average( effect ) )
-                     ->add_stat_from_effect( 4, effect.driver()->effectN( 4 ).average( effect ) )
-                     ->add_stat_from_effect( 5, effect.driver()->effectN( 5 ).average( effect ) )
-                     ->set_cooldown( 0_ms );
-
-  auto action           = new ascension_channel_t( effect, buff );
-  effect.execute_action = action;
-  effect.disable_buff();
-}
-
 // 455799 Driver
 // 455820 First Dig
 // 455826 Second Dig
@@ -8387,113 +8489,6 @@ void the_jastor_diamond( special_effect_t& effect )
   effect.cooldown_ = cooldown_spell->duration();
   effect.spell_id  = equip_driver->id();
   new the_jastor_diamond_cb_t( effect );
-}
-
-// Ringing Ritual Mud
-// NYI: CDR from periodic damage taken
-void ringing_ritual_mud( special_effect_t& effect )
-{
-  struct mudborne_t : absorb_t
-  {
-    action_t* tick;
-    buff_t* damage_buff;
-    buff_t* absorb_buff;
-
-    mudborne_t( const special_effect_t& effect )
-      : absorb_t( "mudborne", effect.player, effect.driver() ),
-        tick( nullptr ),
-        damage_buff( nullptr ),
-        absorb_buff( nullptr )
-    {
-      const spell_data_t* equip = effect.player->find_spell( 1221145 );
-      base_dd_min = base_dd_max = equip->effectN( 3 ).average( effect.item );
-
-      tick = create_proc_action<generic_aoe_proc_t>(
-          "mud_echo", effect, effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).trigger(), true );
-
-      double tick_count = effect.driver()->effectN( 2 ).trigger()->duration() /
-                          effect.driver()->effectN( 2 ).trigger()->effectN( 1 ).period();
-
-      tick->base_dd_min = tick->base_dd_max = equip->effectN( 1 ).average( effect.item );
-      damage_buff = unique_gear::create_buff<buff_t>( effect.player, effect.driver()->effectN( 2 ).trigger() )
-                        ->set_tick_callback( [ &, tick_count ]( buff_t* self, int current_tick, timespan_t ) {
-                          tick->execute();
-                          if ( !absorb_buff->check() && self->check() && current_tick < tick_count )
-                            // Let events clear before expiring
-                            make_event( *sim, 0_ms, [ self ] { self->expire(); } );
-                        } );
-    }
-
-    absorb_buff_t* create_buff( const action_state_t* s ) override
-    {
-      auto b = absorb_t::create_buff( s );
-      absorb_buff = b;
-      return b;
-    }
-
-    void execute() override
-    {
-      action_t::execute();
-      damage_buff->trigger();
-    }
-  };
-
-  effect.execute_action = create_proc_action<mudborne_t>( "ringing_ritual_mud", effect );
-}
-
-// Gigazap's Zap-Cap
-void gigazaps_zapcap( special_effect_t& effect )
-{
-  struct zap_t : generic_proc_t
-  {
-    buff_t* max_stack;
-    const special_effect_t& effect;
-
-    zap_t( const special_effect_t& effect, buff_t* max_stack )
-      : generic_proc_t( effect, "zap", effect.player->find_spell( 1220419 ) ), max_stack( max_stack ), effect( effect )
-    {
-      base_dd_min = base_dd_max = effect.driver()->effectN( 1 ).average( effect.item );
-      base_multiplier *= role_mult( effect );
-      // the second impact is delayed 500ms, but snapshots multipliers as of
-      // the primary execute. this is not exactly that, but somewhat close
-      aoe = 1 + as<int>( effect.driver()->effectN( 5 ).base_value() );
-    }
-
-    double action_multiplier() const override
-    {
-      double m = generic_proc_t::action_multiplier();
-
-      if ( max_stack->check() )
-        m *= effect.driver()->effectN( 4 ).base_value();
-
-      return m;
-    }
-  };
-
-  auto max_stack_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1220413 ) );
-
-  auto ramp_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1220415 ) )
-                       ->set_expire_at_max_stack( true )
-                       ->set_stack_change_callback( [ max_stack_buff ]( buff_t*, int old_, int new_ ) {
-                         if ( old_ && !new_ )
-                           max_stack_buff->trigger();
-                       } );
-
-  effect.custom_buff = ramp_buff;
-  new dbc_proc_callback_t( effect.player, effect );
-
-  auto zap = create_proc_action<zap_t>( "zap", effect, max_stack_buff );
-
-  effect.player->register_combat_begin( [ effect, zap, max_stack_buff ]( player_t* player ) {
-    make_repeating_event( *player->sim, effect.driver()->effectN( 1 ).period(), [ player, zap, max_stack_buff ] {
-      if ( player->in_combat && !max_stack_buff->check() )
-        zap->execute();
-    } );
-    make_repeating_event( *player->sim, effect.driver()->effectN( 1 ).period() / 2.0, [ player, zap, max_stack_buff ] {
-      if ( player->in_combat && max_stack_buff->check() )
-        zap->execute();
-    } );
-  } );
 }
 
 }  // namespace items
