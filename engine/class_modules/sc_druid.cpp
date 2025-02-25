@@ -765,6 +765,7 @@ struct druid_t final : public parse_player_effects_t
     buff_t* vicious_cycle_maul;
     buff_t* guardians_tenacity;  // TWW1 2pc
     buff_t* luck_of_the_draw;  // TWW2 2pc
+    buff_t* stacked_deck;  // TWW2 4pc
 
     // Restoration
     buff_t* abundance;
@@ -11159,6 +11160,10 @@ void druid_t::create_buffs()
   buff.luck_of_the_draw =
     make_fallback( bear_tww2_2pc->ok(), this, "luck_of_the_draw", find_trigger( bear_tww2_2pc ).trigger() );
 
+  buff.stacked_deck =
+    make_fallback( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ), this, "stacked_deck", find_spell( 1218537 ) )
+      ->set_cooldown( 0_ms );
+
   // Restoration buffs
   buff.abundance = make_fallback( talent.abundance.ok(), this, "abundance", find_spell( 207640 ) )
     ->set_duration( 0_ms );
@@ -12365,7 +12370,7 @@ void druid_t::init_special_effects()
     new moonless_night_cb_t( this, *driver );
   }
 
-  if ( auto spell = sets->set( DRUID_BALANCE, TWW2, B2 ); spell->ok() )
+  if ( auto spell = sets->set( DRUID_GUARDIAN, TWW2, B2 ); spell->ok() )
   {
     struct luck_of_the_draw_cb_t final : public druid_cb_t
     {
