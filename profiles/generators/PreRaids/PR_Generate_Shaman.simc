@@ -34,7 +34,7 @@ race=orc
 spec=enhancement
 role=attack
 position=back
-talents=CcQAAAAAAAAAAAAAAAAAAAAAAMzMgZGDzMzMYZmx2sNDAAAAAAAAAgNYBWgZspx2AYmgNAMLTGGWMMjhZmZMjtZmJbsMWGzMAAzMD
+talents=CcQAAAAAAAAAAAAAAAAAAAAAAMzMjZGGDzMzMzMbzM2GAAAAAAAAAAgFYBmxiGbDgZC2AwsMZGYZZMzMDmZmNjlZmJbsMMmZAAGA
 
 head=cryptbound_headpiece,id=221156,ilevel=593
 neck=emergency_stop_keychain,id=221077,ilevel=593
@@ -61,7 +61,7 @@ race=orc
 spec=enhancement
 role=attack
 position=back
-talents=CcQAAAAAAAAAAAAAAAAAAAAAAMzMzCmhZ2mZmZY2mZWWGAAAAAAAAAAYDgFzYYjsAzwQDWAwsMZALmxMzwMzMbDbzMT2YZswMDAwMG
+talents=CcQAAAAAAAAAAAAAAAAAAAAAAMzMjZmZGDzMzMYbmx2AAAAAAAAAAwGgFzYYjsAzwQDWAwsMZGYZZmZmZYmZGGLzMT2YZYYGAgBA
 
 head=cryptbound_headpiece,id=221156,ilevel=593
 neck=emergency_stop_keychain,id=221077,ilevel=593
