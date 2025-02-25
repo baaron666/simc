@@ -764,6 +764,7 @@ struct druid_t final : public parse_player_effects_t
     buff_t* vicious_cycle_mangle;
     buff_t* vicious_cycle_maul;
     buff_t* guardians_tenacity;  // TWW1 2pc
+    buff_t* luck_of_the_draw;  // TWW2 2pc
 
     // Restoration
     buff_t* abundance;
@@ -10747,11 +10748,13 @@ void druid_t::create_buffs()
 
   // Multi-spec
   // The buff ID in-game is same as the talent, 61336, but the buff effects (as well as tooltip reference) is in 50322
+  // Hardcode ID due to bear tww2_2pc
   buff.survival_instincts =
-    make_fallback( talent.survival_instincts.ok(), this, "survival_instincts", talent.survival_instincts )
-      ->set_cooldown( 0_ms )
-      ->set_default_value( find_effect( find_spell( 50322 ), A_MOD_DAMAGE_PERCENT_TAKEN ).percent() +
-                           find_effect( talent.oakskin, find_spell( 50322 ), A_ADD_FLAT_MODIFIER ).percent() );
+    make_fallback( talent.survival_instincts.ok() || sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B2 ),
+      this, "survival_instincts", find_spell( 61336 ) )
+        ->set_cooldown( 0_ms )
+        ->set_default_value( find_effect( find_spell( 50322 ), A_MOD_DAMAGE_PERCENT_TAKEN ).percent() +
+                             find_effect( talent.oakskin, find_spell( 50322 ), A_ADD_FLAT_MODIFIER ).percent() );
 
   // Balance buffs
   buff.astral_communion = make_fallback( talent.astral_communion.ok(), this, "astral_communion", find_spell( 450599 ) );
@@ -11146,11 +11149,15 @@ void druid_t::create_buffs()
       ->set_trigger_spell( talent.vicious_cycle );
 
   auto bear_tww1_2pc = sets->set( DRUID_GUARDIAN, TWW1, B2 );
-  buff.guardians_tenacity = make_fallback( sets->has_set_bonus( DRUID_GUARDIAN, TWW1, B2 ),
-    this, "guardians_tenacity", find_trigger( bear_tww1_2pc ).trigger() )
+  buff.guardians_tenacity =
+    make_fallback( bear_tww1_2pc->ok(), this, "guardians_tenacity", find_trigger( bear_tww1_2pc ).trigger() )
       ->set_trigger_spell( bear_tww1_2pc )
       ->set_cooldown( bear_tww1_2pc->internal_cooldown() )
       ->set_default_value_from_effect_type( A_MOD_DAMAGE_PERCENT_TAKEN );
+
+  auto bear_tww2_2pc = sets->set( DRUID_GUARDIAN, TWW2, B2 );
+  buff.luck_of_the_draw =
+    make_fallback( bear_tww2_2pc->ok(), this, "luck_of_the_draw", find_trigger( bear_tww2_2pc ).trigger() );
 
   // Restoration buffs
   buff.abundance = make_fallback( talent.abundance.ok(), this, "abundance", find_spell( 207640 ) )
@@ -12356,6 +12363,39 @@ void druid_t::init_special_effects()
     special_effects.push_back( driver );
 
     new moonless_night_cb_t( this, *driver );
+  }
+
+  if ( auto spell = sets->set( DRUID_BALANCE, TWW2, B2 ); spell->ok() )
+  {
+    struct luck_of_the_draw_cb_t final : public druid_cb_t
+    {
+      timespan_t si_dur;
+
+      luck_of_the_draw_cb_t( druid_t* p, const special_effect_t& e, const spell_data_t* s )
+        : druid_cb_t( p, e ), si_dur( s->effectN( 2 ).time_value() )
+      {}
+
+      void execute( action_t*, action_state_t* ) override
+      {
+        p()->buff.luck_of_the_draw->trigger();
+        p()->buff.survival_instincts->extend_duration_or_trigger( si_dur );
+      }
+    };
+
+    const auto driver = new special_effect_t( this );
+    driver->name_str = spell->name_cstr();
+    driver->spell_id = spell->id();
+
+    // assume full rppm in dungeons since we're always getting hit
+    if ( sim->fight_style == FIGHT_STYLE_DUNGEON_SLICE || sim->fight_style == FIGHT_STYLE_DUNGEON_ROUTE )
+    {
+      driver->proc_flags_ = PF_MELEE_ABILITY;
+      driver->proc_flags2_ = PF2_LANDED;
+    }
+
+    special_effects.push_back( driver );
+
+    new luck_of_the_draw_cb_t( this, *driver, spell );
   }
 
   // Hero talents
@@ -14233,6 +14273,8 @@ void druid_t::parse_action_effects( action_t* action )
   _a->parse_effects( buff.guardians_tenacity );
   // effects#5 and #6 are ignored regardless of lunar calling
   _a->parse_effects( sets->set( DRUID_GUARDIAN, TWW1, B4 ), effect_mask_t( true ).disable( 5, 6 ) );
+
+  _a->parse_effects( buff.luck_of_the_draw );
 
   // Restoration
   _a->parse_effects( buff.abundance );
