@@ -11965,6 +11965,10 @@ void death_knight_t::burst_festering_wound( player_t* target, unsigned n, proc_t
         if ( !p()->buffs.festering_scythe->check() )
         {
           p()->buffs.festering_scythe_stacks->trigger( n_executes );
+          if ( p()->buffs.festering_scythe_stacks->at_max_stacks() )
+          {
+            p()->buffs.festering_scythe_stacks->expire();
+          }
         }
       }
 
@@ -14484,7 +14488,6 @@ void death_knight_t::create_buffs()
 
   buffs.festering_scythe_stacks = make_fallback( talent.unholy.festering_scythe.ok(), this, "festering_scythe_stacks",
                                                  spell.festering_scythe_stacking_buff )
-                                      ->set_expire_at_max_stack( true )
                                       ->set_expire_callback( [ this ]( buff_t*, int, timespan_t remains ) {
                                         if ( remains > 0_ms )
                                           buffs.festering_scythe->trigger();
