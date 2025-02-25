@@ -13146,7 +13146,11 @@ void shaman_t::trigger_whirling_fire( const action_state_t* /* state */ )
   }
 
   buff.whirling_fire->decrement();
-  cooldown.lava_lash->reset( false );
+  // [BUG] 2025-02-25: Mote-triggered Hot Hand does not properly reset the Lava Lash cooldown
+  if ( !bugs )
+  {
+    cooldown.lava_lash->reset( false );
+  }
 }
 
 void shaman_t::trigger_stormblast( const action_state_t* state )
