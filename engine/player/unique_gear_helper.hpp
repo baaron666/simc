@@ -666,12 +666,12 @@ public:
   virtual attack_t* create_auto_attack()
   { return nullptr; }
 
-  double composite_owner_pet_damage_multiplier( const action_state_t* s ) const override
+  double composite_owner_pet_damage_multiplier( const action_state_t* ) const override
   {
     return 1.0;
   }
 
-  double composite_owner_pet_target_damage_multiplier( player_t* t ) const override
+  double composite_owner_pet_target_damage_multiplier( player_t* ) const override
   {
     return 1.0;
   }
