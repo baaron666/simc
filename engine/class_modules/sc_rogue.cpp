@@ -5646,7 +5646,7 @@ struct secret_technique_t : public rogue_attack_t
     // 2023-10-02 -- Clone attacks do not trigger Shadow Blades proc damage
     // 2025-02-08 -- Fixed on 11.1 PTR
     bool procs_shadow_blades_damage() const override
-    { return secondary_trigger_type != secondary_trigger::SECRET_TECHNIQUE_CLONE || p()->is_ptr(); }
+    { return true; }
   };
 
   secret_technique_attack_t* player_attack;
@@ -8277,31 +8277,18 @@ struct roll_the_bones_t : public buff_t
       // Source: https://us.battle.net/forums/en/wow/topic/20753815486?page=2#post-21
       // Odds double checked on 2020-03-09.
       
-      if ( rogue->is_ptr() )
+      // 2025-02-09 -- 5 buff chance has been increased from 1% to 2% on 11.1 PTR
+      //               Sleight of Hand and TWW2 4pc bonus applies 25% of their value to 5-buff
+      rogue->options.fixed_rtb_odds = { 78.0, 20.0, 0.0, 0.0, 2.0, 0.0 };
+
+      double roll_bonus = ( rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value() +
+                            rogue->set_bonuses.tww2_outlaw_4pc->effectN( 1 ).base_value() );
+
+      if ( roll_bonus > 0 )
       {
-        // 2025-02-09 -- 5 buff chance has been increased from 1% to 2% on 11.1 PTR
-        //               Sleight of Hand and TWW2 4pc bonus applies 25% of their value to 5-buff
-        rogue->options.fixed_rtb_odds = { 78.0, 20.0, 0.0, 0.0, 2.0, 0.0 };
-
-        double roll_bonus = ( rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value() +
-                              rogue->set_bonuses.tww2_outlaw_4pc->effectN( 1 ).base_value() );
-
-        if ( roll_bonus > 0 )
-        {
-          rogue->options.fixed_rtb_odds[ 0 ] -= roll_bonus;
-          rogue->options.fixed_rtb_odds[ 1 ] += roll_bonus * 0.75;
-          rogue->options.fixed_rtb_odds[ 4 ] += roll_bonus * 0.25;
-        }
-      }
-      else
-      {
-        rogue->options.fixed_rtb_odds = { 79.0, 20.0, 0.0, 0.0, 1.0, 0.0 };
-
-        if ( rogue->talent.outlaw.sleight_of_hand->ok() )
-        {
-          rogue->options.fixed_rtb_odds[ 0 ] -= rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value();
-          rogue->options.fixed_rtb_odds[ 1 ] += rogue->talent.outlaw.sleight_of_hand->effectN( 1 ).base_value();
-        }
+        rogue->options.fixed_rtb_odds[ 0 ] -= roll_bonus;
+        rogue->options.fixed_rtb_odds[ 1 ] += roll_bonus * 0.75;
+        rogue->options.fixed_rtb_odds[ 4 ] += roll_bonus * 0.25;
       }
 
       rogue->sim->print_log( "{} {} odds set to {:.1f}% one, {:.1f}% two and {:.1f}% five buffs",
@@ -8814,12 +8801,6 @@ void actions::rogue_action_t<Base>::trigger_shadow_techniques( const action_stat
     double energy_gain = p()->spec.shadow_techniques_energize->effectN( 2 ).base_value() +
                          p()->talent.subtlety.improved_shadow_techniques->effectN( 1 ).base_value();
     p()->resource_gain( RESOURCE_ENERGY, energy_gain, p()->gains.shadow_techniques, state->action );
-    // 2024-11-28 -- Shadowcraft's implementation appears to trigger the energize twice
-    // 2025-02-08 -- Fixed on 11.1 PTR
-    if ( p()->bugs && !p()->is_ptr() && p()->talent.subtlety.shadowcraft->ok() && p()->buffs.symbols_of_death->check() )
-    {
-      p()->resource_gain( RESOURCE_ENERGY, energy_gain, p()->gains.shadow_techniques, state->action );
-    }
     p()->buffs.shadow_techniques->trigger( 1 + shadowcraft_adjustment ); // Combo Point storage
   }
 }
