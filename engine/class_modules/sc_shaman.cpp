@@ -6613,7 +6613,7 @@ struct chain_lightning_t : public chained_base_t
       p()->action.ti_trigger = p()->action.chain_lightning_ti;
     }
 
-    if ( exec_type == spell_variant::NORMAL &&
+    if ( ( exec_type == spell_variant::NORMAL || exec_type == spell_variant::THORIMS_INVOCATION ) &&
          p()->specialization() == SHAMAN_ENHANCEMENT &&
          rng().roll( p()->talent.supercharge->effectN( 2 ).percent() ) )
     {
@@ -7502,7 +7502,7 @@ struct lightning_bolt_t : public shaman_spell_t
       p()->action.ti_trigger = p()->action.lightning_bolt_ti;
     }
 
-    if ( exec_type == spell_variant::NORMAL &&
+    if ( ( exec_type == spell_variant::NORMAL || exec_type == spell_variant::THORIMS_INVOCATION ) &&
          p()->specialization() == SHAMAN_ENHANCEMENT &&
          rng().roll( p()->talent.supercharge->effectN( 2 ).percent() ) )
     {
@@ -10710,6 +10710,14 @@ struct primordial_storm_t : public shaman_spell_t
     trigger_lightning_damage();
 
     p()->buff.primordial_storm->decrement();
+
+    // [BUG] 2025-02-24 Supercharge works on Primordial Storm in-game
+    if ( p()->bugs && exec_type == spell_variant::NORMAL &&
+         p()->specialization() == SHAMAN_ENHANCEMENT &&
+         rng().roll( p()->talent.supercharge->effectN( 2 ).percent() ) )
+    {
+      p()->generate_maelstrom_weapon( this, as<int>( p()->talent.supercharge->effectN( 3 ).base_value() ) );
+    }
   }
 
   bool ready() override
@@ -10823,7 +10831,7 @@ struct tempest_t : public shaman_spell_t
 
     p()->trigger_static_accumulation_refund( execute_state, mw_consumed_stacks );
 
-    if ( exec_type == spell_variant::NORMAL &&
+    if ( ( exec_type == spell_variant::NORMAL || exec_type == spell_variant::THORIMS_INVOCATION ) &&
          p()->specialization() == SHAMAN_ENHANCEMENT &&
          rng().roll( p()->talent.supercharge->effectN( 2 ).percent() ) )
     {
