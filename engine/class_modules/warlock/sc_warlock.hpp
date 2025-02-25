@@ -575,6 +575,7 @@ public:
     action_t* wicked_reaping;
     action_t* demonfire_infusion;
     action_t* jackpot_ua;
+    action_t* jackpot_cdf;
   } proc_actions;
 
   struct tier_sets_t
@@ -601,10 +602,10 @@ public:
     const spell_data_t* hexflame_destro_2pc;
     const spell_data_t* hexflame_destro_4pc;
     const spell_data_t* echo_of_the_azjaqir;
-    //const spell_data_t* spliced_destro_2pc;
-    //const spell_data_t* spliced_destro_4pc;
-    //const spell_data_t* spliced_destro_jackpot;
-    //const spell_data_t* demonfire_flurry; // Procs Demonfire bolts on Jackpot proc
+    const spell_data_t* spliced_destro_2pc;
+    const spell_data_t* spliced_destro_4pc;
+    const spell_data_t* spliced_destro_jackpot;
+    const spell_data_t* demonfire_flurry; // Procs Demonfire bolts on Jackpot proc
 
   } tier;
 
@@ -666,6 +667,8 @@ public:
     propagate_const<buff_t*> decimation;
     propagate_const<buff_t*> summon_overfiend;
     propagate_const<buff_t*> echo_of_the_azjaqir;
+    propagate_const<buff_t*> demonfire_flurry_trigger;
+    propagate_const<buff_t*> jackpot_destruction;
 
     // Diabolist Buffs
     propagate_const<buff_t*> ritual_overlord;
@@ -764,6 +767,7 @@ public:
     proc_t* decimation;
     proc_t* dimension_ripper;
     proc_t* echo_of_the_azjaqir;
+    proc_t* jackpot_destruction;
 
     // Diabolist
 
@@ -825,6 +829,7 @@ public:
   shuffled_rng_t* rain_of_chaos_rng;
   real_ppm_t* ravenous_afflictions_rng;
   real_ppm_t* jackpot_demonology_rng;
+  real_ppm_t* jackpot_destruction_rng;
   const spell_data_t* version_11_1_0_data;
 
   warlock_t( sim_t* sim, util::string_view name, race_e r );

@@ -502,6 +502,12 @@ namespace warlock
     tier.hexflame_destro_4pc = sets->set( WARLOCK_DESTRUCTION, TWW1, B4 ); // Should be ID 453646
     tier.echo_of_the_azjaqir = find_spell( 455674 );
 
+    // Liberation of Undermine
+    tier.spliced_destro_2pc = sets->set( WARLOCK_DESTRUCTION, TWW2, B2 ); // Should be ID 1215680
+    tier.spliced_destro_4pc = sets->set( WARLOCK_DESTRUCTION, TWW2, B4 ); // Should be ID 1215681
+    tier.spliced_destro_jackpot = find_spell( 1217798 );
+    tier.demonfire_flurry = find_spell( 1217731 );
+
     // Initialize some default values for pet spawners
     warlock_pet_list.infernals.set_default_duration( talents.summon_infernal_main->duration() );
     warlock_pet_list.overfiends.set_default_duration( talents.summon_overfiend->duration() );
@@ -802,6 +808,46 @@ namespace warlock
                                    { resource_gain( RESOURCE_SOUL_SHARD, talents.overfiend_buff->effectN( 1 ).base_value() / 10.0, gains.summon_overfiend ); } );
 
     buffs.echo_of_the_azjaqir = make_buff( this, "echo_of_the_azjaqir", tier.echo_of_the_azjaqir );
+
+    buffs.demonfire_flurry_trigger = make_buff( this, "demonfire_flurry_trigger", tier.demonfire_flurry )
+                                         ->set_refresh_behavior( buff_refresh_behavior::DURATION )
+                                         ->set_tick_callback( [ this ]( buff_t*, int, timespan_t ){
+                                             proc_actions.jackpot_cdf->target_cache.is_valid = false;
+                                             const auto& tl = proc_actions.jackpot_cdf->target_list();
+
+                                             if ( !tl.empty() )
+                                             {
+                                               proc_actions.jackpot_cdf->set_target( tl[ rng().range( size_t(), tl.size() ) ] );
+                                               proc_actions.jackpot_cdf->execute();
+                                             }
+                                           } );
+
+    timespan_t tick_time = tier.demonfire_flurry->effectN( 1 ).period();
+    timespan_t duration = tier.demonfire_flurry->duration();
+
+    if ( talents.demonfire_mastery.ok() )
+    {
+      tick_time *= 1.0 + talents.demonfire_mastery->effectN( 2 ).percent();
+      duration *= 1.0 + talents.demonfire_mastery->effectN( 3 ).percent();
+    }
+
+    int ticks = as<int>( duration / tick_time );
+    if ( talents.raging_demonfire.ok() )
+    {
+      ticks += as<int>( talents.raging_demonfire->effectN( 1 ).base_value() );
+      tick_time *= 1.0 + talents.raging_demonfire->effectN( 3 ).percent();
+    }
+    duration = ticks * tick_time;
+
+    buffs.demonfire_flurry_trigger->set_period( tick_time );
+    buffs.demonfire_flurry_trigger->set_duration( duration );
+    buffs.demonfire_flurry_trigger->set_tick_time_behavior( buff_tick_time_behavior::UNHASTED );
+    // TODO: Supposedly this is a hasted effect. Not sure if buff_t has a case for this having periodic ticks *and* hasted duration
+    //buffs.demonfire_flurry_trigger->set_tick_time_behavior( buff_tick_time_behavior::HASTED );
+
+    buffs.jackpot_destruction = make_buff( this, "jackpot_destruction", tier.spliced_destro_jackpot )
+                                    ->set_pct_buff_type( STAT_PCT_BUFF_MASTERY )
+                                    ->set_default_value_from_effect( 1 );
   }
 
   void warlock_t::create_buffs_diabolist()
@@ -1038,6 +1084,7 @@ namespace warlock
     procs.decimation = get_proc( "decimation" );
     procs.dimension_ripper = get_proc( "dimension_ripper" );
     procs.echo_of_the_azjaqir = get_proc( "echo_of_the_azjaqir" );
+    procs.jackpot_destruction = get_proc( "jackpot_destruction" );
   }
 
   void warlock_t::init_procs_diabolist()
@@ -1088,6 +1135,7 @@ namespace warlock
   {
     // TOCHECK: Presumed to use deck of cards at 3 out of 20. Long sample test needed to reconfirm in TWW
     rain_of_chaos_rng = get_shuffled_rng( "rain_of_chaos", 3, 20 );
+    jackpot_destruction_rng = get_rppm( "jackpot_destruction", tier.spliced_destro_2pc );
   }
 
   void warlock_t::init_rng_diabolist()
