@@ -5109,7 +5109,9 @@ void house_of_cards( special_effect_t& effect )
   auto value_spell = effect.player->find_spell( 466680 );
   assert( value_spell && "House of Cards missing value spell" );
 
-  auto stacking_buff = create_buff<buff_t>( effect.player, effect.player->find_spell( 1219158 ) );
+  auto stacking_buff =
+      create_buff<buff_t>( effect.player, "stacked_deck_trinket", effect.player->find_spell( 1219158 ) )
+          ->set_name_reporting( "stacked_deck" );
 
   effect.player->register_on_combat_state_callback( [ stacking_buff ]( player_t* p, bool c ) {
     if ( !c && !p->sim->event_mgr.canceled )
