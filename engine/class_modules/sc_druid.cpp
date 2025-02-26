@@ -10691,6 +10691,18 @@ void druid_t::init_stats()
 
 void druid_t::init_finished()
 {
+  for ( auto a : action_list )
+  {
+    if ( a->name_str == "cancel_buff" && !a->signature_str.empty() &&
+         ( util::str_in_str_ci( a->signature_str, "name=bear_form" ) ||
+           util::str_in_str_ci( a->signature_str, "name=cat_form" ) ||
+           util::str_in_str_ci( a->signature_str, "name=moonkin_form" ) ) )
+    {
+      throw std::invalid_argument(
+        fmt::format( "Using {} on shapeshift form, use cancelform instead", a->signature_str ) );
+    }
+  }
+
   player_t::init_finished();
 
   // PRECOMBAT SHENANIGANS
