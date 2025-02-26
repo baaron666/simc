@@ -6897,6 +6897,8 @@ public:
     parse_effects( p->buff.dreamstate, effect_mask_t( false ).enable( 3 ) );
     parse_effects( &p->buff.dreamstate->data(), effect_mask_t( true ).disable( 3 ), [ this ] { return dreamstate; } );
 
+    base_costs[ RESOURCE_MANA ] = 0.0;  // remove mana cost so we don't need to enable mana regen
+
     if ( p->talent.fluid_form && p->talent.moonkin_form )
       form_mask = MOONKIN_FORM;
     else
