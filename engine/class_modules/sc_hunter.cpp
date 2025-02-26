@@ -572,6 +572,7 @@ public:
     proc_t* deathblow;
 
     proc_t* precision_detonation;
+    proc_t* tww_s2_mm_4pc_explosive;
 
     proc_t* sentinel_stacks;
     proc_t* sentinel_implosions;
@@ -4236,7 +4237,11 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
       // Need to update here with the damage spell multipliers since the state came from the cast
       // and the execute() call will skip player modifiers when a pre_execute_state exists
       if ( pre_execute_state )
+      {
         update_state( pre_execute_state, result_amount_type::DMG_DIRECT );
+        if ( pre_execute_state->persistent_multiplier > 1.0 )
+          p()->procs.tww_s2_mm_4pc_explosive->occur();
+      }
 
       hunter_ranged_attack_t::execute();
       
@@ -4282,6 +4287,13 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
 
     explosion = p->get_background_action<damage_t>( "explosive_shot_damage" );
     grenade_juggler_reduction = p->talents.grenade_juggler->effectN( 3 ).time_value();
+  }
+
+  void init() override
+  {
+    hunter_ranged_attack_t::init();
+
+    snapshot_flags = STATE_MUL_PERSISTENT;
   }
 
   virtual void update_state( action_state_t* s, result_amount_type rt )
@@ -5602,13 +5614,6 @@ struct aimed_shot_t : public aimed_shot_base_t
   struct explosive_shot_tww_s2_mm_4pc_t : public explosive_shot_background_t
   {
     explosive_shot_tww_s2_mm_4pc_t( util::string_view n, hunter_t* p ) : explosive_shot_background_t( n, p ) {}
-
-    void init() override
-    {
-      explosive_shot_background_t::init();
-
-      snapshot_flags = STATE_MUL_PERSISTENT;
-    }
 
     double composite_persistent_multiplier( const action_state_t *state ) const override
     {
@@ -8936,6 +8941,9 @@ void hunter_t::init_procs()
 
   if ( talents.precision_detonation.ok() )
     procs.precision_detonation = get_proc( "Precision Detonations" );
+
+  if ( tier_set.tww_s2_mm_4pc.ok() )
+    procs.tww_s2_mm_4pc_explosive = get_proc( "TWW S2 MM 4pc Explosive" );
 
   if ( talents.sentinel.ok() )
   {
