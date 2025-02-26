@@ -943,20 +943,20 @@ void adrenal_surge( special_effect_t& effect )
 // Effect 4: Range
 // 458630 Self Damage
 // 458624 Damage
-void siphoning_stilleto( special_effect_t& effect )
+void siphoning_stiletto( special_effect_t& effect )
 {
-  struct siphoning_stilleto_cb_t : public dbc_proc_callback_t
+  struct siphoning_stiletto_cb_t : public dbc_proc_callback_t
   {
     action_t* self;
     action_t* damage;
     timespan_t duration;
-    siphoning_stilleto_cb_t( const special_effect_t& e )
+    siphoning_stiletto_cb_t( const special_effect_t& e )
       : dbc_proc_callback_t( e.player, e ),
         self( nullptr ),
         damage( nullptr ),
         duration( timespan_t::from_seconds( e.driver()->effectN( 3 ).base_value() ) )
     {
-      self              = create_proc_action<generic_proc_t>( "siphoning_stilleto_self", e, 458630 );
+      self              = create_proc_action<generic_proc_t>( "siphoning_stiletto_self", e, 458630 );
       // TODO: Check if self damage is affected by the role multiplier
       self->base_dd_min = self->base_dd_max = e.driver()->effectN( 1 ).average( e ) * writhing_mul( e.player );
       self->stats->type = STATS_NEUTRAL;
@@ -964,7 +964,7 @@ void siphoning_stilleto( special_effect_t& effect )
       self->callbacks   = false;
       self->target      = e.player;
 
-      damage              = create_proc_action<generic_proc_t>( "siphoning_stilleto", e, 458624 );
+      damage              = create_proc_action<generic_proc_t>( "siphoning_stiletto", e, 458624 );
       damage->base_dd_min = damage->base_dd_max =
           e.driver()->effectN( 2 ).average( e );
       damage->base_multiplier *= role_mult( e );
@@ -982,7 +982,7 @@ void siphoning_stilleto( special_effect_t& effect )
     }
   };
 
-  new siphoning_stilleto_cb_t( effect );
+  new siphoning_stiletto_cb_t( effect );
 }
 }  // namespace embellishments
 
@@ -1430,7 +1430,7 @@ void swarmlords_authority( special_effect_t& effect )
     double return_speed;
 
     ravenous_scarab_t( const special_effect_t& e, const spell_data_t* data )
-      : generic_proc_t( e, "ravenous_scarab", e.trigger() )
+      : generic_proc_t( e, "ravenous_swarm", e.trigger() )
     {
       base_dd_min = base_dd_max = data->effectN( 1 ).average( e );
 
@@ -1450,7 +1450,7 @@ void swarmlords_authority( special_effect_t& effect )
     }
   };
 
-  auto scarab = create_proc_action<ravenous_scarab_t>( "ravenous_scarab", effect, data );
+  auto scarab = create_proc_action<ravenous_scarab_t>( "ravenous_swarm", effect, data );
 
   // setup equip
   equip->execute_action = scarab;
@@ -2563,9 +2563,9 @@ void opressive_orators_larynx( special_effect_t& e )
   {
     double mult;
     dark_oration_t( const special_effect_t& e, const spell_data_t* equip_driver )
-      : generic_aoe_proc_t( e, "dark_oration", e.player->find_spell( 451015 ) ), mult( 0 )
+      : generic_aoe_proc_t( e, "oppressive_oration_damage", e.player->find_spell( 451015 ) ), mult( 0 )
     {
-      background  = true;
+      background = dual = true;
       base_dd_min = base_dd_max = equip_driver->effectN( 2 ).average( e );
       base_multiplier *= role_mult( e );
     }
@@ -2586,7 +2586,7 @@ void opressive_orators_larynx( special_effect_t& e )
     action_t* damage;
     double increase_per_stack;
     dark_oration_tick_t( const special_effect_t& e, buff_t* buff, action_t* damage )
-      : generic_proc_t( e, "dark_oration", e.driver() ), buff( buff ), damage( damage ), increase_per_stack( 0 )
+      : generic_proc_t( e, "oppressive_oration", e.driver() ), buff( buff ), damage( damage ), increase_per_stack( 0 )
     {
       background         = true;
       tick_action        = damage;
@@ -2603,7 +2603,7 @@ void opressive_orators_larynx( special_effect_t& e )
 
   unsigned equip_id = 446787;
   auto equip_effect = find_special_effect( e.player, equip_id );
-  assert( equip_effect && "Opressive Orator's Larynx missing equip effect" );
+  assert( equip_effect && "Oppressive Orator's Larynx missing equip effect" );
 
   auto equip_driver = equip_effect->driver();
 
@@ -2622,8 +2622,8 @@ void opressive_orators_larynx( special_effect_t& e )
   equip_cb->initialize();
   equip_cb->activate();
 
-  auto damage        = create_proc_action<dark_oration_t>( "dark_oration", e, equip_driver );
-  auto ticking_spell = create_proc_action<dark_oration_tick_t>( "dark_oration_tick", e, buff, damage );
+  auto damage        = create_proc_action<dark_oration_t>( "oppressive_oration_damage", e, equip_driver );
+  auto ticking_spell = create_proc_action<dark_oration_tick_t>( "oppressive_oration", e, buff, damage );
 
   e.execute_action = ticking_spell;
 }
@@ -3188,7 +3188,7 @@ void signet_of_the_priory( special_effect_t& effect )
 // TODO: determine reasonable delay to intercept
 void harvesters_edict( special_effect_t& effect )
 {
-  auto damage = create_proc_action<generic_aoe_proc_t>( "volatile_blood_blast", effect, effect.driver(), true );
+  auto damage = create_proc_action<generic_aoe_proc_t>( "harvesters_edict", effect, effect.driver(), true );
   damage->base_dd_min = damage->base_dd_max =
     effect.driver()->effectN( 1 ).average( effect );
   damage->base_multiplier *= role_mult( effect );
@@ -3221,7 +3221,7 @@ void harvesters_edict( special_effect_t& effect )
 void conductors_wax_whistle( special_effect_t& effect )
 {
   // TODO: confirm damage does not increase per extra target
-  auto damage = create_proc_action<generic_aoe_proc_t>( "collision", effect, 450429, true );
+  auto damage = create_proc_action<generic_aoe_proc_t>( "candle_conductors_collision", effect, 450429, true );
   damage->base_dd_min = damage->base_dd_max = effect.driver()->effectN( 1 ).average( effect );
   damage->base_multiplier *= role_mult( effect );
   // TODO: determine travel speed/delay, assuming 7.5yd/s based on summed cart path(?) radius/duration
@@ -3937,12 +3937,11 @@ void shadowed_essence( special_effect_t& effect )
       auto dark_embrace = create_buff<stat_buff_t>( e.player, e.player->find_spell( 455656 ) )
                               ->add_stat_from_effect_type( A_MOD_RATING, e.driver()->effectN( 3 ).average( e ) );
 
-      auto damage         = create_proc_action<generic_proc_t>( "shadowed_essence_damage", e, 455654 );
+      auto damage         = create_proc_action<generic_proc_t>( "shadowed_essence", e, 455654 );
       damage->base_dd_min = damage->base_dd_max = e.driver()->effectN( 1 ).average( e );
       damage->base_multiplier *= role_mult( e.player );
 
-      auto missile           = create_proc_action<generic_proc_t>( "shadowed_essence", e, 455653 );
-      missile->add_child( damage );
+      auto missile           = create_proc_action<generic_proc_t>( "shadowed_essence_missile", e, 455653 );
       missile->impact_action = damage;
 
       set_quiet( true );
@@ -4105,7 +4104,7 @@ void shining_arathor_insignia( special_effect_t& effect )
 {
   // TODO: make it heal players as well
   // TODO: determine if this is affected by role mult
-  auto damage_proc         = create_proc_action<generic_proc_t>( "shining_arathor_insignia_damage", effect, 455433 );
+  auto damage_proc         = create_proc_action<generic_proc_t>( "shining_arathor_insignia", effect, 455433 );
   damage_proc->base_dd_min = damage_proc->base_dd_max = effect.driver()->effectN( 1 ).average( effect );
 
   effect.execute_action = damage_proc;
@@ -4796,15 +4795,14 @@ void golem_gearbox( special_effect_t& effect )
   auto counter = create_buff<buff_t>( effect.player, effect.player->find_spell( 469917 ) )
     ->set_max_stack( as<int>( effect.driver()->effectN( 1 ).base_value() ) );
 
-  auto missile = create_proc_action<generic_proc_t>( "torrent_of_flames", effect, 469919 );
+  auto missile = create_proc_action<generic_proc_t>( "torrent_of_flames_missile", effect, 469919 );
   auto damage =
-    create_proc_action<generic_proc_t>( "torrent_of_flames_damage", effect, missile->data().effectN( 1 ).trigger() );
-  damage->dual = damage->background = true;
+    create_proc_action<generic_proc_t>( "torrent_of_flames", effect, missile->data().effectN( 1 ).trigger() );
+  damage->background = true;
   // TODO: confirm driver coeff is used and not damage spell coeff
   damage->base_dd_min = damage->base_dd_max = effect.driver()->effectN( 2 ).average( effect );
   damage->base_multiplier *= role_mult( effect );
 
-  missile->add_child( damage );
   missile->impact_action = damage;
 
   effect.proc_flags2_ = PF2_CRIT;
@@ -6253,7 +6251,8 @@ void ratfang_toxin( special_effect_t& effect )
     }
   };
 
-  auto use = create_proc_action<ratfang_toxin_t>( "ratfang_toxin_dot", effect, "ratfang_toxin_dot", effect.player->find_spell( 1216606 ), *equip_cb );
+  auto use = create_proc_action<ratfang_toxin_t>( "ratfang_toxin", effect, "ratfang_toxin",
+                                                  effect.player->find_spell( 1216606 ), *equip_cb );
 
   effect.execute_action = use;
 }
@@ -9169,6 +9168,7 @@ struct storm_sewers_citrine_t : public absorb_citrine_t
   {
     storm_sewers_citrine_damage_t( player_t* p ) : spell_t( "storm_sewers_citrine_damage", p, p->find_spell( 468422 ) )
     {
+      name_str_reporting = "storm_sewers_citrine";
     }
   };
 
@@ -9177,8 +9177,7 @@ struct storm_sewers_citrine_t : public absorb_citrine_t
     : absorb_citrine_t( e, "storm_sewers_citrine", 462958, STORM_SEWERS_CITRINE )
   {
     base_dd_min = base_dd_max = cyrce_driver->effectN( 1 ).average( e ) * driver_spell->effectN( 2 ).percent();
-    damage                    = new storm_sewers_citrine_damage_t( e.player );
-    add_child( damage );
+    damage = new storm_sewers_citrine_damage_t( e.player );
   }
 
   void impact( action_state_t* s )
@@ -10039,7 +10038,7 @@ void register_special_effects()
   register_special_effect( 443902, DISABLED_EFFECT );  // writhing armor banding
   register_special_effect( 436132, embellishments::binding_of_binding );
   register_special_effect( 436085, DISABLED_EFFECT ); // Binding of Binding on use
-  register_special_effect( 453573, embellishments::siphoning_stilleto );
+  register_special_effect( 453573, embellishments::siphoning_stiletto );
 
   // Trinkets
   register_special_effect( 444959, items::spymasters_web, true );
