@@ -52,13 +52,13 @@ TWW2_Generate_Mage.simc
 TWW2_Generate_Priest.simc
 
 # Rogue
-# TWW2_Generate_Rogue.simc
+TWW2_Generate_Rogue.simc
 
 # Shaman
 TWW2_Generate_Shaman.simc
 
 # Warlock
-# TWW2_Generate_Warlock.simc
+TWW2_Generate_Warlock.simc
 
 # Warrior
 # TWW2_Generate_Warrior.simc
