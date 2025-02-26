@@ -9,12 +9,11 @@ jobs:
   spec-test:
     name: spec-test-${{ matrix.spec }}-${{ matrix.fightstyle }}
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
       matrix:
-        runs-on: ubuntu-22.04
         spec: [
             deathknight_blood, deathknight_unholy, deathknight_frost,
             demonhunter_vengeance, demonhunter_havoc,
