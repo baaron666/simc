@@ -622,6 +622,7 @@ struct druid_t final : public parse_player_effects_t
     action_t* maul_tooth_and_claw;
     action_t* raze_tooth_and_claw;
     action_t* thrash_bear_flashing;
+    action_t* stacked_deck;  // TWW2 4pc proxy
 
     // Restoration
     action_t* yseras_gift;
@@ -1878,6 +1879,9 @@ public:
       for ( auto cd : { p()->cooldown.fury_of_elune, p()->cooldown.moon_cd, p()->cooldown.lunar_beam } )
         cd->adjust( ( *eff++ ).time_value() );
     }
+
+    if ( !ab::use_off_gcd && p()->buff.stacked_deck->check() && p()->buff.stacked_deck->trigger( this ))
+      p()->active.stacked_deck->execute();
   }
 
   bool can_trigger_lunation() const
@@ -9554,6 +9558,103 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
 };
 }  // end namespace spells
 
+// Stacked Deck Proxy (Guardian TWW2 4pc Set Bonus) =========================
+struct stacked_deck_t : public action_t
+{
+  std::vector<std::tuple<action_t*, double, double>> dist;
+
+  action_t* stacked_mangle;
+  action_t* stacked_maul;
+  action_t* stacked_swipe_bear;
+  action_t* stacked_swipe_cat;
+  action_t* stacked_shred;
+  action_t* stacked_ferocious_bite;
+  action_t* stacked_wrath;
+  action_t* stacked_starfire;
+  action_t* stacked_starsurge;
+  action_t* stacked_renewal;
+
+  double dist_sum;
+  double mul;
+
+  stacked_deck_t( druid_t* p )
+    : action_t( action_e::ACTION_OTHER, "stacked_deck", p, &p->buff.stacked_deck->data() ),
+      mul( p->sets->set( DRUID_GUARDIAN, TWW2, B4 )->effectN( 1 ).percent() )
+  {
+    using namespace bear_attacks;
+    using namespace cat_attacks;
+    using namespace spells;
+    using namespace heals;
+
+    // TODO: all these distributions are guesstimates
+    stacked_mangle = get_stacked_action<mangle_t>( "mangle", 2.0 );
+    stacked_maul = get_stacked_action<maul_t>( "maul", 1.0, p->find_spell( 6807 ) );
+    stacked_swipe_bear = get_stacked_action<swipe_bear_t>( "swipe_bear", 1.5 );
+    stacked_swipe_cat = get_stacked_action<swipe_cat_t>( "swipe_cat", 0.0 );
+    stacked_shred = get_stacked_action<shred_t>( "shred", 1.5 );
+    stacked_ferocious_bite = get_stacked_action<ferocious_bite_t>( "ferocious_bite", 0.75 );
+    stacked_wrath = get_stacked_action<wrath_t>( "wrath", 1.25 );
+    stacked_starfire = get_stacked_action<starfire_t>( "starfire", 1.25, p->find_spell( 197628 ) );
+    stacked_starsurge = get_stacked_action<starsurge_t>( "starsurge", 0.625, p->find_spell( 197626 ) );
+    // stacked_renewal = get_Stacked_action<renewal_t>( "renewal", xxx );
+
+    for ( auto it = dist.begin(); it != dist.end(); it++ )
+    {
+      std::get<2>( *it ) = std::accumulate( dist.begin(), it + 1, 0.0, []( double a, const auto& b ) {
+        return a + std::get<1>( b );
+      } );
+    }
+
+    dist_sum = std::get<2>( dist.back() );
+  }
+
+  template <typename T>
+  T* get_stacked_action( std::string n, double d, const spell_data_t* s = nullptr )
+  {
+    auto a = static_cast<druid_t*>( player )->get_secondary_action<T>( n + "_stacked", s, flag_e::STACKED );
+    if ( a->name_str_reporting.empty() )
+      a->name_str_reporting = n;
+
+    stats->add_child( a->stats );
+    a->gain = gain;
+    a->proc = true;
+    a->trigger_gcd = 0_ms; // prevent schedule_ready() fuzziness being added to execute time stat
+    a->base_multiplier *= mul;
+
+    if ( d )
+      dist.emplace_back( a, d, 0.0 );
+
+    return a;
+  }
+
+  void execute() override
+  {
+    // NOTE: this should only ever be called directly and never executed normally
+    assert( !pre_execute_state && !execute_state );
+
+    auto roll = rng().range( 0.0, dist_sum );
+
+    for ( auto it = dist.begin(); it != dist.end(); it++ )
+    {
+      if ( roll < std::get<2>( *it ) )
+      {
+        auto a = std::get<0>( *it );
+
+        if ( a == stacked_swipe_bear && static_cast<druid_t*>( player )->form == CAT_FORM )
+          a = stacked_swipe_cat;
+
+        const auto& tl = a->target_list();
+        if ( tl.empty() )
+          continue;
+
+        a->execute_on_target( rng().range( tl ) );
+        stats->add_execute( a->time_to_execute, a->target );
+        break;
+      }
+    }
+  }
+};
+
 #undef DRUID_ABILITY
 #undef DRUID_ABILITY_B
 #undef DRUID_ABILITY_C
@@ -11168,9 +11269,9 @@ void druid_t::create_buffs()
     make_fallback( bear_tww2_2pc->ok(), this, "luck_of_the_draw", find_trigger( bear_tww2_2pc ).trigger() );
 
   buff.stacked_deck =
-    make_fallback( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ), this, "stacked_deck", find_spell( 1218537 ) )
-      ->set_cooldown( 0_ms )
-      ->set_reverse( true );
+    make_fallback( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ), this, "stacked_deck_4pc", find_spell( 1218537 ) )
+      ->set_reverse( true )
+      ->set_name_reporting( "stacked_deck" );
 
   // Restoration buffs
   buff.abundance = make_fallback( talent.abundance.ok(), this, "abundance", find_spell( 207640 ) )
@@ -11594,6 +11695,9 @@ void druid_t::create_actions()
     active.thrash_bear_flashing = flash;
   }
 
+  if ( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ) )
+    active.stacked_deck = get_secondary_action<stacked_deck_t>( "stacked_deck" );
+
   // Restoration
   if ( talent.yseras_gift.ok() )
     active.yseras_gift = get_secondary_action<yseras_gift_t>( "yseras_gift" );
@@ -11961,111 +12065,15 @@ void druid_t::init_resources( bool force )
 
 
 // druid_t::init_special_effects ============================================
-struct druid_cb_t : public dbc_proc_callback_t
-{
-  druid_cb_t( druid_t* p, const special_effect_t& e ) : dbc_proc_callback_t( p, e ) {}
-
-  druid_t* p() { return static_cast<druid_t*>( listener ); }
-};
-
-// NOTE: stacked_deck_cb_t defined outside of init_special_effects() to allow for templated get_stacked_action()
-struct stacked_deck_cb_t final : public druid_cb_t
-{
-  std::vector<std::tuple<action_t*, double, double>> dist;
-  action_t* stacked_deck;
-
-  action_t* stacked_mangle;
-  action_t* stacked_maul;
-  action_t* stacked_swipe_bear;
-  action_t* stacked_swipe_cat;
-  action_t* stacked_shred;
-  action_t* stacked_ferocious_bite;
-  action_t* stacked_wrath;
-  action_t* stacked_starfire;
-  action_t* stacked_starsurge;
-  action_t* stacked_renewal;
-
-  double dist_sum;
-  double mul;
-
-  stacked_deck_cb_t( druid_t* p, const special_effect_t& e )
-    : druid_cb_t( p, e ), mul( p->sets->set( DRUID_GUARDIAN, TWW2, B4 )->effectN( 1 ).percent() )
-  {
-    stacked_deck = new action_t( action_e::ACTION_OTHER, "stacked_deck", p, &p->buff.stacked_deck->data() );
-
-    using namespace bear_attacks;
-    using namespace cat_attacks;
-    using namespace spells;
-    using namespace heals;
-
-    // TODO: all these distributions are guesstimates
-    stacked_mangle = get_stacked_action<mangle_t>( "mangle", 2.0 );
-    stacked_maul = get_stacked_action<maul_t>( "maul", 1.0, p->find_spell( 6807 ) );
-    stacked_swipe_bear = get_stacked_action<swipe_bear_t>( "swipe_bear", 1.5 );
-    stacked_swipe_cat = get_stacked_action<swipe_cat_t>( "swipe_cat", 0.0 );
-    stacked_shred = get_stacked_action<shred_t>( "shred", 1.5 );
-    stacked_ferocious_bite = get_stacked_action<ferocious_bite_t>( "ferocious_bite", 0.75 );
-    stacked_wrath = get_stacked_action<wrath_t>( "wrath", 1.25 );
-    stacked_starfire = get_stacked_action<starfire_t>( "starfire", 1.25, p->find_spell( 197628 ) );
-    stacked_starsurge = get_stacked_action<starsurge_t>( "starsurge", 0.625, p->find_spell( 197626 ) );
-    // stacked_renewal = get_Stacked_action<renewal_t>( "renewal", xxx );
-
-    auto _sum = []( double a, const auto& b ) { return a + std::get<1>( b ); };
-    dist_sum = std::accumulate( dist.begin(), dist.end(), 0.0, _sum );
-
-    for ( auto it = dist.begin(); it != dist.end(); it++ )
-      std::get<2>( *it ) = std::accumulate( dist.begin(), it + 1, 0.0, _sum );
-
-    assert( std::get<2>( dist.back() ) == dist_sum );
-  }
-
-  template <typename T>
-  T* get_stacked_action( std::string n, double d, const spell_data_t* s = nullptr )
-  {
-    auto a = p()->get_secondary_action<T>( n + "_stacked", s, flag_e::STACKED );
-    if ( a->name_str_reporting.empty() )
-      a->name_str_reporting = n;
-
-    stacked_deck->stats->add_child( a->stats );
-    a->gain = stacked_deck->gain;
-    a->proc = true;
-    a->trigger_gcd = 0_ms; // prevent schedule_ready() fuzziness being added to execute time stat
-    a->base_multiplier *= mul;
-
-    if ( d )
-      dist.emplace_back( a, d, 0.0 );
-
-    return a;
-  }
-
-  void execute( action_t*, action_state_t* ) override
-  {
-    p()->buff.stacked_deck->trigger();
-
-    auto roll = rng().range( 0.0, dist_sum );
-
-    for ( auto it = dist.begin(); it != dist.end(); it++ )
-    {
-      if ( roll < std::get<2>( *it ) )
-      {
-        auto a = std::get<0>( *it );
-
-        if ( a == stacked_swipe_bear && p()->form == CAT_FORM )
-          a = stacked_swipe_cat;
-
-        const auto& tl = a->target_list();
-        if ( tl.empty() )
-          continue;
-
-        a->execute_on_target( rng().range( tl ) );
-        break;
-      }
-    }
-  }
-};
-
 void druid_t::init_special_effects()
 {
+  struct druid_cb_t : public dbc_proc_callback_t
+  {
+    druid_cb_t( druid_t* p, const special_effect_t& e ) : dbc_proc_callback_t( p, e ) {}
+
+    druid_t* p() { return static_cast<druid_t*>( listener ); }
+  };
+
   // General
   // bear form rage from being attacked
   if ( uses_bear_form() )
@@ -12511,18 +12519,6 @@ void druid_t::init_special_effects()
     special_effects.push_back( driver );
 
     new luck_of_the_draw_cb_t( this, *driver, spell );
-  }
-
-  if ( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ) )
-  {
-    // NOTE: stacked_deck_cb_t defined outside of init_special_effects() to allow for templated get_stacked_action()
-    const auto driver = new special_effect_t( this );
-    driver->name_str = buff.stacked_deck->name();
-    driver->spell_id = buff.stacked_deck->data().id();
-    special_effects.push_back( driver );
-
-    auto cb = new stacked_deck_cb_t( this, *driver );
-    cb->activate_with_buff( buff.stacked_deck );
   }
 
   // Hero talents
