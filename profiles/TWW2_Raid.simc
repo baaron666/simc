@@ -2,11 +2,11 @@ optimal_raid=1
 default_actions=1
 
 # TWW2_Death_Knight_Blood.simc
-# TWW2_Death_Knight_Frost.simc
+TWW2_Death_Knight_Frost.simc
 # TWW2_Death_Knight_Frost_Rider.simc
-# TWW2_Death_Knight_Frost_Shattering_Deathbringer.simc
+TWW2_Death_Knight_Frost_Deathbringer.simc
 TWW2_Death_Knight_Unholy.simc
-TWW2_Death_Knight_Unholy_Rider.simc
+TWW2_Death_Knight_Unholy_San'layn.simc
 
 # TWW2_Demon_Hunter_Havoc.simc
 # TWW2_Demon_Hunter_Vengeance.simc
@@ -50,7 +50,7 @@ TWW2_Priest_Shadow_Archon.simc
 TWW2_Rogue_Subtlety.simc
 
 # TWW2_Shaman_Elemental.simc
-# TWW2_Shaman_Elemental_Farseer.simc
+TWW2_Shaman_Elemental_Farseer.simc
 # TWW2_Shaman_Enhancement.simc
 # TWW2_Shaman_Enhancement_Totemic.simc
 
