@@ -4776,7 +4776,8 @@ struct imbuement_mastery_t : public shaman_spell_t  // Imbuement Mastery damage
         player->find_spell( 467386 ) )
   {
     may_crit = background = true;
-    aoe = 5;
+    aoe = -1;
+    reduced_aoe_targets = 5.0;
   }
 
   void init() override
@@ -9308,6 +9309,7 @@ struct doom_winds_damage_t : public shaman_attack_t
   {
     background = true;
     aoe = -1;
+    reduced_aoe_targets = 5.0;
   }
 
   void init() override
