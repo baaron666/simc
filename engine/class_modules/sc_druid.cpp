@@ -2065,18 +2065,11 @@ struct use_fluid_form_t : public BASE
     if ( p->talent.fluid_form.ok() && !BASE::has_flag( flag_e::FREE_PROCS ) )
     {
       if constexpr ( S == DRUID_BALANCE )
-      {
-        if ( p->specialization() == DRUID_BALANCE )
           BASE::autoshift = p->active.shift_to_moonkin;
-      }
       else if constexpr ( S == DRUID_FERAL )
-      {
         BASE::autoshift = p->active.shift_to_cat;
-      }
       else if constexpr ( S == DRUID_GUARDIAN )
-      {
         BASE::autoshift = p->active.shift_to_bear;
-      }
     }
   }
 };
@@ -6903,6 +6896,14 @@ public:
     // damage bonus is applied at end of cast, but cast speed bonuses apply before
     parse_effects( p->buff.dreamstate, effect_mask_t( false ).enable( 3 ) );
     parse_effects( &p->buff.dreamstate->data(), effect_mask_t( true ).disable( 3 ), [ this ] { return dreamstate; } );
+
+    if ( p->talent.fluid_form && p->talent.moonkin_form )
+      form_mask = MOONKIN_FORM;
+    else
+      form_mask = NO_FORM | MOONKIN_FORM;
+
+    if ( !is_free() )
+      delayed_autoshift = true;
   }
 
   void schedule_execute( action_state_t* s ) override
@@ -8427,9 +8428,6 @@ struct starfire_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
 
     base_aoe_multiplier = 1.0 / ( 1.0 + find_effect( p->talent.lunar_calling, &data() ).percent() );
 
-    if ( !is_free() )
-      delayed_autoshift = true;
-
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->talent.wild_surges )
       ->parse_effects( p->buff.eclipse_lunar, p->talent.umbral_intensity )
@@ -8953,11 +8951,6 @@ struct wrath_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
   wrath_base_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f )
     : base_t( n, p, s, f ), smolder_mul( p->talent.astral_smolder->effectN( 1 ).percent() )
   {
-    form_mask = NO_FORM | MOONKIN_FORM;
-
-    if ( !is_free() )
-      delayed_autoshift = true;
-
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->spec.astral_power )
       ->parse_effects( p->talent.wild_surges );
