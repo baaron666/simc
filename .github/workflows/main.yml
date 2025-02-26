@@ -131,6 +131,14 @@ jobs:
           ninja -C '${{ runner.workspace }}/b/ninja'
           ccache -s
 
+      - name: Upload Binary
+        if: matrix.compiler == 'clang++-15' && matrix.cppVersion == '17'
+        uses: actions/upload-artifact@v4
+        with:
+          name: simc-clang-binary-${{ github.sha }}
+          path: ${{ runner.workspace }}/b/ninja/simc
+          retention-days: 1
+
       - uses: actions/cache@v4
         with:
           path: |
