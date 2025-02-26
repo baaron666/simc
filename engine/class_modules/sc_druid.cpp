@@ -8224,6 +8224,12 @@ struct shooting_stars_t final : public druid_spell_t
 struct skull_bash_t final : public use_fluid_form_t<DRUID_FERAL, druid_interrupt_t>
 {
   DRUID_ABILITY( skull_bash_t, base_t, "skull_bash", p->talent.skull_bash ) {}
+
+  bool target_ready( player_t* t ) override
+  {
+    // bypass druid_interrupt_t to allow usage with fluid form for offgcd shifting
+    return druid_spell_t::target_ready( t );
+  }
 };
 
 // Solar Beam ===============================================================
