@@ -5035,11 +5035,12 @@ struct killing_spree_t : public rogue_attack_t
   {
     rogue_attack_t::tick( d );
 
-    attack_mh->set_target( d->target );
-    attack_oh->set_target( d->target );
-    attack_mh->execute();
-    attack_oh->execute();
+    attack_mh->execute_on_target( d->target );
+    attack_oh->execute_on_target( d->target );
   }
+
+  bool consumes_supercharger() const override
+  { return true; }
 };
 
 // Kingsbane ================================================================
@@ -8699,7 +8700,7 @@ void actions::rogue_action_t<Base>::trigger_blade_flurry( const action_state_t* 
   // Compute Blade Flurry modifier
   double multiplier = p()->buffs.blade_flurry->check_value();
 
-  // Grand Melee buff is additive with Killing Spree 100% base value
+  // Grand Melee buff is additive with Killing Spree base value
   if ( p()->buffs.grand_melee->up() )
   {
     multiplier += p()->spec.grand_melee->effectN( 2 ).percent();
@@ -9534,7 +9535,9 @@ void actions::rogue_action_t<Base>::trigger_tww1_outlaw_set_bonus( const action_
 template <typename Base>
 void actions::rogue_action_t<Base>::trigger_tww2_set_bonus_removal()
 {
-  if ( p()->set_bonuses.tww2_assassination_2pc->ok() && p()->buffs.tww2_assassination_2pc->check() &&
+  // 2025-02-26 -- 4pc can self-proc when up, unclear if this is intentional or not
+  if ( p()->set_bonuses.tww2_assassination_2pc->ok() &&
+       ( p()->buffs.tww2_assassination_2pc->check() || ( p()->bugs && p()->buffs.tww2_assassination_4pc->check() ) ) &&
        p()->rng().roll( p()->set_bonuses.tww2_assassination_2pc->effectN( 1 ).percent() ) )
   {
     // 2025-02-08 -- Based on testing, 20% chance is nowhere in spell data currently
@@ -9542,7 +9545,16 @@ void actions::rogue_action_t<Base>::trigger_tww2_set_bonus_removal()
     if ( p()->set_bonuses.tww2_assassination_4pc->ok() && p()->rng().roll( 0.66 ) )
     {
       // Buff stack change callback for the 4pc handles expiration and restoration of 2pc buff stacks
-      p()->buffs.tww2_assassination_4pc->trigger( p()->buffs.tww2_assassination_4pc->max_stack() );
+      // If the 4pc refreshes itself, the restoration value (default_value) gets updated to 10 stacks
+      if ( p()->buffs.tww2_assassination_4pc->check() )
+      {
+        p()->buffs.tww2_assassination_4pc->trigger( p()->buffs.tww2_assassination_4pc->max_stack(),
+                                                    p()->buffs.tww2_assassination_4pc->max_stack() );
+      }
+      else
+      {
+        p()->buffs.tww2_assassination_4pc->trigger( p()->buffs.tww2_assassination_4pc->max_stack() );
+      }
       return;
     }
 
