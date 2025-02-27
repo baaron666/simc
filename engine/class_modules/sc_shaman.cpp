@@ -6485,6 +6485,18 @@ struct chain_lightning_t : public chained_base_t
     return shaman_spell_t::benefit_from_maelstrom_weapon();
   }
 
+  double action_multiplier() const override
+  {
+    double m = shaman_spell_t::action_multiplier();
+
+    if ( exec_type == spell_variant::PRIMORDIAL_STORM )
+    {
+      m *= p()->talent.primordial_storm->effectN( 2 ).percent();
+    }
+
+    return m;
+  }
+
   // If Stormkeeper is up, Chain Lightning will not consume Maelstrom Weapon stacks, but
   // will allow Chain Lightning to fully benefit from the stacks.
   bool consume_maelstrom_weapon() const override
@@ -7412,9 +7424,9 @@ struct lightning_bolt_t : public shaman_spell_t
   {
     double m = shaman_spell_t::action_multiplier();
 
-    if ( p()->buff.primordial_wave->check() && p()->specialization() == SHAMAN_ENHANCEMENT )
+    if ( exec_type == spell_variant::PRIMORDIAL_STORM )
     {
-      m *= p()->buff.primordial_wave->value();
+      m *= p()->talent.primordial_storm->effectN( 2 ).percent();
     }
 
     return m;
