@@ -71,13 +71,14 @@ enum flag_e : uint32_t
   TREANT       = 0x00040000,  // treants of the moon moonfire
   LIGHTOFELUNE = 0x00080000,  // light of elune talent
   THRASHING    = 0x00100000,  // thrashing claws talent
+  STACKED      = 0x00200000,  // bear tww2 4pc
   // free casts
   APEX         = 0x01000000,  // apex predators's craving
   TOOTHANDCLAW = 0x02000000,  // tooth and claw talent
   // misc
   UMBRAL       = 0x10000000,  // umbral embrace talent
 
-  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE,
+  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE | THRASHING | STACKED,
   FREE_CASTS = APEX | TOOTHANDCLAW
 };
 
@@ -621,6 +622,7 @@ struct druid_t final : public parse_player_effects_t
     action_t* maul_tooth_and_claw;
     action_t* raze_tooth_and_claw;
     action_t* thrash_bear_flashing;
+    action_t* stacked_deck;  // TWW2 4pc proxy
 
     // Restoration
     action_t* yseras_gift;
@@ -1877,6 +1879,9 @@ public:
       for ( auto cd : { p()->cooldown.fury_of_elune, p()->cooldown.moon_cd, p()->cooldown.lunar_beam } )
         cd->adjust( ( *eff++ ).time_value() );
     }
+
+    if ( !ab::use_off_gcd && p()->buff.stacked_deck->check() && p()->buff.stacked_deck->trigger( this ))
+      p()->active.stacked_deck->execute();
   }
 
   bool can_trigger_lunation() const
@@ -2057,21 +2062,14 @@ struct use_fluid_form_t : public BASE
   use_fluid_form_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f = flag_e::NONE )
     : BASE( n, p, s, f )
   {
-    if ( p->talent.fluid_form.ok() && !BASE::has_flag( flag_e::CONVOKE ) )
+    if ( p->talent.fluid_form.ok() && !BASE::has_flag( flag_e::FREE_PROCS ) )
     {
       if constexpr ( S == DRUID_BALANCE )
-      {
-        if ( p->specialization() == DRUID_BALANCE )
           BASE::autoshift = p->active.shift_to_moonkin;
-      }
       else if constexpr ( S == DRUID_FERAL )
-      {
         BASE::autoshift = p->active.shift_to_cat;
-      }
       else if constexpr ( S == DRUID_GUARDIAN )
-      {
         BASE::autoshift = p->active.shift_to_bear;
-      }
     }
   }
 };
@@ -6808,7 +6806,7 @@ void druid_action_t<Base>::init()
     ab::target = ab::player;
 
   // ensure secondary actions from convoke actions are also procs
-  if ( has_flag( flag_e::CONVOKE ) )
+  if ( has_flag( flag_e::FREE_PROCS ) )
     ab::proc = true;
 
   if ( dbc::is_school( ab::school, SCHOOL_ARCANE ) && p()->buff.lunar_amplification->can_expire( this ) )
@@ -6898,6 +6896,16 @@ public:
     // damage bonus is applied at end of cast, but cast speed bonuses apply before
     parse_effects( p->buff.dreamstate, effect_mask_t( false ).enable( 3 ) );
     parse_effects( &p->buff.dreamstate->data(), effect_mask_t( true ).disable( 3 ), [ this ] { return dreamstate; } );
+
+    base_costs[ RESOURCE_MANA ] = 0.0;  // remove mana cost so we don't need to enable mana regen
+
+    if ( p->talent.fluid_form && p->talent.moonkin_form )
+      form_mask = MOONKIN_FORM;
+    else
+      form_mask = NO_FORM | MOONKIN_FORM;
+
+    if ( !is_free() )
+      delayed_autoshift = true;
   }
 
   void schedule_execute( action_state_t* s ) override
@@ -8223,6 +8231,12 @@ struct shooting_stars_t final : public druid_spell_t
 struct skull_bash_t final : public use_fluid_form_t<DRUID_FERAL, druid_interrupt_t>
 {
   DRUID_ABILITY( skull_bash_t, base_t, "skull_bash", p->talent.skull_bash ) {}
+
+  bool target_ready( player_t* t ) override
+  {
+    // bypass druid_interrupt_t to allow usage with fluid form for offgcd shifting
+    return druid_spell_t::target_ready( t );
+  }
 };
 
 // Solar Beam ===============================================================
@@ -8298,7 +8312,7 @@ struct starfall_t final : public ap_spender_t
     starfall_damage_t* damage;
 
     starfall_driver_t( druid_t* p, std::string_view n, flag_e f )
-      : druid_spell_t( n, p, find_trigger( p->buff.starfall ).trigger(), f )
+      : druid_spell_t( n, p, find_trigger( p->find_spell( 191034 ) ).trigger(), f )
     {
       background = proc = dual = true;
 
@@ -8415,9 +8429,6 @@ struct starfire_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
     reduced_aoe_targets = data().effectN( p->specialization() == DRUID_BALANCE ? 5 : 3 ).base_value();
 
     base_aoe_multiplier = 1.0 / ( 1.0 + find_effect( p->talent.lunar_calling, &data() ).percent() );
-
-    if ( !is_free() )
-      delayed_autoshift = true;
 
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->talent.wild_surges )
@@ -8942,11 +8953,6 @@ struct wrath_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
   wrath_base_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f )
     : base_t( n, p, s, f ), smolder_mul( p->talent.astral_smolder->effectN( 1 ).percent() )
   {
-    form_mask = NO_FORM | MOONKIN_FORM;
-
-    if ( !is_free() )
-      delayed_autoshift = true;
-
     auto m_data = p->get_modified_spell( &data() )
       ->parse_effects( p->spec.astral_power )
       ->parse_effects( p->talent.wild_surges );
@@ -9244,7 +9250,7 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
   {
     actions.conv_full_moon = get_convoke_action<full_moon_t>( "full_moon", p()->find_spell( 274283 ) );
     actions.conv_starfall  = get_convoke_action<starfall_t>( "starfall", p()->find_spell( 191034 ) );
-    actions.conv_starsurge = get_convoke_action<starsurge_t>( "starsurge" );
+    actions.conv_starsurge = get_convoke_action<starsurge_t>( "starsurge", p()->find_spell( 78674 ) );
   }
 
   void _init_bear()
@@ -9546,6 +9552,103 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
   bool usable_moving() const override { return true; }
 };
 }  // end namespace spells
+
+// Stacked Deck Proxy (Guardian TWW2 4pc Set Bonus) =========================
+struct stacked_deck_t : public action_t
+{
+  std::vector<std::tuple<action_t*, double, double>> dist;
+
+  action_t* stacked_mangle;
+  action_t* stacked_maul;
+  action_t* stacked_swipe_bear;
+  action_t* stacked_swipe_cat;
+  action_t* stacked_shred;
+  action_t* stacked_ferocious_bite;
+  action_t* stacked_wrath;
+  action_t* stacked_starfire;
+  action_t* stacked_starsurge;
+  action_t* stacked_renewal;
+
+  double dist_sum;
+  double mul;
+
+  stacked_deck_t( druid_t* p )
+    : action_t( action_e::ACTION_OTHER, "stacked_deck", p, &p->buff.stacked_deck->data() ),
+      mul( p->sets->set( DRUID_GUARDIAN, TWW2, B4 )->effectN( 1 ).percent() )
+  {
+    using namespace bear_attacks;
+    using namespace cat_attacks;
+    using namespace spells;
+    using namespace heals;
+
+    // TODO: all these distributions are guesstimates
+    stacked_mangle = get_stacked_action<mangle_t>( "mangle", 2.0 );
+    stacked_maul = get_stacked_action<maul_t>( "maul", 1.0, p->find_spell( 6807 ) );
+    stacked_swipe_bear = get_stacked_action<swipe_bear_t>( "swipe_bear", 1.5 );
+    stacked_swipe_cat = get_stacked_action<swipe_cat_t>( "swipe_cat", 0.0 );
+    stacked_shred = get_stacked_action<shred_t>( "shred", 1.5 );
+    stacked_ferocious_bite = get_stacked_action<ferocious_bite_t>( "ferocious_bite", 0.75 );
+    stacked_wrath = get_stacked_action<wrath_t>( "wrath", 1.25 );
+    stacked_starfire = get_stacked_action<starfire_t>( "starfire", 1.25, p->find_spell( 197628 ) );
+    stacked_starsurge = get_stacked_action<starsurge_t>( "starsurge", 0.625, p->find_spell( 197626 ) );
+    // stacked_renewal = get_Stacked_action<renewal_t>( "renewal", xxx );
+
+    for ( auto it = dist.begin(); it != dist.end(); it++ )
+    {
+      std::get<2>( *it ) = std::accumulate( dist.begin(), it + 1, 0.0, []( double a, const auto& b ) {
+        return a + std::get<1>( b );
+      } );
+    }
+
+    dist_sum = std::get<2>( dist.back() );
+  }
+
+  template <typename T>
+  T* get_stacked_action( std::string n, double d, const spell_data_t* s = nullptr )
+  {
+    auto a = static_cast<druid_t*>( player )->get_secondary_action<T>( n + "_stacked", s, flag_e::STACKED );
+    if ( a->name_str_reporting.empty() )
+      a->name_str_reporting = n;
+
+    stats->add_child( a->stats );
+    a->gain = gain;
+    a->proc = true;
+    a->trigger_gcd = 0_ms; // prevent schedule_ready() fuzziness being added to execute time stat
+    a->base_multiplier *= mul;
+
+    if ( d )
+      dist.emplace_back( a, d, 0.0 );
+
+    return a;
+  }
+
+  void execute() override
+  {
+    // NOTE: this should only ever be called directly and never executed normally
+    assert( !pre_execute_state && !execute_state );
+
+    auto roll = rng().range( 0.0, dist_sum );
+
+    for ( auto it = dist.begin(); it != dist.end(); it++ )
+    {
+      if ( roll < std::get<2>( *it ) )
+      {
+        auto a = std::get<0>( *it );
+
+        if ( a == stacked_swipe_bear && static_cast<druid_t*>( player )->form == CAT_FORM )
+          a = stacked_swipe_cat;
+
+        const auto& tl = a->target_list();
+        if ( tl.empty() )
+          continue;
+
+        a->execute_on_target( rng().range( tl ) );
+        stats->add_execute( a->time_to_execute, a->target );
+        break;
+      }
+    }
+  }
+};
 
 #undef DRUID_ABILITY
 #undef DRUID_ABILITY_B
@@ -10583,6 +10686,18 @@ void druid_t::init_stats()
 
 void druid_t::init_finished()
 {
+  for ( auto a : action_list )
+  {
+    if ( a->name_str == "cancel_buff" && !a->signature_str.empty() &&
+         ( util::str_in_str_ci( a->signature_str, "name=bear_form" ) ||
+           util::str_in_str_ci( a->signature_str, "name=cat_form" ) ||
+           util::str_in_str_ci( a->signature_str, "name=moonkin_form" ) ) )
+    {
+      throw std::invalid_argument(
+        fmt::format( "Using {} on shapeshift form, use cancelform instead", a->signature_str ) );
+    }
+  }
+
   player_t::init_finished();
 
   // PRECOMBAT SHENANIGANS
@@ -11161,8 +11276,9 @@ void druid_t::create_buffs()
     make_fallback( bear_tww2_2pc->ok(), this, "luck_of_the_draw", find_trigger( bear_tww2_2pc ).trigger() );
 
   buff.stacked_deck =
-    make_fallback( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ), this, "stacked_deck", find_spell( 1218537 ) )
-      ->set_cooldown( 0_ms );
+    make_fallback( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ), this, "stacked_deck_4pc", find_spell( 1218537 ) )
+      ->set_reverse( true )
+      ->set_name_reporting( "stacked_deck" );
 
   // Restoration buffs
   buff.abundance = make_fallback( talent.abundance.ok(), this, "abundance", find_spell( 207640 ) )
@@ -11585,6 +11701,9 @@ void druid_t::create_actions()
     flash->name_str_reporting = "flashing_claws";
     active.thrash_bear_flashing = flash;
   }
+
+  if ( sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ) )
+    active.stacked_deck = get_secondary_action<stacked_deck_t>( "stacked_deck" );
 
   // Restoration
   if ( talent.yseras_gift.ok() )
@@ -12375,15 +12494,21 @@ void druid_t::init_special_effects()
     struct luck_of_the_draw_cb_t final : public druid_cb_t
     {
       timespan_t si_dur;
+      bool _4pc;
 
       luck_of_the_draw_cb_t( druid_t* p, const special_effect_t& e, const spell_data_t* s )
-        : druid_cb_t( p, e ), si_dur( s->effectN( 2 ).time_value() )
+        : druid_cb_t( p, e ),
+          si_dur( s->effectN( 2 ).time_value() ),
+          _4pc( p->sets->has_set_bonus( DRUID_GUARDIAN, TWW2, B4 ) )
       {}
 
       void execute( action_t*, action_state_t* ) override
       {
-        p()->buff.luck_of_the_draw->trigger();
         p()->buff.survival_instincts->extend_duration_or_trigger( si_dur );
+        p()->buff.luck_of_the_draw->trigger();
+
+        if ( _4pc )
+          p()->buff.stacked_deck->trigger();
       }
     };
 

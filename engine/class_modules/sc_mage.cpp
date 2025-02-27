@@ -7474,6 +7474,8 @@ struct time_anomaly_tick_event_t final : public mage_event_t
           case TA_ICY_VEINS:
             mage->buffs.icy_veins->trigger( 1000 * mage->talents.time_anomaly->effectN( 5 ).time_value() );
             mage->buffs.cryopathy->trigger( mage->buffs.cryopathy->max_stack() );
+            // TODO: should have been removed according to 11.1 notes
+            mage->trigger_flash_freezeburn();
             if ( mage->pets.water_elemental->is_sleeping() )
               mage->pets.water_elemental->summon();
             break;
