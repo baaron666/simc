@@ -13295,7 +13295,7 @@ void shaman_t::trigger_whirling_air( const action_state_t* state )
 
 void shaman_t::trigger_reactivity( const action_state_t* state )
 {
-  if ( !talent.reactivity.ok() )
+  if ( !talent.reactivity.ok() || !buff.hot_hand->up() )
   {
     return;
   }
