@@ -5266,7 +5266,7 @@ std::unique_ptr<expr_t> paladin_t::create_consecration_expression( util::string_
 
   if ( util::str_compare_ci( expr[ 1U ], "ticking" ) || util::str_compare_ci( expr[ 1U ], "up" ) )
   {
-    return make_fn_expr( "consecration_ticking", [ this ]() { return all_active_consecrations.empty() ? 0 : 1; } );
+    return make_fn_expr( "consecration_ticking", [ this ]() { return active_consecration != nullptr; } );
   }
   else if ( util::str_compare_ci( expr[ 1U ], "remains" ) )
   {
