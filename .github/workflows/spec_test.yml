@@ -17,11 +17,9 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           path: ${{ runner.workspace }}
 
-      - run: |
-          ls
-          tar -xvf ${{ runner.workspace }}/simc.tar
+      - run: tar -xvf ${{ runner.workspace }}/simc.tar
 
-      - uses: actions/cache@v4
+      - uses: actions/cache/save@v4
         with:
           path: ${{ runner.workspace }}/simc
           key: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
@@ -62,7 +60,7 @@ jobs:
       PLAYER_ARGS: load_default_gear=1
 
     steps:
-      - uses: actions/cache@v4
+      - uses: actions/cache/restore@v4
         with:
           path: ${{ runner.workspace }}/simc
           key: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
