@@ -26,7 +26,7 @@ jobs:
             .git
           key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
 
-  build_binary:
+  build-binary:
     needs: [ check-binary ]
     if: ${{ needs.check-binary.outputs.cache-hit != 'true' }}
     runs-on: ubuntu-22.04
