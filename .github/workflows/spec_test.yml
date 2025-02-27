@@ -6,6 +6,22 @@ on:
     types: [completed]
 
 jobs:
+  download-binary:
+    name: Download Binary
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+          path: ${{ runner.workspace }}
+
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.workspace }}/simc
+          key: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
+
   spec-test:
     name: spec-test-${{ matrix.spec }}-${{ matrix.fightstyle }}
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
@@ -42,6 +58,11 @@ jobs:
       PLAYER_ARGS: load_default_gear=1
 
     steps:
+      - uses: actions/cache@v4
+        with:
+          path: ${{ runner.workspace }}/simc
+          key: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
+
       - name: Setup
         id: setup
         env:
@@ -49,14 +70,6 @@ jobs:
         run: |
           echo "CLASS_STR=${MATRIX_SPEC%%_*}" >> "$GITHUB_ENV"
           echo "SPEC_STR=${MATRIX_SPEC#*_}" >> "$GITHUB_ENV"
-
-      - name: Download Binary
-        uses: actions/download-artifact@v4
-        with:
-          name: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
-          path: ${{ runner.workspace }}
 
       - name: "Log Debug"
         if: always()
