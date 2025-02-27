@@ -1287,7 +1287,15 @@ struct divine_hammer_t : public holy_power_consumer_t<paladin_spell_t>
   {
     holy_power_consumer_t<paladin_spell_t>::execute();
 
-    p()->buffs.divine_hammer->trigger();
+    if ( p()->bugs )
+    {
+      p()->sim->print_debug( "divine_hammer new buff duration: {} * {} = {}", p()->buffs.divine_hammer->buff_duration(), p()->cache.attack_haste(), p()->buffs.divine_hammer->buff_duration() * p()->cache.attack_haste() );
+      p()->buffs.divine_hammer->trigger( p()->buffs.divine_hammer->buff_duration() * p()->cache.attack_haste() );
+    }
+    else
+    {
+      p()->buffs.divine_hammer->trigger();
+    }
   }
 };
 
