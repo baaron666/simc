@@ -6194,7 +6194,7 @@ void ratfang_toxin( special_effect_t& effect )
 
     void trigger( action_t* a, action_state_t* s ) override
     {
-      if ( !get_debuff( s->target )->at_max_stacks() )
+      if ( auto d = get_debuff( s->target ); d && !d->at_max_stacks() )
         dbc_proc_callback_t::trigger( a, s );
     }
 
