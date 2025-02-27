@@ -49,16 +49,16 @@ TWW2_Priest_Shadow_Archon.simc
 # TWW2_Rogue_Outlaw_HO.simc
 TWW2_Rogue_Subtlety.simc
 
-# TWW2_Shaman_Elemental.simc
-TWW2_Shaman_Elemental_Farseer.simc
+# TWW2_Shaman_Elemental_Stormbringer.simc
+TWW2_Shaman_Elemental.simc
 # TWW2_Shaman_Enhancement.simc
 # TWW2_Shaman_Enhancement_Totemic.simc
 
-# TWW2_Warlock_Affliction.simc
-TWW2_Warlock_Affliction_Hellcaller.simc
-# TWW2_Warlock_Demonology.simc
-TWW2_Warlock_Demonology_Diabolist.simc
-# TWW2_Warlock_Destruction.simc
+# TWW2_Warlock_Affliction_Soul_Harvester.simc
+TWW2_Warlock_Affliction.simc
+# TWW2_Warlock_Demonology_Soul_Harvester.simc
+TWW2_Warlock_Demonology.simc
+TWW2_Warlock_Destruction.simc
 # TWW2_Warlock_Destruction_Hellcaller.simc
 
 # TWW2_Warrior_Arms.simc

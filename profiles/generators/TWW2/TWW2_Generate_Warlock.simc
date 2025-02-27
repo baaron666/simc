@@ -25,7 +25,7 @@
 # main_hand=sovereigns_disdain,id=212394,bonus_id=1540/10299/10376,enchant_id=7460
 # off_hand=broodtwisters_grim_catalyst,id=212387,bonus_id=1540/10299/10376
 
-# save=TWW2_Warlock_Affliction.simc
+# save=TWW2_Warlock_Affliction_Soul_Harvester.simc
 
 warlock="TWW2_Warlock_Affliction_Hellcaller"
 spec=affliction
@@ -54,7 +54,7 @@ trinket2=mugs_moxie_jug,id=230192,bonus_id=1527/11996/11964
 main_hand=scalding_queenmakers_shiv,id=221062,bonus_id=3170/11996/11964,enchant_id=7460
 off_hand=vagabonds_torch,id=222566,bonus_id=10421/9633/8902/12043/12040/1485/11300/8960,crafted_stats=32/49
 
-save=TWW2_Warlock_Affliction_Hellcaller.simc
+save=TWW2_Warlock_Affliction.simc
 
 
 # warlock="TWW2_Warlock_Demonology_Soul_Harvester"
@@ -82,7 +82,7 @@ save=TWW2_Warlock_Affliction_Hellcaller.simc
 # main_hand=sovereigns_disdain,id=212394,bonus_id=1540/10299/10376,enchant_id=7460
 # off_hand=vagabonds_torch,id=222566,bonus_id=10421/9633/8902/11144/10222/1485/11300/8960/8792,crafted_stats=32/36
 
-# save=TWW2_Warlock_Demonology.simc
+# save=TWW2_Warlock_Demonology_Soul_Harvester.simc
 
 warlock="TWW2_Warlock_Demonology_Diabolist"
 source=default
@@ -110,7 +110,7 @@ trinket2=house_of_cards,id=230027,ilevel=678
 main_hand=scalding_queenmakers_shiv,id=221062,bonus_id=3170/11996/11964,enchant_id=7460
 off_hand=vagabonds_torch,id=222566,bonus_id=10421/9633/8902/12043/12040/1485/8795/11300/8960,crafted_stats=40/36
 
-save=TWW2_Warlock_Demonology_Diabolist.simc
+save=TWW2_Warlock_Demonology.simc
 
 warlock="TWW2_Warlock_Destruction_Diabolist"
 spec=destruction
