@@ -55,7 +55,7 @@ jobs:
         with:
           name: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          run_id: ${{ github.event.workflow_run.id }}
+          run-id: ${{ github.event.workflow_run.id }}
           path: ${{ runner.workspace }}/b/ninja/simc
 
       - name: "Log Debug"
