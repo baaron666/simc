@@ -60,9 +60,9 @@ jobs:
       PLAYER_ARGS: load_default_gear=1
 
     steps:
-      - uses: actions/cache/restore@v4
+      - uses: actions/cache@v4
         with:
-          path: ${{ runner.workspace }}/simc
+          path: ${{ runner.workspace }}
           key: simc-clang-binary-${{ github.event.workflow_run.head_sha }}
 
       - name: Setup
