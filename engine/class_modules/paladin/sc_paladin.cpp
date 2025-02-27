@@ -5242,12 +5242,10 @@ bool paladin_t::standing_in_consecration() const
 
 bool paladin_t::get_how_availability( player_t* t ) const
 {
-  // Regardless what buff is up, both Hammer of Wrath Talent and Avenging Wrath Talent have to be talented for Hammer of Wrath to be usable on the target. (You can talent into Crusade/Sentinel without Avenging Wrath)
-  // Maybe ToDo: Do the same for Avenging Wrath: Might
-  // Moved Hammer of Wrath Check to return value
-  bool buffs_ok = talents.avenging_wrath->ok() && ( buffs.avenging_wrath->up() || buffs.crusade->up() || buffs.sentinel->up() );
+  bool buffs_ok = ( buffs.avenging_wrath->up() || buffs.crusade->up() || buffs.sentinel->up() );
   buffs_ok = buffs_ok || buffs.final_verdict->up() || buffs.templar.endless_wrath->up() || buffs.herald_of_the_sun.blessing_of_anshe->up();
   // Health threshold has to be hardcoded :peepocri:
+  // Regardless what buff is up, Hammer of Wrath Talent has to be talented for Hammer of Wrath to be usable on the target.
   return ( buffs_ok || t->health_percentage() <= 20 ) && talents.hammer_of_wrath->ok();
 }
 
