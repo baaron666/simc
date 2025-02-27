@@ -17,6 +17,8 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           path: ${{ runner.workspace }}
 
+      - run: tar -xvf simc.tar
+
       - uses: actions/cache@v4
         with:
           path: ${{ runner.workspace }}/simc
