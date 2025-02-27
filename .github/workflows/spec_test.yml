@@ -52,7 +52,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
+          key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
 
       - name: Setup
         id: setup
@@ -176,7 +176,7 @@ jobs:
       #  continue-on-error: true
       #  uses: actions/upload-artifact@v4
       #  with:
-      #    name: apl-${{ github.sha }}-${{ matrix.spec }}
+      #    name: apl-${{ github.event.workflow_run.head_sha }}-${{ matrix.spec }}
       #    path: ${{ matrix.spec }}.simc
       #    retention-days: 1
 
