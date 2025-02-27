@@ -5832,6 +5832,12 @@ void improvised_seaforium_pacemaker( special_effect_t& effect )
       crit_buff->set_expire_callback( [ & ]( buff_t*, int, timespan_t ) { extensions = 0; } );
     }
 
+    void trigger( action_t* a, action_state_t* s ) override
+    {
+      if ( extensions < max_extensions )
+        dbc_proc_callback_t::trigger( a, s );
+    }
+
     void execute( action_t*, action_state_t* ) override
     {
       if ( extensions++ < max_extensions )
