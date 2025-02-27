@@ -452,7 +452,6 @@ public:
       player_talent_t essence_break;
       player_talent_t fel_barrage;  // Old implementation
       player_talent_t shattered_destiny;
-      player_talent_t any_means_necessary;
       player_talent_t screaming_brutality;
       player_talent_t a_fire_inside;
 
@@ -749,8 +748,6 @@ public:
   {
     // Havoc
     const spell_data_t* demonic_presence;
-    const spell_data_t* any_means_necessary;
-    const spell_data_t* any_means_necessary_tuning;
     const spell_data_t* a_fire_inside;
     // Vengeance
     const spell_data_t* fel_blood;
@@ -1579,8 +1576,6 @@ public:
   struct
   {
     // Havoc
-    affect_flags any_means_necessary;
-    affect_flags any_means_necessary_full;
     affect_flags demonic_presence;
     affect_flags a_fire_inside;
     bool chaos_theory = false;
@@ -1643,7 +1638,6 @@ public:
     ab::apply_affecting_aura( p->talent.havoc.looks_can_kill );
     ab::apply_affecting_aura( p->talent.havoc.tactical_retreat );
     ab::apply_affecting_aura( p->talent.havoc.accelerated_blade );
-    ab::apply_affecting_aura( p->talent.havoc.any_means_necessary );
     ab::apply_affecting_aura( p->talent.havoc.dancing_with_fate );
     ab::apply_affecting_aura( p->talent.havoc.a_fire_inside );
 
@@ -1673,7 +1667,6 @@ public:
 
       // Affect Flags
       parse_affect_flags( p->mastery.demonic_presence, affected_by.demonic_presence );
-      parse_affect_flags( p->mastery.any_means_necessary, affected_by.any_means_necessary );
       parse_affect_flags( p->mastery.a_fire_inside, affected_by.a_fire_inside );
 
       if ( p->talent.havoc.chaos_theory->ok() )
@@ -1848,17 +1841,6 @@ public:
       m *= 1.0 + p()->cache.mastery_value();
     }
 
-    if ( affected_by.any_means_necessary.direct )
-    {
-      m *= 1.0 + p()->cache.mastery_value() * ( 1.0 + p()->mastery.any_means_necessary_tuning->effectN( 1 ).percent() );
-    }
-
-    // 2024-08-30 -- Some spells have full 100% mastery value from AMN.
-    if ( affected_by.any_means_necessary_full.direct )
-    {
-      m *= 1.0 + p()->cache.mastery_value();
-    }
-
     if ( affected_by.a_fire_inside.direct )
     {
       m *= 1.0 + p()->cache.mastery_value();
@@ -1872,17 +1854,6 @@ public:
     double m = ab::composite_ta_multiplier( s );
 
     if ( affected_by.demonic_presence.periodic )
-    {
-      m *= 1.0 + p()->cache.mastery_value();
-    }
-
-    if ( affected_by.any_means_necessary.periodic )
-    {
-      m *= 1.0 + p()->cache.mastery_value() * ( 1.0 + p()->mastery.any_means_necessary_tuning->effectN( 2 ).percent() );
-    }
-
-    // 2024-08-30 -- Some spells have full 100% mastery value from AMN.
-    if ( affected_by.any_means_necessary_full.periodic )
     {
       m *= 1.0 + p()->cache.mastery_value();
     }
@@ -2293,30 +2264,6 @@ struct art_of_the_glaive_trigger_t : public BASE
       {
         BASE::p()->proc.soul_fragment_from_aldrachi_tactics->occur();
         BASE::p()->spawn_soul_fragment( soul_fragment::LESSER );
-      }
-    }
-  }
-};
-
-template <typename BASE>
-struct amn_full_mastery_bug_t : public BASE
-{
-  using base_t = amn_full_mastery_bug_t<BASE>;
-
-  amn_full_mastery_bug_t( util::string_view n, demon_hunter_t* p, const spell_data_t* s ) : BASE( n, p, s )
-  {
-    // 2024-08-30 -- Demonsurge / Burning Blades gets a full 100% mastery buff from AMN instead of 80%
-    if ( p->bugs )
-    {
-      if ( BASE::affected_by.any_means_necessary.direct )
-      {
-        BASE::affected_by.any_means_necessary.direct      = false;
-        BASE::affected_by.any_means_necessary_full.direct = true;
-      }
-      if ( BASE::affected_by.any_means_necessary.periodic )
-      {
-        BASE::affected_by.any_means_necessary.periodic      = false;
-        BASE::affected_by.any_means_necessary_full.periodic = true;
       }
     }
   }
@@ -4700,10 +4647,10 @@ struct sigil_of_chains_t : public demon_hunter_spell_t
   }
 };
 
-struct demonsurge_t : public amn_full_mastery_bug_t<demon_hunter_spell_t>
+struct demonsurge_t : public demon_hunter_spell_t
 {
   demonsurge_t( util::string_view name, demon_hunter_t* p )
-    : amn_full_mastery_bug_t( name, p, p->hero_spec.demonsurge_damage )
+    : demon_hunter_spell_t( name, p, p->hero_spec.demonsurge_damage )
   {
     background = dual   = true;
     aoe                 = -1;
@@ -6499,7 +6446,7 @@ struct soulscar_t : public residual_action::residual_periodic_action_t<demon_hun
 
 // Burning Blades ===========================================================
 struct burning_blades_t
-  : public residual_action::residual_periodic_action_t<amn_full_mastery_bug_t<demon_hunter_spell_t>>
+  : public residual_action::residual_periodic_action_t<demon_hunter_spell_t>
 {
   burning_blades_t( util::string_view name, demon_hunter_t* p ) : base_t( name, p, p->hero_spec.burning_blades_debuff )
   {
@@ -8508,7 +8455,6 @@ void demon_hunter_t::init_spells()
   talent.havoc.essence_break       = find_talent_spell( talent_tree::SPECIALIZATION, "Essence Break" );
   talent.havoc.fel_barrage         = find_talent_spell( talent_tree::SPECIALIZATION, "Fel Barrage" );
   talent.havoc.shattered_destiny   = find_talent_spell( talent_tree::SPECIALIZATION, "Shattered Destiny" );
-  talent.havoc.any_means_necessary = find_talent_spell( talent_tree::SPECIALIZATION, "Any Means Necessary" );
   talent.havoc.screaming_brutality = find_talent_spell( talent_tree::SPECIALIZATION, "Screaming Brutality" );
   talent.havoc.a_fire_inside       = find_talent_spell( talent_tree::SPECIALIZATION, "A Fire Inside" );
 
@@ -8625,9 +8571,6 @@ void demon_hunter_t::init_spells()
   spec.sigil_of_misery_debuff    = conditional_spell_lookup( talent.demon_hunter.sigil_of_misery->ok(), 207685 );
 
   // Spec Background Spells
-  mastery.any_means_necessary = talent.havoc.any_means_necessary;
-  mastery.any_means_necessary_tuning =
-      talent.havoc.any_means_necessary->ok() ? find_spell( 394486 ) : spell_data_t::not_found();
   mastery.a_fire_inside = talent.havoc.a_fire_inside->effectN( 6 ).trigger();
 
   spec.burning_wound_debuff = talent.havoc.burning_wound->effectN( 1 ).trigger();
