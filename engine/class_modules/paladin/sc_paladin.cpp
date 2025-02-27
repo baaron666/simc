@@ -2222,7 +2222,7 @@ struct hammer_of_light_t : public holy_power_consumer_t<paladin_melee_attack_t>
     add_child( cleave_hammer );
 
     doesnt_consume_dp = false;
-    hol_cost          = cost();
+    hol_cost          = p->specialization() == PALADIN_RETRIBUTION ? ret_cost : prot_cost;
   }
 
   action_state_t* new_state() override
