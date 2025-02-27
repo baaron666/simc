@@ -5804,6 +5804,7 @@ struct rapid_fire_t: public hunter_spell_t
     {
       if ( p()->buffs.trick_shots->check() )
         return 1 + trick_shots_targets;
+
       return hunter_ranged_attack_t::n_targets();
     }
 
