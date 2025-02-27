@@ -52,7 +52,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
+          key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
 
       - name: Setup
         id: setup
