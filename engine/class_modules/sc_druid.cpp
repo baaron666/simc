@@ -12235,6 +12235,7 @@ void druid_t::init_special_effects()
     const auto driver = new special_effect_t( this );
     driver->name_str = spell->name_cstr();
     driver->spell_id = spell->id();
+    driver->proc_flags_ = spell->proc_flags() & ~( PF_MELEE_ABILITY | PF_RANGED_ABILITY );
     driver->execute_action = active.jackpot_mushroom;
     special_effects.push_back( driver );
 
