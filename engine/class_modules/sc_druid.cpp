@@ -9069,6 +9069,7 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
     CAST_NONE = 0,
     CAST_OFFSPEC,
     CAST_SPEC,
+    CAST_EXCEPTIONAL,
     CAST_HEAL,
     CAST_MAIN,
     CAST_WRATH,
@@ -9268,7 +9269,7 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
     actions.conv_pulverize = get_convoke_action<pulverize_t>( "pulverize", p()->find_spell( 80313 ) );
   }
 
-  void insert_exceptional( convoke_cast_e cast )
+  void insert_exceptional()
   {
     if ( !deck->trigger() )
       return;
@@ -9277,7 +9278,7 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
     if ( max_ticks <= 9 && !rng().roll( p()->options.cenarius_guidance_exceptional_chance ) )
       return;
 
-    cast_list.push_back( cast );
+    cast_list.push_back( CAST_EXCEPTIONAL );
   }
 
   void _execute_bear()
@@ -9293,12 +9294,12 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
                       static_cast<int>( rng().range( guidance ? 3.5 : 5, guidance ? 6 : 7 ) ),
                       CAST_OFFSPEC );
 
-    insert_exceptional( CAST_PULVERIZE );
+    insert_exceptional();
   }
 
   convoke_cast_e _tick_bear( convoke_cast_e base_type, const std::vector<player_t*>& tl, player_t*& conv_tar )
   {
-    convoke_cast_e type_ = base_type;
+    convoke_cast_e type_ = base_type == CAST_EXCEPTIONAL ? CAST_PULVERIZE : base_type;
 
     // convoke will not cast pulverize if it's already up on the target
     if ( type_ == CAST_PULVERIZE && td( target )->debuff.pulverize->check() )
@@ -9348,7 +9349,7 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
                       static_cast<size_t>( rng().range( guidance ? 2.5 : 4, guidance ? 7.5 : 9 ) ),
                       CAST_OFFSPEC );
 
-    insert_exceptional( CAST_FERAL_FRENZY );
+    insert_exceptional();
 
     cast_list.insert(
         cast_list.end(),
@@ -9359,7 +9360,7 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
 
   convoke_cast_e _tick_cat( convoke_cast_e base_type, const std::vector<player_t*>& tl, player_t*& conv_tar )
   {
-    convoke_cast_e type_ = base_type;
+    convoke_cast_e type_ = base_type == CAST_EXCEPTIONAL ? CAST_FERAL_FRENZY : base_type;
 
     if ( base_type == CAST_OFFSPEC && !offspec_list.empty() )
     {
@@ -9401,12 +9402,12 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
     dot_count    = 0;
     filler_count = 0;
 
-    insert_exceptional( CAST_FULL_MOON );
+    insert_exceptional();
   }
 
   convoke_cast_e _tick_moonkin( convoke_cast_e base_type, const std::vector<player_t*>& tl, player_t*& conv_tar )
   {
-    convoke_cast_e type_ = base_type;
+    convoke_cast_e type_ = base_type == CAST_EXCEPTIONAL ? CAST_FULL_MOON : base_type;
     std::vector<std::pair<convoke_cast_e, double>> dist;
     unsigned adjust = guidance ? 1 : 0;
 
@@ -9520,12 +9521,19 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
       return;
 
     // Do form-specific spell selection
-    if ( p()->buff.moonkin_form->check() )
-      conv_type = _tick_moonkin( conv_type, tl, conv_tar );
-    else if ( p()->buff.bear_form->check() )
-      conv_type = _tick_bear( conv_type, tl, conv_tar );
-    else if ( p()->buff.cat_form->check() )
-      conv_type = _tick_cat( conv_type, tl, conv_tar );
+    switch ( p()->form )
+    {
+      case BEAR_FORM:
+        conv_type = _tick_bear( conv_type, tl, conv_tar );
+        break;
+      case CAT_FORM:
+        conv_type = _tick_cat( conv_type, tl, conv_tar );
+        break;
+      case MOONKIN_FORM:
+        conv_type = _tick_moonkin( conv_type, tl, conv_tar );
+        break;
+      default: break;
+    }
 
     conv_cast = convoke_action_from_type( conv_type );
     if ( !conv_cast )
