@@ -193,17 +193,17 @@ feet=cemented_murlocswimmers,id=228879,ilevel=678
 finger1=the_jastor_diamond,id=231265,ilevel=678,gem_id=213494/213494,enchant=radiant_mastery_3
 finger2=cyrces_circlet,id=228411,bonus_id=12025/1511,gem_id=228638/228639/228646,enchant=radiant_mastery_3
 trinket1=mugs_moxie_jug,id=230192,ilevel=678
-trinket2=eye_of_kezan,id=230198,ilevel=678
+trinket2=house_of_cards,id=230027,ilevel=678
 main_hand=big_earners_bludgeon,id=228901,ilevel=678,enchant=authority_of_the_depths_3
 off_hand=vagabonds_torch,id=222566,bonus_id=11300/8793,ilevel=675
 
 # Gear Summary
 # gear_ilvl=676.38
 # gear_stamina=386578
-# gear_intellect=69873
+# gear_intellect=75061
 # gear_crit_rating=3499
 # gear_haste_rating=16511
-# gear_mastery_rating=17912
+# gear_mastery_rating=16212
 # gear_versatility_rating=931
 # gear_armor=20744
 # set_bonus=thewarwithin_season_2_2pc=1

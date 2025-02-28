@@ -114,7 +114,7 @@ actions.spellslinger+=/arcane_barrage,if=buff.intuition.react
 # Barrage in single target if you have High Voltage, last Nether Precision stack, Clearcasting and either Aether or Execute.
 actions.spellslinger+=/arcane_barrage,if=active_enemies=1&talent.high_voltage&buff.arcane_charge.stack=4&buff.clearcasting.react&buff.nether_precision.stack=1&(buff.aether_attunement.react|(target.health.pct<35&talent.arcane_bombardment))
 # Barrage if you have orb ready and either Orb Barrage or High Voltage, pool for Spark.
-actions.spellslinger+=/arcane_barrage,if=cooldown.arcane_orb.remains<gcd.max&buff.arcane_charge.stack=4&buff.nether_precision.down&talent.orb_barrage&(cooldown.touch_of_the_magi.remains>gcd.max*6|!talent.magis_spark)
+actions.spellslinger+=/arcane_barrage,if=(cooldown.arcane_orb.remains<gcd.max&buff.arcane_charge.stack=4&buff.nether_precision.down&(talent.orb_barrage|(talent.high_voltage&buff.clearcasting.react))&(cooldown.touch_of_the_magi.remains>gcd.max*6|!talent.magis_spark))
 # Barrage with Orb Barrage or execute if you have orb up and no Nether Precision or no way to get another.
 actions.spellslinger+=/arcane_barrage,if=active_enemies=1&(talent.orb_barrage|(target.health.pct<35&talent.arcane_bombardment))&(cooldown.arcane_orb.remains<gcd.max)&buff.arcane_charge.stack=4&(cooldown.touch_of_the_magi.remains>gcd.max*6|!talent.magis_spark)&(buff.nether_precision.down|(buff.nether_precision.stack=1&buff.clearcasting.stack=0))
 # Use Explosion for your first charge or if you have High Voltage you can use it for charge 2 and 3, but at a slightly higher target count.
