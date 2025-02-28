@@ -9128,8 +9128,6 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
   unsigned off_count = 0;
   bool guidance;
 
-  std::vector<std::pair<action_t*,form_e>> old_cast;
-
   DRUID_ABILITY( convoke_the_spirits_t, base_t, "convoke_the_spirits", p->talent.convoke_the_spirits ),
     actions(),
     guidance( p->talent.elunes_guidance.ok() || p->talent.ursocs_guidance.ok() ||
