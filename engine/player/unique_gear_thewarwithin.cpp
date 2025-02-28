@@ -5866,7 +5866,7 @@ void improvised_seaforium_pacemaker( special_effect_t& effect )
   cb->activate_with_buff( crit_buff );
 
   effect.cooldown_ = timespan_t::from_seconds( effect.driver()->effectN( 2 ).base_value() );
-  effect.proc_flags2_ = PF2_ALL_HIT;
+  effect.proc_flags2_ = PF2_ALL_CAST;
   new dbc_proc_callback_t( effect.player, effect );
 }
 
