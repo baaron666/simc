@@ -72,13 +72,14 @@ enum flag_e : uint32_t
   LIGHTOFELUNE = 0x00080000,  // light of elune talent
   THRASHING    = 0x00100000,  // thrashing claws talent
   STACKED      = 0x00200000,  // bear tww2 4pc
+  JACKPOT      = 0x00400000,  // owl tww2 2pc
   // free casts
   APEX         = 0x01000000,  // apex predators's craving
   TOOTHANDCLAW = 0x02000000,  // tooth and claw talent
   // misc
   UMBRAL       = 0x10000000,  // umbral embrace talent
 
-  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE | THRASHING | STACKED,
+  FREE_PROCS = CONVOKE | FIRMAMENT | FLASHING | GALACTIC | ORBIT | TWIN | TREANT | LIGHTOFELUNE | THRASHING | STACKED | JACKPOT,
   FREE_CASTS = APEX | TOOTHANDCLAW
 };
 
@@ -1971,6 +1972,9 @@ public:
 
   void check_autoshift()
   {
+    if ( has_flag( flag_e::FREE_PROCS ) )
+      return;
+
     if ( !check_form_restriction() )
     {
       if ( autoshift )
@@ -9123,6 +9127,8 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
   unsigned off_count = 0;
   bool guidance;
 
+  std::vector<std::pair<action_t*,form_e>> old_cast;
+
   DRUID_ABILITY( convoke_the_spirits_t, base_t, "convoke_the_spirits", p->talent.convoke_the_spirits ),
     actions(),
     guidance( p->talent.elunes_guidance.ok() || p->talent.ursocs_guidance.ok() ||
@@ -11630,7 +11636,7 @@ void druid_t::create_actions()
   if ( sets->has_set_bonus( DRUID_BALANCE, TWW2, B2 ) )
   {
     // tww2_2pc uses same spell as the talent, so hardcode ID in case the talent isn't selected
-    auto jackpot = get_secondary_action<wild_mushroom_t>( "jackpot_mushroom", find_spell( 88747 ) );
+    auto jackpot = get_secondary_action<wild_mushroom_t>( "jackpot_mushroom", find_spell( 88747 ), flag_e::JACKPOT );
     jackpot->name_str_reporting = "Jackpot!";
     jackpot->background = true;
     jackpot->proc = true;
