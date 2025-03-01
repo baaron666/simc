@@ -32,6 +32,7 @@ enum class secondary_trigger
   FAN_THE_HAMMER,
   CRACKSHOT,
   COUP_DE_GRACE,
+  HAND_OF_FATE,
 };
 
 enum stealth_type_e
@@ -355,7 +356,6 @@ public:
     struct
     {
       actions::rogue_attack_t* fatebound_coin_tails = nullptr;
-      actions::rogue_attack_t* fatebound_coin_tails_delivered = nullptr;
       actions::rogue_attack_t* fate_intertwined = nullptr;
       actions::rogue_attack_t* lucky_coin = nullptr;
     } fatebound;
@@ -2041,8 +2041,10 @@ public:
     register_consume_buff( p()->buffs.audacity, affected_by.audacity );
     register_consume_buff( p()->buffs.blindside, affected_by.blindside );
     // Special case for Coup de Grace as it is not consumed until the final impact
+    // Killing Spree does not consume until the last_tick
     register_consume_buff( p()->buffs.cold_blood, ( p()->buffs.cold_blood->is_affecting( &ab::data() ) &&
                                                     ab::data().id() != p()->talent.subtlety.secret_technique->id() &&
+                                                    ab::data().id() != p()->talent.outlaw.killing_spree->id() &&
                                                     ab::data().id() != p()->spell.coup_de_grace->id() &&
                                                     ( secondary_trigger_type != secondary_trigger::COUP_DE_GRACE ||
                                                       ab::data().id() == p()->spell.coup_de_grace_damage_3->id() ) ),
@@ -5004,6 +5006,17 @@ struct killing_spree_t : public rogue_attack_t
     snapshot_flags |= STATE_HASTE;
   }
 
+  void init() override
+  {
+    rogue_attack_t::init();
+
+    // Manual handling of last_tick expire -- Note: Killing Spree is not affected if talented into Inevitabile End
+    if ( p()->talent.rogue.cold_blood->ok() && p()->buffs.cold_blood->is_affecting( &data() ) && !cold_blood_consumed_proc )
+    {
+      cold_blood_consumed_proc = p()->get_proc( "Cold Blood " + name_str );
+    }
+  }
+
   timespan_t tick_time( const action_state_t* s ) const override
   { return data().effectN( 1 ).period() * s->haste; }
 
@@ -5037,6 +5050,19 @@ struct killing_spree_t : public rogue_attack_t
 
     attack_mh->execute_on_target( d->target );
     attack_oh->execute_on_target( d->target );
+  }
+
+  void last_tick( dot_t* d ) override
+  {
+    rogue_attack_t::last_tick( d );
+
+    // 2025-03-01 -- Cold Blood is now only consumed at the end of Killing Spree
+    //               Note: Can still be consumed mid-Killing Spree by things like Hand of Fate
+    if ( cold_blood_consumed_proc && p()->buffs.cold_blood->check() )
+    {
+      p()->buffs.cold_blood->expire();
+      cold_blood_consumed_proc->occur();
+    }
   }
 
   bool consumes_supercharger() const override
@@ -7037,7 +7063,6 @@ struct hand_of_fate_t : public rogue_attack_t
   {
     background = true;
     add_child( p->active.fatebound.fatebound_coin_tails );
-    add_child( p->active.fatebound.fatebound_coin_tails_delivered );
     add_child( p->active.fatebound.lucky_coin );
   }
 };
@@ -8977,7 +9002,7 @@ void actions::rogue_action_t<Base>::execute_fatebound_coinflip( const action_sta
     if ( !ab::is_precombat )
     {
       // Don't fling tails coins at enemies precombat, since that'll start combat (assume the player knows not to have an enemy targeted)
-      p()->active.fatebound.fatebound_coin_tails->execute_on_target( state->target );
+      p()->active.fatebound.fatebound_coin_tails->trigger_secondary_action( state->target );
     }
     p()->buffs.fatebound_coin_tails->increment();
     if ( result != fatebound_t::coinflip_e::EDGE )
@@ -11403,11 +11428,11 @@ void rogue_t::init_spells()
   if ( talent.fatebound.hand_of_fate->ok() )
   {
     active.fatebound.fatebound_coin_tails =
-      get_background_action<actions::fatebound_coin_tails_t>( "fatebound_coin_tails" );
-    active.fatebound.fatebound_coin_tails_delivered =
-      get_background_action<actions::fatebound_coin_tails_t>( "fatebound_coin_tails_delivered" );
+      get_secondary_trigger_action<actions::fatebound_coin_tails_t>( secondary_trigger::HAND_OF_FATE, "fatebound_coin_tails" );
+    active.fatebound.fatebound_coin_tails->not_a_proc = true; // Scripted foreground cast, can trigger cast procs
+
     active.fatebound.lucky_coin =
-      get_background_action<actions::fatebound_lucky_coin_t>( "lucky_coin" );
+      get_secondary_trigger_action<actions::fatebound_lucky_coin_t>( secondary_trigger::HAND_OF_FATE, "lucky_coin" );
 
     // Stats wrapper to group these for reporting purposes
     get_background_action<actions::hand_of_fate_t>( "hand_of_fate" );
@@ -11822,7 +11847,7 @@ void rogue_t::create_buffs()
       if ( new_stacks == 7 && talent.fatebound.fateful_ending->ok() )
       {
         if ( buffs.fatebound_lucky_coin->check() )
-          active.fatebound.lucky_coin->execute();
+          active.fatebound.lucky_coin->trigger_secondary_action( target );
         else
           buffs.fatebound_lucky_coin->trigger();
       }
@@ -11834,7 +11859,7 @@ void rogue_t::create_buffs()
       if ( new_stacks == 7 && talent.fatebound.fateful_ending->ok() )
       {
         if ( buffs.fatebound_lucky_coin->check() )
-          active.fatebound.lucky_coin->execute();
+          active.fatebound.lucky_coin->trigger_secondary_action( target );
         else
           buffs.fatebound_lucky_coin->trigger();
       }
