@@ -203,17 +203,17 @@ actions.variables+=/variable,name=spend_rp,op=setif,value=1,value_else=0,conditi
 actions.variables+=/variable,name=epidemic_targets,value=3+talent.improved_death_coil+(talent.frenzied_bloodthirst&buff.essence_of_the_blood_queen.stack>5)+(talent.hungering_thirst&talent.harbinger_of_doom&buff.sudden_doom.up)
 
 head=cauldron_champions_crown,id=229253,bonus_id=11996/10356/11960/6652/12176/1527/10255/10878,gem_id=213497
-neck=strapped_rescuekeg,id=221060,bonus_id=9026/1544/1641/10879,gem_id=213494/213494
+neck=strapped_rescuekeg,id=221060,bonus_id=4786/3170/11996/8781,gem_id=213497/213497
 shoulders=cauldron_champions_screamplate,id=229251,bonus_id=11996/10356/11962/6652/1527/10255
 back=consecrated_cloak,id=222817,bonus_id=12043/9627/9633/8902/8793/12040/10520/8960,crafted_stats=32/36
 chest=cauldron_champions_ribcage,id=229256,bonus_id=11996/10356/11958/6652/1527/10255,enchant=crystalline_radiance_3
 wrists=everforged_vambraces,id=222435,bonus_id=12043/9627/9633/8902/8793/12040/10520/8960/10878,gem_id=213497,crafted_stats=32/36
 hands=cauldron_champions_fistguards,id=229254,bonus_id=11996/10356/11959/6652/1527/10255
 waist=coinoperated_girdle,id=228886,bonus_id=11996/10356/6652/12176/1527/10255/10878,gem_id=213497
-legs=galvanized_oxxein_legguards,id=178800,bonus_id=9026/3280/1641,enchant=stormbound_armor_kit_3
+legs=galvanized_oxxein_legguards,id=178800,bonus_id=4786/9987/11996,enchant=stormbound_armor_kit_3
 feet=cauldron_champions_greatboots,id=229255,bonus_id=11996/10356/6652/1527/10255,enchant=defenders_march_3
 finger1=the_jastor_diamond,id=231265,bonus_id=6652/10394/10392/10356/11996/1527/10255/10879,gem_id=213497/213497,enchant=radiant_haste_3
-finger2=miniature_roulette_wheel,id=228843,bonus_id=10356/1527/8781/8948/8950,gem_id=213494/213494,enchant=radiant_mastery_3
+finger2=miniature_roulette_wheel,id=228843,bonus_id=10356/1527/8781/8948/8950,gem_id=213497/213497,enchant=radiant_mastery_3
 trinket1=mechanocore_amplifier,id=232485,bonus_id=6652/11990/1537/10255
 trinket2=house_of_cards,id=230027,bonus_id=6652/10356/11996/1527/10255
 main_hand=bestinslots,id=232526,bonus_id=6652/10356/11996/9418/1527/10255,enchant=rune_of_the_fallen_crusader
@@ -223,9 +223,9 @@ main_hand=bestinslots,id=232526,bonus_id=6652/10356/11996/9418/1527/10255,enchan
 # gear_strength=55629
 # gear_stamina=392419
 # gear_crit_rating=1586
-# gear_haste_rating=22509
+# gear_haste_rating=22313
 # gear_mastery_rating=18104
-# gear_versatility_rating=944
+# gear_versatility_rating=1140
 # gear_armor=72548
 # set_bonus=thewarwithin_season_2_2pc=1
 # set_bonus=thewarwithin_season_2_4pc=1
