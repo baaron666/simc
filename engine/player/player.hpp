@@ -1209,6 +1209,8 @@ public:
   virtual double composite_player_target_armor( player_t* ) const;
   virtual double composite_player_healing_received_multiplier() const
   { return 1.0; }
+  virtual double composite_player_absorb_received_multiplier() const
+  { return 1.0; }
   virtual double composite_mitigation_multiplier( school_e ) const;
   virtual double non_stacking_movement_modifier() const;
   virtual double stacking_movement_modifier() const;

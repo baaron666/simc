@@ -105,6 +105,11 @@ double absorb_t::composite_versatility(const action_state_t* state) const
   return spell_base_t::composite_versatility(state) + player->cache.heal_versatility();
 }
 
+double absorb_t::composite_target_multiplier( player_t* target ) const
+{
+  return target->composite_player_absorb_received_multiplier();
+}
+
 size_t absorb_t::available_targets( std::vector<player_t*>& target_list ) const
 {
   target_list.clear();
