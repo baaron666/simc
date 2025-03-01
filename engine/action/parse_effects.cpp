@@ -1198,7 +1198,7 @@ std::vector<player_effect_t>* parse_player_effects_t::get_effect_vector( const s
       str = "healing received";
       return &healing_received_effects;
 
-    case A_MOD_ABSORB_RECIEVED_PERCENT:
+    case A_MOD_ABSORB_RECEIVED_PERCENT:
       str = "absorb received";
       return &absorb_received_mult_effects;
 

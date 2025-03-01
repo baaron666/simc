@@ -1271,7 +1271,7 @@ enum effect_subtype_t : unsigned {
     A_MOD_MANA_POOL_PCT = 419,
     A_420 = 420,
     A_MOD_ABSORB_DONE_PERCENT = 421,
-    A_MOD_ABSORB_RECIEVED_PERCENT = 422,
+    A_MOD_ABSORB_RECEIVED_PERCENT = 422,
     A_423 = 423,
     A_424 = 424,
     A_426 = 426,
