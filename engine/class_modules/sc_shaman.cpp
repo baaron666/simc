@@ -984,6 +984,7 @@ public:
     // 11.1 Flowing Spirits proc modeling tweaks
     unsigned flowing_spirits_procs = 3;  // Number of Flowing Spirits procs in a shuffled rng
     unsigned flowing_spirits_total = 30; // Number of total draws in Flowing Spirits shuffled rng
+    double   tww1_4pc_flowing_spirits_chance = 1.0; // Chance to summon an additional wolf
   } options;
 
   // Cooldowns
@@ -11618,6 +11619,8 @@ void shaman_t::create_options()
     options.flowing_spirits_procs, 0, std::numeric_limits<unsigned>::max() ) );
   add_option( opt_uint( "shaman.flowing_spirits_total",
     options.flowing_spirits_total, 0, std::numeric_limits<unsigned>::max() ) );
+  add_option( opt_float( "shaman.tww1_4pc_flowing_spirits_chance",
+    options.tww1_4pc_flowing_spirits_chance, 0.0, 1.0 ) );
 }
 
 // shaman_t::create_profile ================================================
@@ -11671,6 +11674,7 @@ void shaman_t::copy_from( player_t* source )
 
   options.flowing_spirits_procs = p->options.flowing_spirits_procs;
   options.flowing_spirits_total = p->options.flowing_spirits_total;
+  options.tww1_4pc_flowing_spirits_chance = p->options.tww1_4pc_flowing_spirits_chance;
 }
 
 // shaman_t::create_special_effects ========================================
@@ -13487,8 +13491,12 @@ void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfu
     return;
   }
 
-  auto n_summons = 1U +
-    as<unsigned>( sets->set( SHAMAN_ENHANCEMENT, TWW1, B4 )->effectN( 1 ).base_value() );
+  auto n_summons = 1U;
+  if ( rng().roll( options.tww1_4pc_flowing_spirits_chance ) )
+  {
+    n_summons += as<unsigned>(
+      sets->set( SHAMAN_ENHANCEMENT, TWW1, B4 )->effectN( 1 ).base_value() );
+  }
   unsigned record_index = active_flowing_spirits_proc * n_summons;
 
   if ( flowing_spirits_procs.size() <= record_index )
