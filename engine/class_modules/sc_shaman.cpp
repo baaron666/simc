@@ -1012,6 +1012,7 @@ public:
     cooldown_t* ancestral_swiftness;
     cooldown_t* flowing_spirit;
     cooldown_t* stormblast; // Stormblast ICD custom implementation
+    cooldown_t* arc_discharge;
   } cooldown;
 
   // Expansion-specific Legendaries
@@ -1487,6 +1488,7 @@ public:
     cooldown.ancestral_swiftness= get_cooldown( "ancestral_swiftness" );
     cooldown.flowing_spirit     = get_cooldown( "flowing_spirit" );
     cooldown.stormblast         = get_cooldown( "stormblast_icd" );
+    cooldown.arc_discharge      = get_cooldown( "arc_discharge" );
 
     melee_mh      = nullptr;
     melee_oh      = nullptr;
@@ -6632,7 +6634,7 @@ struct chain_lightning_t : public chained_base_t
     }
 
     // Chain Lightning Arc Discharge actually targets the last target hit, not the first one.
-    if ( as<unsigned>( state->chain_target ) == state->n_targets - 1 && ( exec_type == spell_variant::NORMAL || exec_type == spell_variant::THORIMS_INVOCATION || exec_type == spell_variant::PRIMORDIAL_STORM ) )
+    if ( as<unsigned>( state->chain_target ) == state->n_targets - 1 )
     {
       p()->trigger_arc_discharge( state );
     }
@@ -7497,10 +7499,7 @@ struct lightning_bolt_t : public shaman_spell_t
 
     p()->trigger_thunderstrike_ward( execute_state );
 
-    if ( exec_type == spell_variant::NORMAL || exec_type == spell_variant::THORIMS_INVOCATION || exec_type == spell_variant::PRIMORDIAL_STORM )
-    {
-      p()->trigger_arc_discharge( execute_state );
-    }
+    p()->trigger_arc_discharge( execute_state );
 
     p()->trigger_totemic_rebound( execute_state );
 
@@ -13463,6 +13462,19 @@ void shaman_t::trigger_arc_discharge( const action_state_t* state )
     return;
   }
 
+  if ( cooldown.arc_discharge->down() )
+  {
+    return;
+  }
+
+  auto s = shaman_spell_t::cast_state( state );
+
+  if ( s->exec_type != spell_variant::NORMAL && s->exec_type != spell_variant::THORIMS_INVOCATION &&
+       s->exec_type != spell_variant::PRIMORDIAL_STORM && s->exec_type != spell_variant::ARC_DISCHARGE )
+  {
+    return;
+  }
+
   if ( specialization() == SHAMAN_ENHANCEMENT )
   {
     action_t* action_ = nullptr;
@@ -13479,7 +13491,11 @@ void shaman_t::trigger_arc_discharge( const action_state_t* state )
 
     assert( action_ );
 
-    make_event( *sim, rng().gauss( 500_ms, 50_ms ),
+    // Arc Discharge is capable of self-proccing; experimentally verified in game to roughly 3/4 of
+    // re-triggering within the ICD (400ms), vs 1/4 of re-triggering outside of the ICD in which
+    // case the Arc Discharge Lightning Bolt will consume the remaining stack of Arc Discharge and
+    // trigger again.
+    make_event( *sim, rng().range( 325_ms, 425_ms ),
       [ action_, t = state->target ]() {
         if ( t->is_sleeping() )
         {
@@ -13488,9 +13504,10 @@ void shaman_t::trigger_arc_discharge( const action_state_t* state )
 
         action_->execute_on_target( t );
     } );
-
   }
+
   buff.arc_discharge->decrement();
+  cooldown.arc_discharge->start( buff.arc_discharge->data().internal_cooldown() );
 }
 
 //Flowing Spirits logic is real round-about all around the module, when Windfury procs it, it reports
@@ -13692,7 +13709,8 @@ void shaman_t::create_buffs()
     ->set_refresh_behavior( buff_refresh_behavior::DISABLED );
   buff.arc_discharge = make_buff( this, "arc_discharge", find_spell( 455097 ) )
     ->set_max_stack( find_spell( 455097 )->max_stacks() )
-    ->set_default_value_from_effect( 2 );
+    ->set_default_value_from_effect( 2 )
+    ->set_cooldown( 0_ms ); // Handled by shaman_t::trigger_arc_discharge
 
   buff.storm_swell = make_buff( this, "storm_swell", find_spell( 455089 ) )
     ->set_default_value_from_effect_type(A_MOD_MASTERY_PCT)
