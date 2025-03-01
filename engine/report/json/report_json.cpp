@@ -573,7 +573,7 @@ void collected_data_to_json( JsonOutput root, const ::report::json::report_confi
   add_non_zero( root, "compound_dmg", cd.compound_dmg );
   add_non_zero( root, "timeline_dmg", cd.timeline_dmg );
   add_non_zero( root, "total_iterations", cd.total_iterations );
-  if ( !p.is_enemy() && sim.target_list.size() > 1 )
+  if ( !p.is_enemy() && sim.enemy_targets > 1 )
   {
     add_non_zero( root, "prioritydps", cd.prioritydps );
   }
