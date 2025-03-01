@@ -107,7 +107,11 @@ double absorb_t::composite_versatility(const action_state_t* state) const
 
 double absorb_t::composite_target_multiplier( player_t* target ) const
 {
-  return target->composite_player_absorb_received_multiplier();
+  double m = spell_base_t::composite_target_multiplier( target );
+  
+  m *= target->composite_player_absorb_received_multiplier();
+
+  return m;
 }
 
 size_t absorb_t::available_targets( std::vector<player_t*>& target_list ) const
