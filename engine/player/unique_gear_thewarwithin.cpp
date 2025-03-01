@@ -9387,19 +9387,6 @@ struct roaring_warqueen_citrine_t : public spell_t
 
   void execute() override
   {
-    bool skippers_estimate = player->thewarwithin_opts.estimate_skippers_group_benefit &&
-                             ( player->sim->single_actor_batch || player->sim->player_no_pet_list.size() == 1 );
-    // Base of 1 + small epsilon to avoid rounding errors.
-    if ( base_multiplier > 1.001 && player->thewarwithin_opts.personal_estimate_skippers_group_benefit &&
-         ( player->thewarwithin_opts.force_estimate_skippers_group_benefit || skippers_estimate ) )
-    {
-      bool old_group_value = estimate_group_value;
-      // Can only happen with Legendary Skippers
-      estimate_group_value = true;
-      if ( estimate_group_value != old_group_value )
-        target_cache.is_valid = false;
-    }
-
     if ( target_list().size() == 0 )
     {
       // We have no targets at all. Free state(s) and abandon ship.
@@ -9753,10 +9740,10 @@ void legendary_skippers_citrine( special_effect_t& effect )
 
       // Heal
       MARINERS_HALLOWED_CITRINE,
-      OLD_SALTS_BARDIC_CITRINE,
+      OLD_SALTS_BARDIC_CITRINE
 
       // Ally Trigger
-      ROARING_WARQUEENS_CITRINE
+      //ROARING_WARQUEENS_CITRINE
 
       // Itself
       // LEGENDARY_SKIPPERS_CITRINE,
@@ -9827,97 +9814,6 @@ void legendary_skippers_citrine( special_effect_t& effect )
   effect.execute_action = create_proc_action<legendary_skippers_citrine_t>( "legendary_skippers_citrine", effect );
 
   new dbc_proc_callback_t( effect.player, effect );
-
-  struct skippers_roaring_warqueens_estimate_cb_t : public dbc_proc_callback_t
-  {
-    roaring_warqueen_citrine_t::citrine_data_t citrine_data;
-
-    skippers_roaring_warqueens_estimate_cb_t( const special_effect_t& e )
-      : dbc_proc_callback_t( e.player, e ), citrine_data()
-    {
-      singing_citrines_drivers_e citrine = CITRINE_DRIVER_NONE;
-      for ( auto& d : roaring_warqueen_citrine_t::CITRINE_DRIVERS )
-      {
-        if ( unique_gear::find_special_effect( effect.player, d ) )
-        {
-          citrine = d;
-          break;
-        }
-      }
-
-      if ( citrine == CITRINE_DRIVER_NONE )
-        return;
-
-      if ( auto proc_buff = find_citrine_proc_buff( effect.player, citrine ) )
-      {
-        auto buff             = debug_cast<stat_buff_current_value_t*>( proc_buff );
-        citrine_data.gem_type = roaring_warqueen_citrine_t::gem_type_t::BUFF;
-        citrine_data.buff     = buff;
-        return;
-      }
-
-      if ( auto proc_action = find_citrine_action( effect.player, citrine ) )
-      {
-        citrine_data.gem_type = roaring_warqueen_citrine_t::gem_type_t::ACTION;
-        citrine_data.action   = proc_action;
-      }
-    }
-
-    void execute( action_t*, action_state_t* s ) override
-    {
-      switch ( citrine_data.gem_type )
-      {
-        case roaring_warqueen_citrine_t::gem_type_t::ACTION:
-          assert( citrine_data.action && "There must be a valid action pointer if the gem type is set to ACTION" );
-          citrine_data.action->execute();
-          break;
-        case roaring_warqueen_citrine_t::gem_type_t::BUFF:
-          assert( citrine_data.buff && "There must be a valid buff pointer if the gem type is set to BUFF" );
-          citrine_data.buff->queen_proc = true;
-          citrine_data.buff->trigger();
-          break;
-        default:
-          break;
-      }
-    }
-
-    void trigger( action_t* a, action_state_t* state ) override
-    {
-      auto _rppm_modifier = rppm->get_modifier();
-      rppm->set_modifier( _rppm_modifier * ( 1 + a->player->buffs.bloodlust->check_stack_value() ) );
-
-      dbc_proc_callback_t::trigger( a, state );
-
-      rppm->set_modifier( _rppm_modifier );
-    }
-  };
-
-  if ( effect.player->thewarwithin_opts.estimate_skippers_group_benefit &&
-       effect.player->thewarwithin_opts.estimate_skippers_group_members > 0 )
-  {
-    auto skipper_rwq_estimate      = new special_effect_t( effect.player );
-    skipper_rwq_estimate->name_str = "legendary_skippers_party_estimate";
-    skipper_rwq_estimate->type     = SPECIAL_EFFECT_EQUIP;
-    skipper_rwq_estimate->source   = SPECIAL_EFFECT_SOURCE_ITEM;
-    skipper_rwq_estimate->spell_id = effect.spell_id;
-    // 25% Raid average haste assumption (slight underestimate)
-    skipper_rwq_estimate->rppm_modifier_ =
-        effect.player->thewarwithin_opts.estimate_skippers_group_members / possible_stones.size() * 1.25;
-    effect.player->special_effects.push_back( skipper_rwq_estimate );
-
-    // Make the RPPM Object early so it can be set to RPPM_NONE
-    effect.player->get_rppm( skipper_rwq_estimate->name(), skipper_rwq_estimate->rppm(),
-                             skipper_rwq_estimate->rppm_modifier(), rppm_scale_e::RPPM_NONE );
-
-    auto cb = new skippers_roaring_warqueens_estimate_cb_t( *skipper_rwq_estimate );
-
-    effect.player->register_combat_begin( [ cb ]( player_t* p ) {
-      if ( ( !p->sim->single_actor_batch && p->sim->player_no_pet_list.size() > 1 &&
-             !p->thewarwithin_opts.force_estimate_skippers_group_benefit ) ||
-           p->thewarwithin_opts.personal_estimate_skippers_group_benefit )
-        cb->deactivate();
-    } );
-  }
 }
 
 
