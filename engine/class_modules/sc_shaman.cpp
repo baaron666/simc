@@ -4624,7 +4624,7 @@ struct stormstrike_attack_t : public shaman_attack_t
   {
     shaman_attack_t::init();
 
-    may_proc_flowing_spirits = false;
+    may_proc_flowing_spirits = !p()->talent.elemental_spirits.ok();
   }
 
   double action_multiplier() const override
