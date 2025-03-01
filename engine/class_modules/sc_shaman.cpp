@@ -5256,12 +5256,13 @@ struct lava_lash_t : public shaman_attack_t
 
     p()->trigger_elemental_assault( execute_state );
     p()->trigger_tempest_strikes( execute_state );
-    p()->trigger_reactivity( execute_state );
     p()->trigger_lively_totems( execute_state );
 
     p()->buff.ashen_catalyst->expire();
     p()->trigger_whirling_fire( execute_state );
     p()->buff.whirling_fire->decrement();
+
+    p()->trigger_reactivity( execute_state );
 
     if ( p()->talent.lively_totems.ok() && p()->rng_obj.lively_totems_ptr->trigger() )
     {
