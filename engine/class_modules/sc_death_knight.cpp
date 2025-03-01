@@ -15616,37 +15616,15 @@ struct death_knight_module_t : public module_t
     unique_gear::register_special_effect( 326982, runeforge::unending_thirst );
   }
 
-  /*
   void register_hotfixes() const override
   {
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Death Coil nerfed by 13%", 39872,
-                             hotfix::HOTFIX_FLAG_PTR )
-        .field( "ap_coefficient" )
+    hotfix::register_effect( "Death Knight", "2025-2-28", "Winning Streak Buffed to 4.5%", 1200456,
+                             hotfix::HOTFIX_FLAG_LIVE )
+        .field( "base_value" )
         .operation( hotfix::HOTFIX_SET )
-        .modifier( 0.64400184 )
-        .verification_value( 0.740232 );
-
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Doomed Bidding Duration reduced to 6s", 1158770,
-                             hotfix::HOTFIX_FLAG_PTR )
-      .field( "base_value" )
-      .operation( hotfix::HOTFIX_SET )
-      .modifier( 6000 )
-      .verification_value( 8000 );
-
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Commander of the Dead buffed by 10%", 1026956,
-                             hotfix::HOTFIX_FLAG_PTR )
-      .field( "base_value" )
-      .operation( hotfix::HOTFIX_SET )
-      .modifier( 45 )
-      .verification_value( 35 );
-
-    hotfix::register_effect( "Death Knight", "2024-12-13", "Gargoyle Strike buffed by 50%", 44400,
-                             hotfix::HOTFIX_FLAG_PTR )
-      .field( "ap_coefficient" )
-      .operation( hotfix::HOTFIX_SET )
-      .modifier( 0.34776 )
-      .verification_value( 0.23184 );
-  }*/
+        .modifier( 4.5 )
+        .verification_value( 3 );
+  }
 
   void init( player_t* ) const override
   {
