@@ -1777,10 +1777,7 @@ struct hot_hand_buff_t : public buff_t
     set_cooldown( timespan_t::zero() );
     set_stack_change_callback(
         [ this ]( buff_t*, int, int ) { shaman->cooldown.lava_lash->adjust_recharge_multiplier(); } );
-    if ( p->talent.hot_hand.ok() )
-    {
-      set_chance( p->talent.hot_hand->proc_chance() );
-    }
+    set_chance( 1.0 ); // Proc chance handled by shaman_t::trigger_hot_hand
   }
 
   bool trigger( int s, double v, double c, timespan_t d ) override
@@ -12539,34 +12536,16 @@ void shaman_t::trigger_hot_hand( const action_state_t* state )
     return;
   }
 
-  // [BUG] 2025-02-25: Normal Hot Hand trigger will overwrite a Whirling Fire extended Hot Hand buff
-  // down to 6 seconds. Presumed that a non-bugged version would not overwrite a longer duration
-  // buff.
-  bool triggered = false;
-  if ( bugs )
+  if ( !rng().roll( talent.hot_hand->proc_chance() ) )
   {
-    auto rem_duration = buff.hot_hand->remains();
-    triggered = buff.hot_hand->trigger();
-    if ( triggered && rem_duration > buff.hot_hand->buff_duration() )
-    {
-      proc.hot_hand_duration->occur();
-    }
-  }
-  else
-  {
-    if ( buff.hot_hand->remains() < buff.hot_hand->buff_duration() )
-    {
-      triggered = buff.hot_hand->trigger();
-    }
+    return;
   }
 
-  if ( triggered )
+  buff.hot_hand->extend_duration_or_trigger( buff.hot_hand->buff_duration() );
+
+  if ( attack->proc_hh )
   {
-    if ( attack->proc_hh )
-    {
-      attack->proc_hh->occur();
-    }
-    cooldown.lava_lash->reset( true );
+    attack->proc_hh->occur();
   }
 }
 
@@ -13176,21 +13155,9 @@ void shaman_t::trigger_whirling_fire( const action_state_t* /* state */ )
   }
 
   // Mote of Fire extends an existing Hot Hand buff, or triggers a new one with its duration
-  if ( buff.hot_hand->check() )
-  {
-    buff.hot_hand->extend_duration( this, buff.whirling_fire->data().effectN( 1 ).time_value() );
-  }
-  else
-  {
-    buff.hot_hand->trigger( -1, buff_t::DEFAULT_VALUE(), 1.0 );
-  }
+  buff.hot_hand->extend_duration_or_trigger( buff.whirling_fire->data().effectN( 1 ).time_value() );
 
   buff.whirling_fire->decrement();
-  // [BUG] 2025-02-25: Mote-triggered Hot Hand does not properly reset the Lava Lash cooldown
-  if ( !bugs )
-  {
-    cooldown.lava_lash->reset( false );
-  }
 }
 
 void shaman_t::trigger_stormblast( const action_state_t* state )
