@@ -1265,6 +1265,18 @@ struct divine_hammer_tick_t : public paladin_melee_attack_t
       pal->cooldowns.hammerfall_icd->start();
     }
   }
+
+  double composite_target_multiplier( player_t* target ) const override
+  {
+    double ctm = paladin_melee_attack_t::composite_target_multiplier( target );
+
+    paladin_td_t* td = this->td( target );
+    if ( p()->talents.burn_to_ash->ok() && td->dots.truths_wake->is_ticking() )
+      ctm *= 1.0 + p()->talents.burn_to_ash->effectN( 2 ).percent();
+
+    return ctm;
+  }
+
 };
 
 struct divine_hammer_t : public holy_power_consumer_t<paladin_spell_t>

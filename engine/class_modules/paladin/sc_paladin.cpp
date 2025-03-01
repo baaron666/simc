@@ -416,6 +416,9 @@ struct consecration_tick_t : public paladin_spell_t
     if ( td->debuff.sanctify->up() )
       m *= 1.0 + td->debuff.sanctify->data().effectN( 1 ).percent();
 
+    if ( p()->talents.burn_to_ash->ok() && td->dots.truths_wake->is_ticking() )
+      m *= 1.0 + p()->talents.burn_to_ash->effectN( 2 ).percent();
+
     return m;
   }
 };
