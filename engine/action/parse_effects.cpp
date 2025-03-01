@@ -1330,7 +1330,7 @@ void parse_player_effects_t::parsed_effects_html( report::sc_html_stream& os )
     print_parsed_type( os, dodge_effects, "Dodge" );
     print_parsed_type( os, absorb_multiplier_effects, "Absorb Multiplier" );
     print_parsed_type( os, healing_received_effects, "Healing Received" );
-    print_parsed_type( os, absorb_received_mult_effects, "Absorb Recieved Multiplier" );
+    print_parsed_type( os, absorb_received_mult_effects, "Absorb Received Multiplier" );
     print_parsed_type( os, target_multiplier_effects, "Target Multiplier", &opt_strings::school );
     print_parsed_type( os, target_pet_multiplier_effects, "Target Pet Multiplier", &opt_strings::pet_type );
     print_parsed_custom_type( os );
