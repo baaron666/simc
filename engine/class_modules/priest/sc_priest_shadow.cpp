@@ -1222,7 +1222,6 @@ struct void_bolt_base_t : public priest_spell_t
 
   void_bolt_extension_t* void_bolt_extension;
   bool trigger_shadowy_apparitions;
-  bool only_cwc;
   const spell_data_t* mind_flay_spell;
   const spell_data_t* mind_flay_insanity_spell;
   const spell_data_t* void_torrent_spell;
@@ -1231,16 +1230,11 @@ struct void_bolt_base_t : public priest_spell_t
     : priest_spell_t( name, p, p.specs.void_bolt ),
       void_bolt_extension( nullptr ),
       trigger_shadowy_apparitions( true ),
-      only_cwc( false ),
       mind_flay_spell( p.specs.mind_flay ),
       mind_flay_insanity_spell( p.talents.shadow.mind_flay_insanity_spell ),
       void_torrent_spell( p.talents.shadow.void_torrent )
   {
-    add_option( opt_bool( "only_cwc", only_cwc ) );
     parse_options( options );
-
-    if ( p.bugs && only_cwc )
-      usable_while_casting = use_while_casting = only_cwc;
 
     energize_type              = action_energize::ON_CAST;
     cooldown->hasted           = true;
@@ -1258,22 +1252,6 @@ struct void_bolt_base_t : public priest_spell_t
   {
     if ( !priest().buffs.voidform->check() )
     {
-      return false;
-    }
-
-    if ( only_cwc && !p().bugs )
-      return false;
-
-    if ( only_cwc )
-    {
-      if ( player->channeling == nullptr )
-        return false;
-
-      if ( player->channeling->data().id() == mind_flay_spell->id() ||
-           player->channeling->data().id() == mind_flay_insanity_spell->id() ||
-           player->channeling->data().id() == void_torrent_spell->id() )
-        return priest_spell_t::ready();
-
       return false;
     }
 
