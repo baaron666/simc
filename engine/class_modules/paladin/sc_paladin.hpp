@@ -1826,6 +1826,8 @@ public:
     bool isFreeSLDPSpender = p->buffs.divine_purpose->up() || ( is_wog && p->buffs.shining_light_free->up() ) ||
                              ( is_divine_storm && p->buffs.empyrean_power->up() ) || p->buffs.all_in->up();
 
+    bool isFreeHoL = is_hammer_of_light_driver && p->buffs.templar.hammer_of_light_free->up();
+
     double num_hopo_spent = as<double>( holy_power_consumer_t::cost() );
     if ( is_hammer_of_light_driver && !p->buffs.templar.hammer_of_light_free->up() )
       num_hopo_spent = hol_cost;
@@ -1873,9 +1875,9 @@ public:
       }
     }
 
-    if ( p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && p->cooldowns.divine_hammer_icd->up() )
+    if ( p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && p->cooldowns.divine_hammer_icd->up() && ( num_hopo_spent > 0 || isFreeHoL ) )
     {
-      unsigned base_cost = as<int>( num_hopo_spent );
+      unsigned base_cost = isFreeHoL ? hol_cost : as<int>( num_hopo_spent );
       p->buffs.divine_hammer->extend_duration( p, timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() * base_cost ) );
       p->cooldowns.divine_hammer_icd->start();
     }
@@ -1896,7 +1898,7 @@ public:
       // of procs pretty closely, tested on a couple thousand TV casts.
       // This will need periodic re-verification, but is good enough for beta
       // purposes.
-      p->radiant_glory_accumulator += ab::rng().range( 0.0, 0.225 );
+      p->radiant_glory_accumulator += ab::rng().range( 0.0, 0.075 * num_hopo_spent );
       if ( p->radiant_glory_accumulator >= 1.0 )
       {
         bool do_avatar = p->talents.herald_of_the_sun.suns_avatar->ok() && !( p->buffs.avenging_wrath->up() || p->buffs.crusade->up() );
