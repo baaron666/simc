@@ -724,7 +724,7 @@ public:
   /// Flowing Spirits tracking
   size_t active_flowing_spirits_proc;
   // Attempts, successes
-  std::vector<std::tuple<simple_sample_data_t, simple_sample_data_t, simple_sample_data_t>> flowing_spirits_procs;
+  std::vector<std::tuple<simple_sample_data_t, simple_sample_data_t>> flowing_spirits_procs;
 
   /// Molten Thunder 11.1
   double molten_thunder_chance;
@@ -982,10 +982,8 @@ public:
     double surging_totem_miss_chance = 0.1;
 
     // 11.1 Flowing Spirits proc modeling tweaks
-    unsigned max_flowing_spirits = 8;        // Maximum number of Flowing Spirits procced wolves
-    double flowing_spirits_floor = 0.025;    // Minimum probability of proccing
-    double flowing_spirits_step = 0.025;     // Reduced probability per active wolf/proc
-    bool   flowing_spirits_per_wolf = false; // Reduce proc rate based on active wolf/proc
+    unsigned flowing_spirits_procs = 3;  // Number of Flowing Spirits procs in a shuffled rng
+    unsigned flowing_spirits_total = 30; // Number of total draws in Flowing Spirits shuffled rng
   } options;
 
   // Cooldowns
@@ -1418,6 +1416,7 @@ public:
     shuffled_rng_t* icefury;
     shuffled_rng_t* ancient_fellowship;
     shuffled_rng_t* routine_communication;
+    shuffled_rng_t* flowing_spirits;
 
     accumulated_rng_t* imbuement_mastery;
     accumulated_rng_t* dre_enhancement;
@@ -2803,11 +2802,6 @@ public:
       p()->buff.flurry->decrement();
     }
 
-    if ( may_proc_flowing_spirits )
-    {
-      p()->trigger_flowing_spirits( execute_state );
-    }
-
     p()->buff.tww2_enh_2pc->trigger();
   }
 
@@ -2822,6 +2816,11 @@ public:
     p()->trigger_windfury_weapon( state );
     p()->trigger_flametongue_weapon( state );
     p()->trigger_hot_hand( state );
+
+    if ( may_proc_flowing_spirits )
+    {
+      p()->trigger_flowing_spirits( execute_state );
+    }
   }
 
   virtual double stormbringer_proc_chance() const
@@ -3039,11 +3038,6 @@ struct shaman_spell_t : public shaman_spell_base_t<spell_t>
 
     p()->trigger_earthen_rage( execute_state );
 
-    if ( may_proc_flowing_spirits )
-    {
-      p()->trigger_flowing_spirits( execute_state );
-    }
-
     if ( p()->sets->has_set_bonus( SHAMAN_ELEMENTAL, TWW2, B2 ) && p()->rppm.jackpot->trigger() )
     {
       p()->proc.jackpot_rppm->occur();
@@ -3063,6 +3057,16 @@ struct shaman_spell_t : public shaman_spell_base_t<spell_t>
     }
 
     p()->buff.tww2_enh_2pc->trigger();
+  }
+
+  void impact( action_state_t* state ) override
+  {
+    base_t::impact( state );
+
+    if ( may_proc_flowing_spirits )
+    {
+      p()->trigger_flowing_spirits( state );
+    }
   }
 
   void schedule_travel( action_state_t* s ) override
@@ -4606,15 +4610,6 @@ struct stormstrike_attack_t : public shaman_attack_t
     }
   }
 
-  void init() override
-  {
-    shaman_attack_t::init();
-
-    // Strikes appear to have only one chance to proc Flowing Spirits, which is covered by the
-    // strike base ability.
-    may_proc_flowing_spirits = false;
-  }
-
   action_state_t* new_state() override
   { return new stormstrike_attack_state_t( this, target ); }
 
@@ -4797,7 +4792,6 @@ struct sundering_reactivity_t : public shaman_attack_t
     shaman_attack_t::init();
 
     may_proc_flametongue = may_proc_windfury = may_proc_stormsurge = true;
-    may_proc_flowing_spirits = false;
   }
 
   void execute() override
@@ -5568,9 +5562,6 @@ struct stormstrike_base_t : public shaman_attack_t
   {
     shaman_attack_t::init();
     may_proc_flametongue = may_proc_windfury = may_proc_stormsurge = false;
-
-    may_proc_flowing_spirits = p()->talent.flowing_spirits.ok() &&
-      !p()->talent.elemental_spirits.ok();
 
     p()->set_mw_proc_state( this, mw_proc_state::DISABLED );
   }
@@ -6437,6 +6428,14 @@ struct chain_lightning_t : public chained_base_t
     }
   }
 
+  void init() override
+  {
+    shaman_spell_t::init();
+
+    may_proc_flowing_spirits = exec_type != spell_variant::PRIMORDIAL_WAVE &&
+      exec_type != spell_variant::PRIMORDIAL_STORM && exec_type != spell_variant::THORIMS_INVOCATION;
+  }
+
   void proc_lightning_rod()
   {
     if ( p()->specialization() != SHAMAN_ENHANCEMENT || !p()->talent.conductive_energy.ok() )
@@ -6997,13 +6996,6 @@ struct fire_nova_t : public shaman_spell_t
     add_child( impact_action );
   }
 
-  void init() override
-  {
-    shaman_spell_t::init();
-
-    may_proc_flowing_spirits = false;
-  }
-
   size_t available_targets( std::vector<player_t*>& tl ) const override
   {
     shaman_spell_t::available_targets( tl );
@@ -7398,6 +7390,14 @@ struct lightning_bolt_t : public shaman_spell_t
       default:
         break;
     }
+  }
+
+  void init() override
+  {
+    shaman_spell_t::init();
+
+    may_proc_flowing_spirits = exec_type != spell_variant::PRIMORDIAL_WAVE &&
+      exec_type != spell_variant::PRIMORDIAL_STORM && exec_type != spell_variant::THORIMS_INVOCATION;
   }
 
   bool consume_maelstrom_weapon() const override
@@ -9041,13 +9041,6 @@ struct wind_shear_t : public shaman_spell_t
     is_interrupt = true;
   }
 
-  void init() override
-  {
-    shaman_spell_t::init();
-
-    may_proc_flowing_spirits = false;
-  }
-
   bool target_ready( player_t* candidate_target ) override
   {
     if ( candidate_target->debuffs.casting && !candidate_target->debuffs.casting->check() )
@@ -9348,7 +9341,7 @@ struct doom_winds_t : public shaman_attack_t
 
     weapon = &( player->main_hand_weapon );
     weapon_multiplier = 0.0;
-    may_proc_flowing_spirits = may_proc_flametongue = may_proc_stormsurge = may_proc_windfury = false;
+    may_proc_flametongue = may_proc_stormsurge = may_proc_windfury = false;
 
     if ( player->action.doom_winds == nullptr )
     {
@@ -10431,6 +10424,13 @@ struct primordial_wave_t : public shaman_spell_t
       background = true;
     }
 
+    void init() override
+    {
+      shaman_spell_t::init();
+
+      may_proc_flowing_spirits = false;
+    }
+
     void impact( action_state_t* s ) override
     {
       shaman_spell_t::impact( s );
@@ -10537,13 +10537,6 @@ struct primordial_storm_t : public shaman_spell_t
       reduced_aoe_targets = p()->talent.primordial_storm->effectN( 3 ).base_value();
     }
 
-    void init() override
-    {
-      shaman_attack_t::init();
-
-      may_proc_flowing_spirits = false;
-    }
-
     double action_multiplier() const override
     {
       double m = shaman_attack_t::action_multiplier();
@@ -10580,15 +10573,6 @@ struct primordial_storm_t : public shaman_spell_t
     // Spell data does not indicate this, textual description does
     affected_by_maelstrom_weapon = true;
   }
-
-  void init() override
-  {
-    shaman_spell_t::init();
-
-    // Allow only single proc attempt per Primordial Storm
-    may_proc_flowing_spirits = true;
-  }
-
 
   void trigger_lightning_damage()
   {
@@ -10751,13 +10735,6 @@ struct tempest_t : public shaman_spell_t
         affected_by_master_of_the_elements = true;
         break;
     }
-  }
-
-  void init() override
-  {
-    shaman_spell_t::init();
-
-    may_proc_flowing_spirits = true;
   }
 
   void execute() override
@@ -11609,14 +11586,10 @@ void shaman_t::create_options()
     }
   ) );
 
-  add_option( opt_uint( "shaman.max_flowing_spirits",
-    options.max_flowing_spirits, 0, std::numeric_limits<unsigned>::max() ) );
-  add_option( opt_float( "shaman.flowing_spirits_floor",
-    options.flowing_spirits_floor, 0.0, 1.0 ) );
-  add_option( opt_float( "shaman.flowing_spirits_step",
-    options.flowing_spirits_step, 0.0, 1.0 ) );
-  add_option( opt_bool( "shaman.flowing_spirits_per_wolf",
-    options.flowing_spirits_per_wolf ) );
+  add_option( opt_uint( "shaman.flowing_spirits_procs",
+    options.flowing_spirits_procs, 0, std::numeric_limits<unsigned>::max() ) );
+  add_option( opt_uint( "shaman.flowing_spirits_total",
+    options.flowing_spirits_total, 0, std::numeric_limits<unsigned>::max() ) );
 }
 
 // shaman_t::create_profile ================================================
@@ -11668,10 +11641,8 @@ void shaman_t::copy_from( player_t* source )
 
   options.surging_totem_miss_chance = p->options.surging_totem_miss_chance;
 
-  options.max_flowing_spirits= p->options.max_flowing_spirits;
-  options.flowing_spirits_floor = p->options.flowing_spirits_floor;
-  options.flowing_spirits_step = p->options.flowing_spirits_step;
-  options.flowing_spirits_per_wolf = p->options.flowing_spirits_per_wolf;
+  options.flowing_spirits_procs = p->options.flowing_spirits_procs;
+  options.flowing_spirits_total = p->options.flowing_spirits_total;
 }
 
 // shaman_t::create_special_effects ========================================
@@ -13483,52 +13454,36 @@ void shaman_t::trigger_arc_discharge( const action_state_t* state )
 //to accurately track what proc'd flowing spirits, hence the optional parameter for procs coming from WF trigger function
 void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfurySourceTrigger )
 {
-  if ( !talent.flowing_spirits.ok() )
+  if ( !talent.flowing_spirits.ok() || cooldown.flowing_spirit->down() )
   {
     return;
   }
 
-  if ( cooldown.flowing_spirit->down() )
-  {
-    return;
-  }
-
-  bool triggered = false;
-  double chance = 0.0;
   auto n_summons = 1U +
     as<unsigned>( sets->set( SHAMAN_ENHANCEMENT, TWW1, B4 )->effectN( 1 ).base_value() );
-  unsigned record_index = options.flowing_spirits_per_wolf
-    ? pet.all_wolves.size()
-    : active_flowing_spirits_proc * n_summons;
+  unsigned record_index = active_flowing_spirits_proc * n_summons;
 
   if ( flowing_spirits_procs.size() <= record_index )
   {
     flowing_spirits_procs.resize( record_index + 1 );
   }
 
-  // Apparently in-game, Flowing Spirits generated wolves cannot cause the total number of Spirit
-  // Wolves to exceed 8.
+  bool triggered = rng_obj.flowing_spirits->trigger();
+  cooldown.flowing_spirit->start( talent.flowing_spirits->internal_cooldown() );
 
-  if ( pet.all_wolves.size() + n_summons > options.max_flowing_spirits )
+  if ( sim->debug )
   {
-    std::get<2>( flowing_spirits_procs[ record_index ] ).add( 1.0 );
-    return;
+    sim->out_debug.print(
+      "{} attempts to proc flowing_spirits on {}, active={}, rng=[{}/{}, {:.3f}%]: {}",
+      name(), windfurySourceTrigger ? "windfury_attack" : state->action->name(),
+      active_flowing_spirits_proc,
+      rng_obj.flowing_spirits->count_remains( SUCCESS ) + triggered,
+      rng_obj.flowing_spirits->count_remains( FAIL ) + !triggered,
+      100.0 * ( rng_obj.flowing_spirits->count_remains( SUCCESS ) + triggered ) /
+        as<double>( rng_obj.flowing_spirits->count_remains( FAIL ) +
+          rng_obj.flowing_spirits->count_remains( SUCCESS ) + 1U ),
+      triggered );
   }
-
-  unsigned mul = options.flowing_spirits_per_wolf
-    ? pet.all_wolves.size()
-    : active_flowing_spirits_proc;
-
-  chance = std::max(
-    options.flowing_spirits_floor,
-    talent.flowing_spirits->effectN( 1 ).percent() - mul * options.flowing_spirits_step
-  );
-
-  triggered = rng().roll( chance );
-
-  sim->print_debug( "{} attempts to proc flowing_spirits on {}, active_procs={}, chance={}: {}",
-    name(), windfurySourceTrigger ? "windfury_attack" : state->action->name(),
-    active_flowing_spirits_proc, chance, triggered );
 
   std::get<0>( flowing_spirits_procs[ record_index ] ).add( 1.0 );
 
@@ -13588,7 +13543,6 @@ void shaman_t::trigger_flowing_spirits( const action_state_t* state, bool windfu
     }
   }
 
-  cooldown.flowing_spirit->start( talent.flowing_spirits->internal_cooldown() );
   buff.feral_spirit_maelstrom->trigger( duration );
 
   ++active_flowing_spirits_proc;
@@ -14096,6 +14050,9 @@ void shaman_t::init_rng()
     options.ice_strike_base_chance );
   rng_obj.lively_totems_ptr = get_accumulated_rng( "lively_totems_ptr",
     options.lively_totems_base_chance );
+
+  rng_obj.flowing_spirits = get_shuffled_rng( "flowing_spirits",
+    options.flowing_spirits_procs, options.flowing_spirits_total );
 }
 
 // shaman_t::init_items =====================================================
@@ -15110,7 +15067,6 @@ void shaman_t::merge( player_t& other )
   {
     std::get<0>( flowing_spirits_procs[ idx ] ).merge( std::get<0>( s.flowing_spirits_procs[ idx ] ) );
     std::get<1>( flowing_spirits_procs[ idx ] ).merge( std::get<1>( s.flowing_spirits_procs[ idx ] ) );
-    std::get<2>( flowing_spirits_procs[ idx ] ).merge( std::get<2>( s.flowing_spirits_procs[ idx ] ) );
   }
 }
 
@@ -15190,11 +15146,10 @@ public:
        << "</tr>\n"
        << "<tr>\n"
        << "<th class=\"left\"># of wolves</th>"
-       << "<th class=\"left\">Proc chance%<br/>(actual)</th>"
        << "<th class=\"left\"># of attempts<br/>(per iteration)</th>"
        << "<th class=\"left\"># of procs<br/>(per iteration)</th>"
+       << "<th class=\"left\">Chance</th>"
        << "<th class=\"left\">% of procs</th>\n"
-       << "<th class=\"left\">Attempts@<br/>max wolves (per iteration)</th>\n"
        << "</tr>\n"
        << "</thead>\n";
   }
@@ -15212,32 +15167,21 @@ public:
     {
       const auto& attempts = std::get<0>( p.flowing_spirits_procs[ idx ] );
       const auto& procs = std::get<1>( p.flowing_spirits_procs[ idx ] );
-      const auto& max_wolf = std::get<2>( p.flowing_spirits_procs[ idx ] );
-      if ( attempts.count() == 0 && procs.count() == 0 && max_wolf.count() == 0 )
+      if ( attempts.count() == 0 && procs.count() == 0 )
       {
         continue;
       }
 
       os << fmt::format( "<tr class=\"{}\">\n", row++ & 1 ? "odd" : "even" );
       os << fmt::format( "<td class=\"left\">{}</td>", idx );
-      os << fmt::format( "<td class=\"left\">{:.3f}% ({:.3f}%)</td>",
-        100.0 * ( std::max( p.options.flowing_spirits_floor,
-            p.talent.flowing_spirits->effectN( 1 ).percent() -
-            p.options.flowing_spirits_step * ( p.sets->has_set_bonus( SHAMAN_ENHANCEMENT, TWW1, B4 )
-              ? idx / 2
-              : idx ) )
-        ),
-        util::round( 100.0 * ( attempts.count() > 0 ? procs.count() / as<double>( attempts.count() + max_wolf.count() ) : 0.0 ), 3 )
-      );
       os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>", attempts.count(),
         util::round( attempts.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>", procs.count(),
         util::round( procs.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << fmt::format( "<td class=\"left\">{:.3f}%</td>",
+        util::round( 100.0 * procs.count() / attempts.count(), 3 ) );
+      os << fmt::format( "<td class=\"left\">{:.3f}%</td>",
         util::round( 100.0 * procs.count() / total_procs, 3 ) );
-      os << fmt::format( "<td class=\"left\">{} ({:.3f})</td>",
-        max_wolf.count(),
-        util::round( max_wolf.count() / as<double>( p.sim->iterations + p.sim->threads ), 3 ) );
       os << "</tr>\n";
     }
   }
