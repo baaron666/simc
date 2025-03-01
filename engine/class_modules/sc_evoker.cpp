@@ -308,6 +308,17 @@ struct simple_timed_buff_t : public buff_t
 };
 
 
+enum class bob_buff_type_e
+{
+  BUFF_NONE = -1,
+  BUFF_PERCENT_DAMAGE = 0,
+  BUFF_HASTE,
+  BUFF_CRIT,
+  BUFF_VERS,
+  BUFF_MAST,
+  BUFF_MAX
+};
+
 struct simplified_player_t : public player_t
 {
   action_t* ability;
@@ -326,6 +337,7 @@ struct simplified_player_t : public player_t
       timespan_t duration;
       timespan_t cooldown;
       timespan_t delay_from_start;
+      bob_buff_type_e type;
     };
 
     role_e role;
@@ -359,31 +371,30 @@ struct simplified_player_t : public player_t
       { "default", { ROLE_SPELL, 12.1,  true, 1.5_s, 0.40, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } }, // 250.9k
       { "tank",    { ROLE_TANK,   6.1,  true, 1.5_s, 0.45, -1, 8, 1, 0.0, 20000.0, 0.0011, {} } },      // 157.4k
       { "healer",  { ROLE_HEAL,   1.8,  true, 1.5_s, 0.25, -1, 5, 1, 0.0, 20000.0, 0.0011, {} } },      // 78k
-      { "shadow",  { ROLE_SPELL,  8.36, true, 1.5_s, 0.45, -1, 8, 1, -0.55, 20000.0, 0.0011, {       // 244.8k
-          { "two_mins_cds",           0.4,  40_s, 120_s, 3_s },
-          { "one_mins_cds",           0.3,  15_s, 60_s, 3_s },
-          { "one_mins_cds_lingering", 0.25, 30_s, 60_s, 3_s },
-          { "two_mins_cds_two",       0.4,  65_s, 120_s, 3_s } } } },
+      { "shadow",  { ROLE_SPELL,  7.5, true, 1.5_s, 0.45, -1, 8, 1, 0.0, 20000.0, 0.0011, {       // 244.8k
+          { "two_mins_cds",           0.3,  40_s, 120_s, 3_s, bob_buff_type_e::BUFF_HASTE },
+          { "one_mins_cds",           0.3,  15_s,  60_s, 3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE },
+          { "one_mins_cds_lingering", 0.25, 30_s,  60_s, 3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE },
+          { "two_mins_cds_two",       0.3,  65_s, 120_s, 3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  } } } },
       { "bm",      { ROLE_SPELL,      6.9,  true, 1.5_s, 0.4,  -1, 8, 1, 0.5, 14000.0, 0.0011, {              // 243.5k
-          { "two_mins_cds",           0.3,   20_s, 120_s, 3_s },
-          { "two_mins_cds_lingering", 0.15,  30_s, 120_s, 3_s },
-          { "30s_cds",                0.35,  15_s, 18_s , 3_s },
-          { "30s_cds_two",            0.08,   4_s, 18_s,  3_s },
-          { "30s_cds_three",          0.06,   8_s, 18_s,  3_s } } } },
+          { "two_mins_cds",           0.3,   20_s, 120_s, 3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "two_mins_cds_lingering", 0.15,  30_s, 120_s, 3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "30s_cds",                0.35,  15_s, 18_s , 3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "30s_cds_two",            0.08,   4_s, 18_s,  3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "30s_cds_three",          0.06,   8_s, 18_s,  3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  } } } },
       { "assa",    { ROLE_SPELL, 5.17, false,   1_s, 0.5,  -1, 8, 1, 0.8, 11100.0, 0.0011, {              // 234.6k
-          { "two_mins_cds", 0.9 , 20_s, 120_s, 6_s },
-          { "one_mins_cds", 0.65, 14_s,  60_s, 8_s } } } },
+          { "two_mins_cds", 0.9 , 20_s, 120_s, 6_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "one_mins_cds", 0.65, 14_s,  60_s, 8_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  } } } },
       { "unh",     { ROLE_SPELL, 7.0,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 18000.0, 0.0011, {             // 251.4k
-          { "90s_cds",      1.1, 20_s,  90_s, 7_s },
-          { "45s_cds",      0.6, 20_s,  45_s, 8_s } } } },
-      // Could probably use some RNG in the 40s cds to better emulate the 30-40s variance in use timing
+          { "90s_cds",      1.1, 20_s,  90_s, 7_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "45s_cds",      0.6, 20_s,  45_s, 8_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  } } } },
       { "dk_frost",{ ROLE_SPELL,  7.55,  true, 1.5_s, 0.4,  -1, 8, 1, 0.0, 13900.0, 0.0011, {             // 262.4k
-          { "breath_of_sindragosa",  0.45,  20_s, 45_s*3, 3_s },
-          { "empower_rune_weapon",   0.2,  20_s, 135_s,  3_s },
-          { "pillar_of_frost",       0.4,  12_s,  45_s,  2_s },
-          { "reapers_mark",          0.75,  6_s,  45_s,  4_s },
-          { "reapers_mark_cascade",  0.4,   6_s,  45_s, 10_s },
-          { "reapers_mark_cascade2", 0.1,   6_s,  45_s, 16_s }
+          { "breath_of_sindragosa",  0.45,  20_s, 45_s*3, 3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "empower_rune_weapon",   0.2,  20_s,  135_s,  3_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "pillar_of_frost",       0.4,  12_s,   45_s,  2_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "reapers_mark",          0.75,  6_s,   45_s,  4_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "reapers_mark_cascade",  0.4,   6_s,   45_s, 10_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  },
+          { "reapers_mark_cascade2", 0.1,   6_s,   45_s, 16_s, bob_buff_type_e::BUFF_PERCENT_DAMAGE  }
       } } },
   };
 
@@ -399,16 +410,37 @@ struct simplified_player_t : public player_t
     _spec = SPEC_PET;
   }
 
-  buff_t* make_damage_buff( std::string_view name, double value, timespan_t duration, timespan_t cooldown, timespan_t delay_from_start = 0_s )
+  buff_t* make_damage_buff( std::string_view name, double value, timespan_t duration, timespan_t cooldown,
+                            timespan_t delay_from_start, bob_buff_type_e buff_type )
   {
     buff_t* b = make_buff<simple_timed_buff_t>( this, name );
 
     b->set_default_value( value )
         ->set_cooldown( cooldown )
-        ->set_duration( duration )
-        ->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER );
+        ->set_duration( duration );
 
-    damage_buffs.push_back( b );
+    switch ( buff_type )
+    {
+      case bob_buff_type_e::BUFF_PERCENT_DAMAGE:
+        b->add_invalidate( CACHE_PLAYER_DAMAGE_MULTIPLIER );
+        damage_buffs.push_back( b );
+        break;
+      case bob_buff_type_e::BUFF_HASTE:
+        b->set_pct_buff_type( STAT_PCT_BUFF_HASTE );
+        break;
+      case bob_buff_type_e::BUFF_CRIT:
+        b->set_pct_buff_type( STAT_PCT_BUFF_CRIT );
+        break;
+      case bob_buff_type_e::BUFF_VERS:
+        b->set_pct_buff_type( STAT_PCT_BUFF_VERSATILITY );
+        break;
+      case bob_buff_type_e::BUFF_MAST:
+        b->set_pct_buff_type( STAT_PCT_BUFF_MASTERY );
+        break;
+      default:
+        break;
+    }
+
 
     register_combat_begin( [ this, b, delay_from_start ]( player_t* ) {
       make_event( sim, delay_from_start, [ b ]() { b->trigger(); } );
@@ -419,7 +451,7 @@ struct simplified_player_t : public player_t
 
   buff_t* make_damage_buff( bob_settings_t::bob_buff_t b )
   {
-    return make_damage_buff( b.name, b.value, b.duration, b.cooldown, b.delay_from_start );
+    return make_damage_buff( b.name, b.value, b.duration, b.cooldown, b.delay_from_start, b.type );
   }
 
   void make_damage_buffs( bob_settings_t s )
@@ -560,6 +592,11 @@ struct simplified_player_t : public player_t
         return spell_t::execute_time_pct_multiplier();
 
       return 1.0;
+    }
+
+    timespan_t execute_time() const override
+    {
+      return std::max( min_gcd, spell_t::execute_time() );
     }
 
     bool usable_moving() const override
