@@ -108,7 +108,7 @@ trinket1=mechanocore_amplifier,id=232485,bonus_id=6652/11990/1537/10255
 trinket2=house_of_cards,id=230027,bonus_id=6652/10356/11996/1527/10255
 main_hand=bestinslots,id=232526,bonus_id=6652/10356/11996/9418/1527/10255,enchant=rune_of_the_fallen_crusader
 
-save=TWW2_Death_Knight_Unholy.simc
+save=TWW2_Death_Knight_Unholy_Rider.simc
 
 deathknight="TWW2_Death_Knight_Unholy_San'layn"
 source=default
@@ -135,5 +135,5 @@ trinket1=mechanocore_amplifier,id=232485,bonus_id=6652/11990/1537/10255
 trinket2=house_of_cards,id=230027,bonus_id=6652/10356/11996/1527/10255
 main_hand=bestinslots,id=232526,bonus_id=6652/10356/11996/9418/1527/10255,enchant=rune_of_the_fallen_crusader
 
-save=TWW2_Death_Knight_Unholy_San'layn.simc
+save=TWW2_Death_Knight_Unholy.simc
 
