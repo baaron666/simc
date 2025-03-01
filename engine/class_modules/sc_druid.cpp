@@ -8565,7 +8565,7 @@ struct starsurge_offspec_t final : public trigger_call_of_the_elder_druid_t<drui
 {
   DRUID_ABILITY( starsurge_offspec_t, base_t, "starsurge", p->talent.starsurge )
   {
-    form_mask = NO_FORM;
+    form_mask = MOONKIN_FORM | NO_FORM;
     base_costs[ RESOURCE_MANA ] = 0.0;  // so we don't need to enable mana regen
 
     if ( p->talent.master_shapeshifter.ok() )
