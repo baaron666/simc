@@ -17785,7 +17785,7 @@ Attributes       : Can Proc From Procs (122), Aura Points On Client (268), Do No
 Aura Interrupt   : Leave World (19), Enter World (22), Change Specialization (38), Raid Encounter Start or M+ Start (40), Change Talent (46)
 Effects          :
 #1 (id=1200456)  : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
-                   Base Value: 3 | Scaled Value: 3 | PvP Coefficient: 0.5 | Target: Self (1)
+                   Base Value: 4.5 | Scaled Value: 4.5 | PvP Coefficient: 0.5 | Target: Self (1)
                    Affected Spells: Death Coil (47632), Epidemic (207317), Epidemic (212739), Epidemic (215969)
                    Family Flags: 64, 121
 Description      : $@spelldesc1215726
