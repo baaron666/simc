@@ -7253,6 +7253,9 @@ struct coup_de_grace_t : public rogue_attack_t
         bonus_attack->last_cp = cast_state( state )->get_combo_points();
         bonus_attack->execute_on_target( state->target );
       }
+
+      // 2025-03-01 -- All impacts of Coup de Grace have a chance to trigger set bonus removal
+      trigger_tww2_set_bonus_removal();
     }
 
     bool procs_main_gauche() const override
