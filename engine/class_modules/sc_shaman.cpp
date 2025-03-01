@@ -6141,7 +6141,9 @@ struct fire_elemental_t : public shaman_spell_t
   {
     shaman_spell_t::execute();
 
-    p()->buff.jackpot->trigger();
+    if ( p()->sets->has_set_bonus( SHAMAN_ELEMENTAL, TWW2, B2 ) ) {
+      p()->buff.jackpot->trigger();
+    }
 
     p()->summon_elemental( elemental::GREATER_FIRE );
   }
@@ -6178,7 +6180,9 @@ struct storm_elemental_t : public shaman_spell_t
     // https://us.forums.blizzard.com/en/wow/t/elemental-shaman-class-tuning-march-8/1195446
     p()->buff.wind_gust->expire();
 
-    p()->buff.jackpot->trigger();
+    if ( p()->sets->has_set_bonus( SHAMAN_ELEMENTAL, TWW2, B2 ) ) {
+      p()->buff.jackpot->trigger();
+    }
 
     p()->summon_elemental( elemental::GREATER_STORM );
   }
