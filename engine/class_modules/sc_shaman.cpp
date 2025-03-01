@@ -4408,6 +4408,13 @@ struct tempest_strikes_damage_t : public shaman_spell_t
   {
     background = true;
   }
+
+  void init() override
+  {
+    shaman_spell_t::init();
+
+    may_proc_flowing_spirits = false;
+  }
 };
 
 struct flametongue_weapon_spell_t : public shaman_spell_t  // flametongue_attack
@@ -4613,6 +4620,13 @@ struct stormstrike_attack_t : public shaman_attack_t
   action_state_t* new_state() override
   { return new stormstrike_attack_state_t( this, target ); }
 
+  void init() override
+  {
+    shaman_attack_t::init();
+
+    may_proc_flowing_spirits = false;
+  }
+
   double action_multiplier() const override
   {
     double m = shaman_attack_t::action_multiplier();
@@ -4755,6 +4769,13 @@ struct awakening_storms_t : public shaman_spell_t
     shaman_spell_t( "awakening_storms", player, player->find_spell( 455130 ))
   {
     background = true;
+  }
+
+  void init() override
+  {
+    shaman_spell_t::init();
+
+    may_proc_flowing_spirits = false;
   }
 };
 
@@ -10735,6 +10756,13 @@ struct tempest_t : public shaman_spell_t
         affected_by_master_of_the_elements = true;
         break;
     }
+  }
+
+  void init() override
+  {
+    shaman_spell_t::init();
+
+    may_proc_flowing_spirits = exec_type != spell_variant::THORIMS_INVOCATION;
   }
 
   void execute() override
