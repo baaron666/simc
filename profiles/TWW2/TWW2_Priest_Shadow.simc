@@ -190,7 +190,7 @@ waist=refiners_conveyor_belt,id=228882,ilevel=678,gem_id=213470
 legs=pit_doctors_petticoat,id=228865,ilevel=678,enchant=sunset_spellthread_3
 feet=cemented_murlocswimmers,id=228879,ilevel=678
 finger1=the_jastor_diamond,id=231265,ilevel=678,gem_id=213494/213494,enchant=radiant_mastery_3
-finger2=cyrces_circlet,id=228411,bonus_id=12025/1511,gem_id=228638/228639/228646,enchant=radiant_mastery_3
+finger2=cyrces_circlet,id=228411,bonus_id=12025/1511,gem_id=228638/228639/228640,enchant=radiant_mastery_3
 trinket1=mugs_moxie_jug,id=230192,ilevel=678
 trinket2=house_of_cards,id=230027,ilevel=678
 main_hand=big_earners_bludgeon,id=228901,ilevel=678,enchant=authority_of_the_depths_3
