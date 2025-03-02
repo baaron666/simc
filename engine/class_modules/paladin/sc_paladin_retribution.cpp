@@ -1276,7 +1276,6 @@ struct divine_hammer_tick_t : public paladin_melee_attack_t
 
     return ctm;
   }
-
 };
 
 struct divine_hammer_t : public holy_power_consumer_t<paladin_spell_t>
@@ -1686,7 +1685,8 @@ void paladin_t::create_buffs_retribution()
   buffs.rise_from_ash = make_buff( this, "rise_from_ash", find_spell( 454693 ) );
   buffs.winning_streak = make_buff( this, "winning_streak", find_spell( 1216828 ) )
     ->set_default_value_from_effect( 1 );
-  buffs.all_in = make_buff( this, "all_in", find_spell( 1216837 ) );
+  buffs.all_in = make_buff( this, "all_in", find_spell( 1216837 ) )
+    ->set_default_value_from_effect( 1 );
 }
 
 void paladin_t::init_rng_retribution()
