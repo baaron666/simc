@@ -6456,8 +6456,7 @@ struct soulscar_t : public residual_action::residual_periodic_action_t<demon_hun
 };
 
 // Burning Blades ===========================================================
-struct burning_blades_t
-  : public residual_action::residual_periodic_action_t<demon_hunter_spell_t>
+struct burning_blades_t : public residual_action::residual_periodic_action_t<demon_hunter_spell_t>
 {
   burning_blades_t( util::string_view name, demon_hunter_t* p ) : base_t( name, p, p->hero_spec.burning_blades_debuff )
   {
@@ -6659,7 +6658,7 @@ struct preemptive_strike_t : public demon_hunter_ranged_attack_t
     : demon_hunter_ranged_attack_t( name, p, p->talent.aldrachi_reaver.preemptive_strike->effectN( 1 ).trigger() )
   {
     background = dual = true;
-    aoe = -1;
+    aoe               = -1;
   }
 
   // 2025-02-19 -- Preemptive Strike does not hit the primary target
@@ -6972,10 +6971,11 @@ struct metamorphosis_buff_t : public demon_hunter_buff_t<buff_t>
       // 2025-02-08 -- Necessary Sacrifice will not be triggered if the number of stacks on Winning Streak! is less than
       //               the number of stacks on Necessary Sacrifice
 
-      int winning_streak_stacks      = p()->buff.winning_streak->stack();
+      int winning_streak_stacks      = p()->buff.winning_streak->stack() + p()->buff.winning_streak_residual->stack();
       int necessary_sacrifice_stacks = p()->buff.necessary_sacrifice->stack();
 
       p()->buff.winning_streak->expire();
+      p()->buff.winning_streak_residual->expire();
 
       if ( winning_streak_stacks >= necessary_sacrifice_stacks )
       {
@@ -7284,11 +7284,11 @@ struct wounded_quarry_cb_t : public demon_hunter_proc_callback_t
       }
 
       // WQ is affected by mastery
-      affected_by.demonic_presence.direct = true;
+      affected_by.demonic_presence.direct   = true;
       affected_by.demonic_presence.periodic = true;
 
       // WQ is affected by Demon Hide
-      affected_by.demon_hide.direct = true;
+      affected_by.demon_hide.direct   = true;
       affected_by.demon_hide.periodic = true;
     }
 
