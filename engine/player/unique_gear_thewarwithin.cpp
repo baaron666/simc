@@ -8231,7 +8231,7 @@ void the_jastor_diamond( special_effect_t& effect )
   struct jastor_diamond_buff_base_t : public stat_buff_t
   {
     double current_total_value;
-    jastor_diamond_buff_base_t( player_t* p, std::string_view n, const spell_data_t* s )
+    jastor_diamond_buff_base_t( actor_pair_t p, std::string_view n, const spell_data_t* s )
       : stat_buff_t( p, n, s ), current_total_value( 0 )
     {
       set_default_value( 0 );
@@ -8322,10 +8322,10 @@ void the_jastor_diamond( special_effect_t& effect )
     int fake_stacks;
     int max_fake_stacks;
 
-    i_did_that_buff_t( player_t* p, std::string_view n, const spell_data_t* s )
+    i_did_that_buff_t( actor_pair_t p, std::string_view n, const spell_data_t* s )
       : jastor_diamond_buff_base_t( p, n, s ), fake_stacks( 0 ), max_fake_stacks( 0 )
     {
-      max_fake_stacks = as<int>( p->find_spell( 1214161 )->effectN( 2 ).base_value() );
+      max_fake_stacks = as<int>( source->find_spell( 1214161 )->effectN( 2 ).base_value() );
       set_constant_behavior( buff_constant_behavior::NEVER_CONSTANT );
     }
 
@@ -8358,7 +8358,7 @@ void the_jastor_diamond( special_effect_t& effect )
 
   struct no_i_did_that_buff_t : public jastor_diamond_buff_base_t
   {
-    no_i_did_that_buff_t( player_t* p, std::string_view n, const spell_data_t* s )
+    no_i_did_that_buff_t( actor_pair_t p, std::string_view n, const spell_data_t* s )
       : jastor_diamond_buff_base_t( p, n, s )
     {
     }
@@ -8392,18 +8392,22 @@ void the_jastor_diamond( special_effect_t& effect )
 
       self_buff = create_buff<i_did_that_buff_t>( e.player, "i_did_that", e.player->find_spell( 1214823 ) );
 
-      e.player->register_precombat_begin( [ & ]( player_t* p ) {
-        if ( p->sim->player_no_pet_list.size() > 1 && !p->sim->single_actor_batch )
+      if ( e.player->sim->player_no_pet_list.size() > 1 && !e.player->sim->single_actor_batch )
+      {
+        ally_list = e.player->sim->player_no_pet_list;
+        ally_list.find_and_erase( e.player );
+        if ( ally_list.size() > 0 )
         {
-          ally_list = p->sim->player_no_pet_list;
-          ally_list.find_and_erase( p );
           for ( auto& ally : ally_list )
           {
-            auto ally_buff = create_buff<no_i_did_that_buff_t>( ally, "no_i_did_that", ally_buff_spell );
+            auto ally_buff =
+                make_buff<no_i_did_that_buff_t>( actor_pair_t{ ally, e.player }, "no_i_did_that", ally_buff_spell );
             ally_buffs.insert( { { ally }, { ally_buff } } );
           }
+
+          linked_player = rng().range( ally_list );
         }
-      } );
+      }
 
       // Currently bugged, and seems to get stuck on a single player, never changing.
       // To emulate this, give players the option to chose their allied players highest stat, or randomly roll one
