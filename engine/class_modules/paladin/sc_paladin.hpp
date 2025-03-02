@@ -1371,7 +1371,7 @@ public:
       p()->buffs.templar.shake_the_heavens->extend_duration( p(), extension );
     }
 
-    if ( had_winning_streak && ab::harmful )
+    if ( had_winning_streak && ab::harmful && !ab::background )
     {
       if ( ab::rng().roll( p()->buffs.winning_streak->data().effectN( 2 ).percent() ) )
       {
