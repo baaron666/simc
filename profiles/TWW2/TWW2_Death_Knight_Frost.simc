@@ -5,7 +5,7 @@ level=80
 race=maghar_orc
 role=attack
 position=back
-talents=CsPAAAAAAAAAAAAAAAAAAAAAAAAzMjZmxYYGzMzMzMGmJzYYwgZGzMMzMzMzMLzMAAAAAAAAAAAAgFzihBGY20QDbYmZGzMA
+talents=CsPAAAAAAAAAAAAAAAAAAAAAAAAzMjZmxMDDzMzMzMGmJzYYwgZGzMMzMzMzMLzMAAAAAAAAAAAAgFzihBGY20QDbYmZGzMA
 
 # Default consumables
 potion=tempered_potion_3
@@ -212,29 +212,29 @@ actions.variables+=/variable,name=breath_dying,value=runic_power<variable.breath
 actions.variables+=/variable,name=fwf_buffs,value=(buff.pillar_of_frost.remains<gcd.max|(buff.unholy_strength.up&buff.unholy_strength.remains<gcd.max)|(talent.bonegrinder.rank=2&buff.bonegrinder_frost.up&buff.bonegrinder_frost.remains<gcd.max))&(active_enemies>1|debuff.razorice.stack=5|!death_knight.runeforge.razorice&(!talent.glacial_advance|!talent.avalanche|!talent.arctic_assault)|talent.shattering_blade)
 
 head=fullthrottle_facerig,id=228858,bonus_id=10356/1527/6935,gem_id=213743
-neck=semicharmed_amulet,id=228841,bonus_id=10356/1527/6935,gem_id=213458/213458
+neck=strapped_rescuekeg,id=221060,bonus_id=4786/11996/3170/6935,gem_id=213491/213491
 shoulders=cauldron_champions_screamplate,id=229251,bonus_id=11996/10356/11962/6652/1527/10255
 back=undercircuit_racing_flag,id=228839,bonus_id=10356/1527
 chest=cauldron_champions_ribcage,id=229256,bonus_id=11996/10356/11958/6652/1527/10255,enchant=crystalline_radiance_3
-wrists=everforged_vambraces,id=222435,bonus_id=12043/9627/9633/8902/12040/11109/8960/10878,gem_id=213458,crafted_stats=32/36
+wrists=everforged_vambraces,id=222435,bonus_id=12043/9627/9633/8902/12040/11109/8960/10878,gem_id=213491,crafted_stats=32/36
 hands=cauldron_champions_fistguards,id=229254,bonus_id=11996/10356/11959/6652/1527/10255
-waist=venture_contractors_floodlight,id=234505,bonus_id=4786/1527/11996/6935,gem_id=213458
+waist=automatic_waist_tightener,id=168976,bonus_id=4786/10067/11996,gem_id=213491
 legs=cauldron_champions_tattered_cuisses,id=229252,bonus_id=11996/10356/11961/6652/1527/10255,enchant=stormbound_armor_kit_3
-feet=cutthroat_competition_stompers,id=228887,bonus_id=10356/1527
-finger1=cyrces_circlet,id=228411,bonus_id=12025/1511,gem_id=228638/228639/228646,enchant=radiant_critical_strike_3
-finger2=the_jastor_diamond,id=231265,bonus_id=10356/1527/6935/1808,gem_id=213458/213479,enchant=radiant_critical_strike_3
-trinket1=eye_of_kezan,id=230198,bonus_id=10356/1527
+feet=hopsladen_greatboots,id=221061,bonus_id=4786/11996/3170
+finger1=bloodoath_signet,id=178871,bonus_id=4786/9987/11996/6935,gem_id=213491/213491,enchant=radiant_mastery_3
+finger2=the_jastor_diamond,id=231265,bonus_id=10356/1527/6935/1808,gem_id=213458/213479,enchant=radiant_mastery_3
+trinket1=improvised_seaforium_pacemaker,id=232541,bonus_id=4786/1514/11996
 trinket2=house_of_cards,id=230027,bonus_id=10356/1527
 main_hand=remixed_ignition_saber,id=228895,bonus_id=10356/1527,enchant=rune_of_razorice
 off_hand=charged_slicer,id=222451,bonus_id=12043/9627/9633/8902/12040/11300/8960,enchant=rune_of_the_fallen_crusader,crafted_stats=49/32
 
 # Gear Summary
-# gear_ilvl=676.38
-# gear_strength=51224
-# gear_stamina=386578
-# gear_crit_rating=13698
-# gear_haste_rating=12789
-# gear_mastery_rating=12829
+# gear_ilvl=677.63
+# gear_strength=56412
+# gear_stamina=391616
+# gear_crit_rating=13363
+# gear_haste_rating=16131
+# gear_mastery_rating=16299
 # gear_armor=72595
 # set_bonus=thewarwithin_season_2_2pc=1
 # set_bonus=thewarwithin_season_2_4pc=1
