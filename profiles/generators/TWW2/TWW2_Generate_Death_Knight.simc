@@ -75,7 +75,7 @@ hands=cauldron_champions_fistguards,id=229254,bonus_id=11996/10356/11959/6652/15
 waist=automatic_waist_tightener,id=168976,bonus_id=4786/10067/11996,gem_id=213491
 legs=cauldron_champions_tattered_cuisses,id=229252,bonus_id=11996/10356/11961/6652/1527/10255,enchant=stormbound_armor_kit_3
 feet=hopsladen_greatboots,id=221061,bonus_id=4786/11996/3170
-finger1=bloodoath_signet,id=178871,bonus_id=4786/9987/11996/6935,gem_id=213491/213491,enchant_id=radiant_mastery_3
+finger1=bloodoath_signet,id=178871,bonus_id=4786/9987/11996/6935,gem_id=213491/213491,enchant=radiant_mastery_3
 finger2=the_jastor_diamond,id=231265,bonus_id=10356/1527/6935/1808,gem_id=213458/213479,enchant=radiant_mastery_3
 trinket1=improvised_seaforium_pacemaker,id=232541,bonus_id=4786/1514/11996
 trinket2=house_of_cards,id=230027,bonus_id=10356/1527
