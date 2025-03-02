@@ -8473,7 +8473,7 @@ struct starfire_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
     {
       const auto& eff = p->talent.master_shapeshifter->effectN( 2 );
       add_parse_entry( da_multiplier_effects )
-        .set_func( [ p = p ] { return p->form == NO_FORM; } )
+        .set_func( [ p = p ] { return p->form == NO_FORM || p->form == MOONKIN_FORM; } )
         .set_value( eff.percent() )
         .set_eff( &eff );
     }
@@ -8572,7 +8572,7 @@ struct starsurge_offspec_t final : public trigger_call_of_the_elder_druid_t<drui
     {
       const auto& eff = p->talent.master_shapeshifter->effectN( 2 );
       add_parse_entry( da_multiplier_effects )
-        .set_func( [ p = p ] { return p->form == NO_FORM; } )
+        .set_func( [ p = p ] { return p->form == NO_FORM || p->form == MOONKIN_FORM; } )
         .set_value( eff.percent() )
         .set_eff( &eff );
     }
@@ -8988,7 +8988,7 @@ struct wrath_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
     {
       const auto& eff = p->talent.master_shapeshifter->effectN( 2 );
       add_parse_entry( da_multiplier_effects )
-        .set_func( [ p = p ] { return p->form == NO_FORM; } )
+        .set_func( [ p = p ] { return p->form == NO_FORM || p->form == MOONKIN_FORM; } )
         .set_value( eff.percent() )
         .set_eff( &eff );
     }
