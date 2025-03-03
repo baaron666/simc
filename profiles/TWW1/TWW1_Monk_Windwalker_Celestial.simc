@@ -33,7 +33,9 @@ actions+=/chi_torpedo,if=movement.distance>5
 actions+=/flying_serpent_kick,if=movement.distance>5
 actions+=/spear_hand_strike,if=target.debuff.casting.react
 # Potion
-actions+=/potion,if=buff.storm_earth_and_fire.up|fight_remains<=30
+actions+=/potion,if=talent.invoke_xuen_the_white_tiger&pet.xuen_the_white_tiger.active&buff.storm_earth_and_fire.up
+actions+=/potion,if=!talent.invoke_xuen_the_white_tiger&buff.storm_earth_and_fire.up
+actions+=/potion,if=fight_remains<=30
 # Enable PI if available
 actions+=/variable,name=has_external_pi,value=cooldown.invoke_power_infusion_0.duration>0
 # Define Variables for CD Management
@@ -54,8 +56,12 @@ actions+=/call_action_list,name=default_aoe,if=active_enemies>=5
 actions+=/call_action_list,name=default_cleave,if=active_enemies>1&(time>7|!talent.celestial_conduit)&active_enemies<5
 actions+=/call_action_list,name=default_st,if=active_enemies<2
 actions+=/call_action_list,name=fallback
-actions+=/lights_judgment,if=buff.storm_earth_and_fire.down
+actions+=/arcane_torrent,if=chi<chi.max&energy<55
 actions+=/bag_of_tricks,if=buff.storm_earth_and_fire.down
+actions+=/lights_judgment,if=buff.storm_earth_and_fire.down
+actions+=/haymaker,if=buff.storm_earth_and_fire.down
+actions+=/rocket_barrage,if=buff.storm_earth_and_fire.down
+actions+=/arcane_pulse,if=buff.storm_earth_and_fire.down
 
 # aoe opener
 actions.aoe_opener=slicing_winds
@@ -69,10 +75,10 @@ actions.cooldowns+=/tiger_palm,if=(target.time_to_die>14&!fight_style.dungeonrou
 actions.cooldowns+=/invoke_xuen_the_white_tiger,target_if=max:target.time_to_die,if=variable.xuen_condition&!fight_style.dungeonslice&!fight_style.dungeonroute|variable.xuen_dungeonslice_condition&fight_style.Dungeonslice|variable.xuen_dungeonroute_condition&fight_style.dungeonroute
 actions.cooldowns+=/storm_earth_and_fire,target_if=max:target.time_to_die,if=variable.sef_condition&!fight_style.dungeonroute|variable.sef_dungeonroute_condition&fight_style.dungeonroute
 actions.cooldowns+=/touch_of_karma
-actions.cooldowns+=/blood_fury,if=buff.invokers_delight.remains>15|fight_remains<20
-actions.cooldowns+=/berserking,if=buff.invokers_delight.remains>15|fight_remains<15
-actions.cooldowns+=/fireblood,if=buff.invokers_delight.remains>15|fight_remains<10
 actions.cooldowns+=/ancestral_call,if=buff.invokers_delight.remains>15|fight_remains<20
+actions.cooldowns+=/blood_fury,if=buff.invokers_delight.remains>15|fight_remains<20
+actions.cooldowns+=/fireblood,if=buff.invokers_delight.remains>15|fight_remains<10
+actions.cooldowns+=/berserking,if=buff.invokers_delight.remains>15|fight_remains<15
 
 # >=5 Targets
 actions.default_aoe=tiger_palm,if=(energy>55&talent.inner_peace|energy>60&!talent.inner_peace)&combo_strike&chi.max-chi>=2&buff.teachings_of_the_monastery.stack<buff.teachings_of_the_monastery.max_stack&(talent.energy_burst&!buff.bok_proc.up)&!buff.ordered_elements.up|(talent.energy_burst&!buff.bok_proc.up)&!buff.ordered_elements.up&!cooldown.fists_of_fury.remains&chi<3|(prev.strike_of_the_windlord|cooldown.strike_of_the_windlord.remains)&cooldown.celestial_conduit.remains<2&buff.ordered_elements.up&chi<5&combo_strike
@@ -217,7 +223,7 @@ actions.normal_opener=tiger_palm,if=chi<6&combo_strike
 actions.normal_opener+=/rising_sun_kick,if=talent.ordered_elements
 
 actions.trinkets=use_item,name=treacherous_transmitter,if=!fight_style.dungeonslice&(cooldown.invoke_xuen_the_white_tiger.remains<4|talent.xuens_bond&pet.xuen_the_white_tiger.active)|fight_style.dungeonslice&((fight_style.DungeonSlice&active_enemies=1&(time<10|talent.xuens_bond&talent.celestial_conduit)|!fight_style.dungeonslice|active_enemies>1)&cooldown.storm_earth_and_fire.ready&(target.time_to_die>14&!fight_style.dungeonroute|target.time_to_die>22)&(active_enemies>2|debuff.acclamation.up|!talent.ordered_elements&time<5)&(chi>2&talent.ordered_elements|chi>5|chi>3&energy<50|energy<50&active_enemies=1|prev.tiger_palm&!talent.ordered_elements&time<5)|fight_remains<30)|buff.invokers_delight.up
-actions.trinkets+=/use_item,name=mad_queens_mandate,target_if=min:time_to_die,if=!trinket.1.has_use_buff&!trinket.2.has_use_buff|(trinket.1.has_use_buff|trinket.2.has_use_buff)&cooldown.invoke_xuen_the_white_tiger.remains>30
+actions.trinkets+=/use_item,name=mad_queens_mandate,target_if=min:target.health,if=!trinket.1.has_use_buff&!trinket.2.has_use_buff|(trinket.1.has_use_buff|trinket.2.has_use_buff)&cooldown.invoke_xuen_the_white_tiger.remains>30
 actions.trinkets+=/do_treacherous_transmitter_task,if=pet.xuen_the_white_tiger.active|fight_remains<20
 
 head=hood_of_the_hidden_path,id=178691,bonus_id=4786/3293/10336/11307,ilevel=639,gem_id=213743
