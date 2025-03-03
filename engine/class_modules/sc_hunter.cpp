@@ -996,7 +996,7 @@ public:
     events::tar_trap_aoe_t* tar_trap_aoe = nullptr;
     timespan_t tensile_bowstring_extension = 0_s;
     event_t* current_volley = nullptr;
-    action_t* traveling_explosive = nullptr;
+    event_t* precision_detonation_expiry = nullptr;
     timespan_t sentinel_watch_reduction = 0_s;
     howl_of_the_pack_leader_beast howl_of_the_pack_leader_next_beast = WYVERN;
     timespan_t fury_of_the_wyvern_extension = 0_s;
@@ -4421,20 +4421,6 @@ struct explosive_shot_t : public explosive_shot_base_t
       p()->buffs.tip_of_the_spear_explosive->trigger();
     }
   }
-
-  void schedule_travel( action_state_t* s ) override
-  {
-    explosive_shot_base_t::schedule_travel( s );
-
-    p()->state.traveling_explosive = this;
-  }
-
-  void impact( action_state_t* s ) override
-  {
-    explosive_shot_base_t::impact( s );
-
-    p()->state.traveling_explosive = nullptr;
-  }
 };
 
 struct explosive_shot_background_t : public explosive_shot_base_t
@@ -5513,39 +5499,18 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
     // timing of the hidden buff 474199. Pray for fixes and buff all for now.
     if ( p()->talents.precision_detonation->ok() )
     {
-      bool ticking = target_data->dots.explosive_shot->is_ticking();
-      if ( s->chain_target == 0 )
+      if ( target_data->dots.explosive_shot->is_ticking() )
       {
-        bool traveling = p()->state.traveling_explosive && p()->state.traveling_explosive->has_travel_events_for( s->target );
+        p()->buffs.precision_detonation_hidden->trigger();
 
-        if ( ticking || traveling )
-        {
-          p()->buffs.precision_detonation_hidden->trigger();
+        // Expire Precision Detonation after other possible impacts.
+        if ( !p()->state.precision_detonation_expiry )
+          p()->state.precision_detonation_expiry = make_event( p()->sim,
+            [ this ]() {
+              p()->buffs.precision_detonation_hidden->expire();
+              p()->state.precision_detonation_expiry = nullptr;
+            } );
 
-          // Precision Detonation will affect an Explosive Shot queued immediately after an Aimed Shot, which intuitively shouldn't work
-          // since they have the same travel time and the Aimed Shot should impact before the Explosive Shot, so it seems there's some
-          // fudging going on to make it work, once again probably related to the use and timing of the hidden buff 474199, so just 
-          // schedule the detonation to occur after the next Explosive Shot impact if there is one in flight.
-          if ( traveling )
-            make_event( p()->sim, p()->state.traveling_explosive->shortest_travel_event(), [ this, target_data ]()
-              {
-                p()->procs.precision_detonation->occur();
-                target_data->dots.explosive_shot->cancel();
-                p()->buffs.precision_detonation_hidden->expire();
-              } );
-          else
-            // Expire Precision Detonation after other possible impacts.
-            make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
-        }
-        else
-        {
-          // Expire Precision Detonation after other possible impacts in case they trigger the buff.
-          make_event( p()->sim, [ this ]() { p()->buffs.precision_detonation_hidden->expire(); } );
-        }
-      }
-
-      if ( ticking )
-      {
         p()->procs.precision_detonation->occur();
         p()->buffs.precision_detonation_hidden->trigger();
         target_data->dots.explosive_shot->cancel();
@@ -5742,8 +5707,14 @@ struct aimed_shot_t : public aimed_shot_base_t
       precise_shot_stacks++;
     p()->buffs.precise_shots->increment( precise_shot_stacks );
 
+    // TODO 3/3/25: If Deathblow triggers from an Aimed Shot that has a Kill Shot queued after it that would consume an existing Deathblow, the new Deathblow is saved.
     if ( rng().roll( deathblow.chance ) )
-      p()->trigger_deathblow();
+      if ( p()->buffs.deathblow->check() )
+        make_event( sim, sim->queue_lag.mean * 2, [ this ]() {
+          p()->trigger_deathblow();
+        } );
+      else
+        p()->trigger_deathblow();
 
     auto tl = target_list();
     if ( aspect_of_the_hydra && tl.size() > 1 )
