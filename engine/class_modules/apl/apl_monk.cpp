@@ -279,8 +279,6 @@ void mistweaver( player_t *p )
 
 void windwalker_live( player_t *p )
 {
-  auto monk = debug_cast<monk::monk_t *>( p );
-
   //============================================================================
   // On-use Items
   //============================================================================
@@ -290,28 +288,9 @@ void windwalker_live( player_t *p )
     //-------------------------------------------
     const static std::unordered_map<std::string, std::string> sef_trinkets{
         // name_str -> APL
-        // DF Trinkets
-        { "algethar_puzzle_box",
-          ",if=(pet.xuen_the_white_tiger.active|!talent.invoke_xuen_the_white_tiger)&!buff.storm_earth_"
-          "and_fire.up|fight_remains<25" },
-        { "erupting_spear_fragment", ",if=buff.storm_earth_and_fire.up" },
-        { "manic_grieftorch",
-          ",if=!trinket.1.has_use_buff&!trinket.2.has_use_buff&!buff.storm_earth_and_fire.up&!pet.xuen_"
-          "the_white_tiger.active|(trinket.1.has_use_buff|trinket.2.has_use_buff)&cooldown.invoke_xuen_the_white_tiger."
-          "remains>30|fight_remains<5" },
-        { "beacon_to_the_beyond",
-          ",if=!trinket.1.has_use_buff&!trinket.2.has_use_buff&!buff.storm_earth_and_fire.up&!pet.xuen_"
-          "the_white_tiger.active|(trinket.1.has_use_buff|trinket.2.has_use_buff)&cooldown.invoke_xuen_the_white_tiger."
-          "remains>30|fight_remains<10" },
-        { "djaruun_pillar_of_the_elder_flame",
-          ",if=cooldown.fists_of_fury.remains<2&cooldown.invoke_xuen_the_white_tiger.remains>10|fight_remains<12" },
-        { "dragonfire_bomb_dispenser",
-          ",if=!trinket.1.has_use_buff&!trinket.2.has_use_buff|(trinket.1.has_use_buff|trinket.2.has_use_buff)&"
-          "cooldown.invoke_xuen_the_white_tiger.remains>10|fight_remains<10" },
-        // TWW Trinkets
         { "imperfect_ascendancy_serum", ",use_off_gcd=1,if=pet.xuen_the_white_tiger.active" },
         { "mad_queens_mandate",
-          ",target_if=min:time_to_die,if=!trinket.1.has_use_buff&!trinket.2.has_use_buff|(trinket.1.has_use_buff|"
+          ",target_if=min:target.health,if=!trinket.1.has_use_buff&!trinket.2.has_use_buff|(trinket.1.has_use_buff|"
           "trinket.2.has_use_buff)&cooldown.invoke_xuen_the_white_tiger.remains>30" },
         { "treacherous_transmitter",
           ",if=!fight_style.dungeonslice&(cooldown.invoke_xuen_the_white_tiger.remains<4|talent.xuens_bond&pet.xuen_"
@@ -369,26 +348,19 @@ void windwalker_live( player_t *p )
     return concat;
   };
 
-  //============================================================================
+  action_priority_list_t *pre            = p->get_action_priority_list( "precombat" );
+  action_priority_list_t *def            = p->get_action_priority_list( "default" );
+  action_priority_list_t *trinkets       = p->get_action_priority_list( "trinkets" );
+  action_priority_list_t *aoe_opener     = p->get_action_priority_list( "aoe_opener" );
+  action_priority_list_t *normal_opener  = p->get_action_priority_list( "normal_opener" );
+  action_priority_list_t *cooldowns      = p->get_action_priority_list( "cooldowns" );
+  action_priority_list_t *default_aoe    = p->get_action_priority_list( "default_aoe" );
+  action_priority_list_t *default_cleave = p->get_action_priority_list( "default_cleave" );
+  action_priority_list_t *default_st     = p->get_action_priority_list( "default_st" );
+  action_priority_list_t *fallback       = p->get_action_priority_list( "fallback" );
 
-  action_priority_list_t *pre = p->get_action_priority_list( "precombat" );
-
-  // Snapshot stats
   pre->add_action( "snapshot_stats", "Snapshot raid buffed stats before combat begins and pre-potting is done." );
-
-  // Add Precombattrinkets
   pre->add_action( "use_item,name=imperfect_ascendancy_serum" );
-
-  std::vector<std::string> racial_actions = p->get_racial_actions();
-  action_priority_list_t *def             = p->get_action_priority_list( "default" );
-  action_priority_list_t *trinkets        = p->get_action_priority_list( "trinkets" );
-  action_priority_list_t *aoe_opener      = p->get_action_priority_list( "aoe_opener" );
-  action_priority_list_t *normal_opener   = p->get_action_priority_list( "normal_opener" );
-  action_priority_list_t *cooldowns       = p->get_action_priority_list( "cooldowns" );
-  action_priority_list_t *default_aoe     = p->get_action_priority_list( "default_aoe" );
-  action_priority_list_t *default_cleave  = p->get_action_priority_list( "default_cleave" );
-  action_priority_list_t *default_st      = p->get_action_priority_list( "default_st" );
-  action_priority_list_t *fallback        = p->get_action_priority_list( "fallback" );
 
   def->add_action( "auto_attack" );
   def->add_action( "roll,if=movement.distance>5", "Move to target" );
@@ -396,21 +368,17 @@ void windwalker_live( player_t *p )
   def->add_action( "flying_serpent_kick,if=movement.distance>5" );
   def->add_action( "spear_hand_strike,if=target.debuff.casting.react" );
 
-  // Potion
-  if ( p->sim->allow_potions )
-  {
-    if ( monk->talent.windwalker.invoke_xuen_the_white_tiger->ok() )
-      def->add_action( "potion,if=buff.storm_earth_and_fire.up&pet.xuen_the_white_tiger.active|fight_remains<=30",
-                       "Potion" );
-    else
-      def->add_action( "potion,if=buff.storm_earth_and_fire.up|fight_remains<=30", "Potion" );
-  }
+  def->add_action(
+      "potion,if=talent.invoke_xuen_the_white_tiger&pet.xuen_the_white_tiger.active&buff.storm_earth_and_fire.up",
+      "Potion" );
+  def->add_action( "potion,if=!talent.invoke_xuen_the_white_tiger&buff.storm_earth_and_fire.up" );
+  def->add_action( "potion,if=fight_remains<=30" );
 
   // Enable PI if available
   def->add_action( "variable,name=has_external_pi,value=cooldown.invoke_power_infusion_0.duration>0",
                    "Enable PI if available" );
 
-  // Define variables for CD Usage (No clue ask Kholer)
+  // Define variables for CD Usage
   def->add_action(
       "variable,name=sef_condition,value=target.time_to_die>6&(cooldown.rising_sun_kick.remains|active_enemies>2|!"
       "talent.ordered_elements)&(prev.invoke_xuen_the_white_tiger|(talent.celestial_conduit|!talent.last_emperors_"
@@ -477,6 +445,16 @@ void windwalker_live( player_t *p )
   // Fallback
   def->add_action( "call_action_list,name=fallback" );
 
+  // irrelevant racials
+  def->add_action( "arcane_torrent,if=chi<chi.max&energy<55" );
+  def->add_action( "bag_of_tricks,if=buff.storm_earth_and_fire.down" );
+  def->add_action( "lights_judgment,if=buff.storm_earth_and_fire.down" );
+  def->add_action( "haymaker,if=buff.storm_earth_and_fire.down" );
+  def->add_action( "rocket_barrage,if=buff.storm_earth_and_fire.down" );
+  // earthen racial not implemented yet
+  // def->add_action( "azerite_surge,if=buff.storm_earth_and_fire.down" );
+  def->add_action( "arcane_pulse,if=buff.storm_earth_and_fire.down" );
+
   // Trinkets
   for ( const auto &item : p->items )
   {
@@ -509,36 +487,11 @@ void windwalker_live( player_t *p )
       "storm_earth_and_fire,target_if=max:target.time_to_die,if=variable.sef_condition&!fight_style.dungeonroute|"
       "variable.sef_dungeonroute_condition&fight_style.dungeonroute" );
   cooldowns->add_action( "touch_of_karma" );
-
-  // Racials
-  for ( const auto &racial_action : racial_actions )
-  {
-    if ( racial_action != "arcane_torrent" )
-    {
-      if ( racial_action == "ancestral_call" )
-        cooldowns->add_action( racial_action + ",if=buff.invokers_delight.remains>15|fight_remains<20" );
-      else if ( racial_action == "blood_fury" )
-        cooldowns->add_action( racial_action + ",if=buff.invokers_delight.remains>15|fight_remains<20" );
-      else if ( racial_action == "fireblood" )
-        cooldowns->add_action( racial_action + ",if=buff.invokers_delight.remains>15|fight_remains<10" );
-      else if ( racial_action == "berserking" )
-        cooldowns->add_action( racial_action + ",if=buff.invokers_delight.remains>15|fight_remains<15" );
-      else if ( racial_action == "bag_of_tricks" )
-        def->add_action( racial_action + ",if=buff.storm_earth_and_fire.down" );
-      else if ( racial_action == "lights_judgment" )
-        def->add_action( racial_action + ",if=buff.storm_earth_and_fire.down" );
-      else if ( racial_action == "haymaker" )
-        def->add_action( racial_action + ",if=buff.storm_earth_and_fire.down" );
-      else if ( racial_action == "rocket_barrage" )
-        def->add_action( racial_action + ",if=buff.storm_earth_and_fire.down" );
-      else if ( racial_action == "azerite_surge" )
-        def->add_action( racial_action + ",if=buff.storm_earth_and_fire.down" );
-      else if ( racial_action == "arcane_pulse" )
-        def->add_action( racial_action + ",if=buff.storm_earth_and_fire.down" );
-      else
-        def->add_action( racial_action );
-    }
-  }
+  // CD relevant racials
+  cooldowns->add_action( "ancestral_call,if=buff.invokers_delight.remains>15|fight_remains<20" );
+  cooldowns->add_action( "blood_fury,if=buff.invokers_delight.remains>15|fight_remains<20" );
+  cooldowns->add_action( "fireblood,if=buff.invokers_delight.remains>15|fight_remains<10" );
+  cooldowns->add_action( "berserking,if=buff.invokers_delight.remains>15|fight_remains<15" );
 
   // AoE Opener
   aoe_opener->add_action( "slicing_winds", "aoe opener" );
