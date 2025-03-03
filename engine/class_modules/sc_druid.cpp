@@ -225,7 +225,6 @@ struct druid_action_data_t  // variables that need to be accessed from action_t*
   uint32_t action_flags = 0;
   // form spell to automatically cast
   action_t* autoshift = nullptr;
-  bool delayed_autoshift = false;
 
   bool has_flag( uint32_t f ) const { return action_flags & f; }
   bool is_flag( flag_e f ) const { return ( action_flags & f ) == f; }
@@ -1834,8 +1833,7 @@ public:
 
   void schedule_execute( action_state_t* s = nullptr ) override
   {
-    if ( !delayed_autoshift )
-      check_autoshift();
+    check_autoshift();
 
     ab::schedule_execute( s );
   }
@@ -1843,7 +1841,7 @@ public:
   void execute() override
   {
     // offgcd actions bypass schedule_execute so check for autoshift
-    if ( ab::use_off_gcd || delayed_autoshift )
+    if ( ab::use_off_gcd )
       check_autoshift();
 
     ab::execute();
@@ -2058,23 +2056,38 @@ struct use_dot_list_t : public BASE
   }
 };
 
-template <specialization_e S, typename BASE>
+template <form_e FORM, typename BASE>
 struct use_fluid_form_t : public BASE
 {
-  using base_t = use_fluid_form_t<S, BASE>;
+private:
+  bool delayed_shift = false;
+
+public:
+  using base_t = use_fluid_form_t<FORM, BASE>;
 
   use_fluid_form_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f = flag_e::NONE )
     : BASE( n, p, s, f )
   {
     if ( p->talent.fluid_form.ok() && !BASE::has_flag( flag_e::FREE_PROCS ) )
     {
-      if constexpr ( S == DRUID_BALANCE )
-          BASE::autoshift = p->active.shift_to_moonkin;
-      else if constexpr ( S == DRUID_FERAL )
+      if constexpr ( FORM == MOONKIN_FORM )
+        delayed_shift = p->active.shift_to_moonkin ? true : false;
+      else if constexpr ( FORM == CAT_FORM )
         BASE::autoshift = p->active.shift_to_cat;
-      else if constexpr ( S == DRUID_GUARDIAN )
+      else if constexpr ( FORM == BEAR_FORM )
         BASE::autoshift = p->active.shift_to_bear;
     }
+  }
+
+  void execute() override
+  {
+    if constexpr ( FORM == MOONKIN_FORM )
+    {
+      if ( delayed_shift && BASE::p()->form != MOONKIN_FORM )
+        BASE::p()->active.shift_to_moonkin->execute();
+    }
+
+    BASE::execute();
   }
 };
 
@@ -4839,7 +4852,7 @@ struct maim_t final : public cat_finisher_t
 };
 
 // Rake =====================================================================
-struct rake_t final : public use_fluid_form_t<DRUID_FERAL, cp_generator_t>
+struct rake_t final : public use_fluid_form_t<CAT_FORM, cp_generator_t>
 {
   struct rake_bleed_t final : public trigger_thriving_growth_t<trigger_waning_twilight_t<cat_attack_t>>
   {
@@ -5087,7 +5100,7 @@ struct primal_wrath_t final : public cat_finisher_t
 };
 
 // Shred ====================================================================
-struct shred_t final : public use_fluid_form_t<DRUID_FERAL,
+struct shred_t final : public use_fluid_form_t<CAT_FORM,
                                 trigger_claw_rampage_t<DRUID_FERAL,
                                   trigger_wildpower_surge_t<DRUID_FERAL,
                                     trigger_thrashing_claws_t<cp_generator_t>>>>
@@ -5573,7 +5586,7 @@ struct lunar_beam_t final : public bear_attack_t
 };
 
 // Mangle ===================================================================
-struct mangle_t final : public use_fluid_form_t<DRUID_GUARDIAN,
+struct mangle_t final : public use_fluid_form_t<BEAR_FORM,
                                  trigger_claw_rampage_t<DRUID_GUARDIAN,
                                    trigger_aggravate_wounds_t<DRUID_GUARDIAN,
                                      trigger_wildpower_surge_t<DRUID_GUARDIAN, bear_attack_t>>>>
@@ -6903,13 +6916,7 @@ public:
 
     base_costs[ RESOURCE_MANA ] = 0.0;  // remove mana cost so we don't need to enable mana regen
 
-    if ( p->talent.fluid_form && p->talent.moonkin_form )
-      form_mask = MOONKIN_FORM;
-    else
-      form_mask = NO_FORM | MOONKIN_FORM;
-
-    if ( !is_free() )
-      delayed_autoshift = true;
+    form_mask = NO_FORM | MOONKIN_FORM;
   }
 
   void schedule_execute( action_state_t* s ) override
@@ -8232,7 +8239,7 @@ struct shooting_stars_t final : public druid_spell_t
 };
 
 // Skull Bash ===============================================================
-struct skull_bash_t final : public use_fluid_form_t<DRUID_FERAL, druid_interrupt_t>
+struct skull_bash_t final : public use_fluid_form_t<CAT_FORM, druid_interrupt_t>
 {
   DRUID_ABILITY( skull_bash_t, base_t, "skull_bash", p->talent.skull_bash ) {}
 
@@ -8416,7 +8423,7 @@ struct starfall_t final : public ap_spender_t
 };
 
 // Starfire =============================================================
-struct starfire_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
+struct starfire_base_t : public use_fluid_form_t<MOONKIN_FORM, ap_generator_t>
 {
   const modified_spelleffect_t* aoe_eff;
   double smolder_mul;
@@ -8949,7 +8956,7 @@ struct wild_mushroom_t final : public druid_spell_t
 };
 
 // Wrath ====================================================================
-struct wrath_base_t : public use_fluid_form_t<DRUID_BALANCE, ap_generator_t>
+struct wrath_base_t : public use_fluid_form_t<MOONKIN_FORM, ap_generator_t>
 {
   double smolder_mul;
   unsigned count = 0;
