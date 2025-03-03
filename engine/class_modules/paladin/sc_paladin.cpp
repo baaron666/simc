@@ -5473,6 +5473,10 @@ std::unique_ptr<expr_t> paladin_t::create_expression( util::string_view name_str
   {
     return make_fn_expr( "sacred_weapon", []() { return armament::SACRED_WEAPON; } );
   }
+  if ( splits[ 0 ] == "divine_hammer_icd_remains" )
+  {
+    return make_fn_expr( "divine_hammer_icd_remains", [this]() { return cooldowns.divine_hammer_icd->remains(); } );
+  }
 
   struct judgment_holy_power_expr_t : public paladin_expr_t
   {
