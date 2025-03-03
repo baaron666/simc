@@ -5550,7 +5550,8 @@ struct aimed_shot_base_t : public hunter_ranged_attack_t
       p()->cooldowns.trueshot->adjust( -( p()->talents.calling_the_shots->effectN( 1 ).time_value() + p()->talents.unerring_vision->effectN( 3 ).time_value() ) );
     }
 
-    p()->cooldowns.volley->adjust( -p()->talents.bullet_hell->effectN( 2 ).time_value() );
+    // TODO 3/3/25: Aimed Shot hits are giving .3 second recution rather than .5
+    p()->cooldowns.volley->adjust( -p()->talents.bullet_hell->effectN( 1 ).time_value() );
   }
 };
 
