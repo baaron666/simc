@@ -4,7 +4,7 @@ run-name: ${{ github.event.workflow_run.head_commit.message }}
 
 on:
   workflow_run:
-    workflows: ['CI']
+    workflows: ["CI"]
     types: [completed]
 
 jobs:
@@ -27,7 +27,7 @@ jobs:
           key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
 
   build-binary:
-    needs: [ check-binary ]
+    needs: [check-binary]
     if: ${{ needs.check-binary.outputs.cache-hit != 'true' }}
     runs-on: ubuntu-22.04
 
@@ -37,7 +37,7 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
 
       - uses: actions/cache@v4
-        env: { ccache-prefix: 'ubuntu-clang++-15-cpp-17-ccache-0' }
+        env: { ccache-prefix: "ubuntu-clang++-15-cpp-17-ccache-0" }
         with:
           path: ${{ runner.workspace }}/.ccache
           key: ${{ env.ccache-prefix }}-${{ github.event.workflow_run.head_sha }}
@@ -50,16 +50,17 @@ jobs:
 
       - name: Configure
         env:
-          UBSAN_STRIP_COUNT: "`echo \"${{ runner.workspace }}//\" | grep -o '/' - | wc -l`"
-        run: cmake -H. -B'${{ runner.workspace }}/b/ninja' -GNinja -DBUILD_GUI=OFF
-              -DCMAKE_BUILD_TYPE=Debug
-              -DCMAKE_CXX_COMPILER=clang++-15
-              -DCMAKE_CXX_FLAGS="-Og ${{ format('-ffile-prefix-map={0}/=/', runner.workspace) }}
-                -fno-omit-frame-pointer -fsanitize=address,undefined
-                -fsanitize-undefined-strip-path-components=$UBSAN_STRIP_COUNT"
-              -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -fsanitize=address,undefined"
-              -DCMAKE_CXX_STANDARD=17
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          UBSAN_STRIP_COUNT: '`echo "${{ runner.workspace }}//" | grep -o ''/'' - | wc -l`'
+        run:
+          cmake -H. -B'${{ runner.workspace }}/b/ninja' -GNinja -DBUILD_GUI=OFF
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=clang++-15
+          -DCMAKE_CXX_FLAGS="-Og ${{ format('-ffile-prefix-map={0}/=/', runner.workspace) }}
+          -fno-omit-frame-pointer -fsanitize=address,undefined
+          -fsanitize-undefined-strip-path-components=$UBSAN_STRIP_COUNT"
+          -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -fsanitize=address,undefined"
+          -DCMAKE_CXX_STANDARD=17
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         env:
@@ -81,29 +82,49 @@ jobs:
             .git
           key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
 
-
   spec-test:
     name: spec-test-${{ matrix.spec }}-${{ matrix.fightstyle }}
     runs-on: ubuntu-22.04
-    needs: [ check-binary, build-binary ]
+    needs: [check-binary, build-binary]
 
     strategy:
       fail-fast: false
       matrix:
-        spec: [
-            deathknight_blood, deathknight_unholy, deathknight_frost,
-            demonhunter_vengeance, demonhunter_havoc,
-            druid_balance, druid_feral, druid_guardian, druid_restoration,
-            evoker_devastation, evoker_augmentation,
-            hunter_beast_mastery, hunter_marksmanship, hunter_survival,
-            mage_arcane, mage_fire, mage_frost,
-            monk_brewmaster, monk_windwalker, monk_mistweaver,
-            paladin_protection, paladin_retribution,
+        spec:
+          [
+            deathknight_blood,
+            deathknight_unholy,
+            deathknight_frost,
+            demonhunter_vengeance,
+            demonhunter_havoc,
+            druid_balance,
+            druid_feral,
+            druid_guardian,
+            druid_restoration,
+            evoker_devastation,
+            evoker_augmentation,
+            hunter_beast_mastery,
+            hunter_marksmanship,
+            hunter_survival,
+            mage_arcane,
+            mage_fire,
+            mage_frost,
+            monk_brewmaster,
+            monk_windwalker,
+            monk_mistweaver,
+            paladin_protection,
+            paladin_retribution,
             priest_shadow,
-            rogue_assassination, rogue_outlaw, rogue_subtlety,
+            rogue_assassination,
+            rogue_outlaw,
+            rogue_subtlety,
             shaman_elemental,
-            warlock_affliction, warlock_demonology, warlock_destruction,
-            warrior_arms, warrior_fury, warrior_protection
+            warlock_affliction,
+            warlock_demonology,
+            warlock_destruction,
+            warrior_arms,
+            warrior_fury,
+            warrior_protection,
           ]
         fightstyle: [singletarget, multitarget, dungeonslice]
         include:
@@ -253,4 +274,3 @@ jobs:
       #    name: apl-${{ github.event.workflow_run.head_sha }}-${{ matrix.spec }}
       #    path: ${{ matrix.spec }}.simc
       #    retention-days: 1
-

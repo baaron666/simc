@@ -2,14 +2,14 @@ name: CI
 
 on:
   pull_request:
-    branches: [ thewarwithin ]
+    branches: [thewarwithin]
   push:
-    branches: [ thewarwithin ]
+    branches: [thewarwithin]
     paths-ignore:
-      - 'ActionPriorityLists/**'
-      - 'SpellDataDump/*.txt'
-      - 'dbc_extract3/**'
-      - 'casc_extract/**'
+      - "ActionPriorityLists/**"
+      - "SpellDataDump/*.txt"
+      - "dbc_extract3/**"
+      - "casc_extract/**"
 
 env:
   SIMC_PROFILE: profiles/CI.simc
@@ -40,7 +40,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/cache@v4
-        env: { ccache-prefix: 'ubuntu-${{ matrix.compiler }}-cpp-${{ matrix.cppVersion }}-ccache-${{ env.ccache-generation }}' }
+        env:
+          {
+            ccache-prefix: "ubuntu-${{ matrix.compiler }}-cpp-${{ matrix.cppVersion }}-ccache-${{ env.ccache-generation }}",
+          }
         with:
           path: ${{ runner.workspace }}/.ccache
           key: ${{ env.ccache-prefix }}-${{ github.sha }}
@@ -52,11 +55,12 @@ jobs:
           sudo apt-get install -y libcurl4-openssl-dev ninja-build ccache ${{ matrix.packages }}
 
       - name: Configure
-        run: cmake -H. -B'${{ runner.workspace }}/b/ninja' -GNinja -DBUILD_GUI=OFF
-              -DCMAKE_BUILD_TYPE=Debug
-              -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_C_COMPILER=${{ matrix.compiler }}
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-              -DCMAKE_CXX_STANDARD=${{ matrix.cppVersion }}
+        run:
+          cmake -H. -B'${{ runner.workspace }}/b/ninja' -GNinja -DBUILD_GUI=OFF
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          -DCMAKE_CXX_STANDARD=${{ matrix.cppVersion }}
 
       - name: Build
         env:
@@ -99,7 +103,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: actions/cache@v4
-        env: { ccache-prefix: 'ubuntu-${{ matrix.compiler }}-cpp-${{ matrix.cppVersion }}-ccache-${{ env.ccache-generation }}' }
+        env:
+          {
+            ccache-prefix: "ubuntu-${{ matrix.compiler }}-cpp-${{ matrix.cppVersion }}-ccache-${{ env.ccache-generation }}",
+          }
         with:
           path: ${{ runner.workspace }}/.ccache
           key: ${{ env.ccache-prefix }}-${{ github.sha }}
@@ -112,16 +119,17 @@ jobs:
 
       - name: Configure
         env:
-          UBSAN_STRIP_COUNT: "`echo \"${{ runner.workspace }}//\" | grep -o '/' - | wc -l`"
-        run: cmake -H. -B'${{ runner.workspace }}/b/ninja' -GNinja -DBUILD_GUI=OFF
-              -DCMAKE_BUILD_TYPE=Debug
-              -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
-              -DCMAKE_CXX_FLAGS="-Og ${{ matrix.enable_file_prefix_map && format('-ffile-prefix-map={0}/=/', runner.workspace) || ''}}
-                -fno-omit-frame-pointer -fsanitize=address,undefined
-                -fsanitize-undefined-strip-path-components=$UBSAN_STRIP_COUNT"
-              -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -fsanitize=address,undefined"
-              -DCMAKE_CXX_STANDARD=${{ matrix.cppVersion }}
-              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          UBSAN_STRIP_COUNT: '`echo "${{ runner.workspace }}//" | grep -o ''/'' - | wc -l`'
+        run:
+          cmake -H. -B'${{ runner.workspace }}/b/ninja' -GNinja -DBUILD_GUI=OFF
+          -DCMAKE_BUILD_TYPE=Debug
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }}
+          -DCMAKE_CXX_FLAGS="-Og ${{ matrix.enable_file_prefix_map && format('-ffile-prefix-map={0}/=/', runner.workspace) || ''}}
+          -fno-omit-frame-pointer -fsanitize=address,undefined
+          -fsanitize-undefined-strip-path-components=$UBSAN_STRIP_COUNT"
+          -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -fsanitize=address,undefined"
+          -DCMAKE_CXX_STANDARD=${{ matrix.cppVersion }}
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         env:
@@ -146,27 +154,48 @@ jobs:
   spec-test:
     name: spec-test-${{ matrix.spec }}-${{ matrix.fightstyle }}
     runs-on: ${{ matrix.os }}
-    needs: [ ubuntu-clang-build ]
+    needs: [ubuntu-clang-build]
 
     strategy:
       fail-fast: false
       matrix:
         cppVersion: [17]
         compiler: [clang++-15]
-        spec: [
-            deathknight_blood, deathknight_unholy, deathknight_frost,
-            demonhunter_vengeance, demonhunter_havoc,
-            druid_balance, druid_feral, druid_guardian, druid_restoration,
-            evoker_devastation, evoker_augmentation,
-            hunter_beast_mastery, hunter_marksmanship, hunter_survival,
-            mage_arcane, mage_fire, mage_frost,
-            monk_brewmaster, monk_windwalker, monk_mistweaver,
-            paladin_protection, paladin_retribution,
+        spec:
+          [
+            deathknight_blood,
+            deathknight_unholy,
+            deathknight_frost,
+            demonhunter_vengeance,
+            demonhunter_havoc,
+            druid_balance,
+            druid_feral,
+            druid_guardian,
+            druid_restoration,
+            evoker_devastation,
+            evoker_augmentation,
+            hunter_beast_mastery,
+            hunter_marksmanship,
+            hunter_survival,
+            mage_arcane,
+            mage_fire,
+            mage_frost,
+            monk_brewmaster,
+            monk_windwalker,
+            monk_mistweaver,
+            paladin_protection,
+            paladin_retribution,
             priest_shadow,
-            rogue_assassination, rogue_outlaw, rogue_subtlety,
+            rogue_assassination,
+            rogue_outlaw,
+            rogue_subtlety,
             shaman_elemental,
-            warlock_affliction, warlock_demonology, warlock_destruction,
-            warrior_arms, warrior_fury, warrior_protection
+            warlock_affliction,
+            warlock_demonology,
+            warlock_destruction,
+            warrior_arms,
+            warrior_fury,
+            warrior_protection,
           ]
         fightstyle: [singletarget, multitarget, dungeonslice]
         include:
@@ -322,15 +351,13 @@ jobs:
   spec-test-ptr:
     name: spec-test-ptr-${{ matrix.spec }}-${{ matrix.fightstyle }}
     runs-on: ${{ matrix.os }}
-    needs: [ ubuntu-clang-build ]
+    needs: [ubuntu-clang-build]
     strategy:
       fail-fast: false
       matrix:
         cppVersion: [17]
         compiler: [clang++-15]
-        spec: [
-           shaman_elemental
-          ]
+        spec: [shaman_elemental]
         fightstyle: [singletarget, multitarget, dungeonslice]
         include:
           - compiler: clang++-15
@@ -450,7 +477,7 @@ jobs:
   apl-profile:
     name: Action Priority List Dump / Regenerate Profiles
     runs-on: ${{ matrix.os }}
-    needs: [ spec-test, spelldata-dump ]
+    needs: [spec-test, spelldata-dump]
     if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraft/simc'
 
     strategy:
@@ -495,10 +522,10 @@ jobs:
         continue-on-error: true
         uses: EndBug/add-and-commit@v9
         with:
-          message: 'Update APL Dump / Regenerate Profiles ${{ env.SHORT_SHA }}'
+          message: "Update APL Dump / Regenerate Profiles ${{ env.SHORT_SHA }}"
           default_author: github_actions
           fetch: --no-tags --force --prune --no-recurse-submodules --depth=1 origin ${{ github.ref_name }}
-          add: '*.simc'
+          add: "*.simc"
 
       - name: Cleanup
         uses: geekyeggo/delete-artifact@v5
@@ -508,9 +535,9 @@ jobs:
   update-generated-apl-modules:
     name: Action Priority List Dump / Regenerate Profiles
     runs-on: ${{ matrix.os }}
-    needs: [ spec-test, spelldata-dump ]
+    needs: [spec-test, spelldata-dump]
     if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraft/simc'
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -542,15 +569,15 @@ jobs:
         continue-on-error: true
         uses: EndBug/add-and-commit@v9
         with:
-          message: 'Update generated APL modules ${{ env.SHORT_SHA }}'
+          message: "Update generated APL modules ${{ env.SHORT_SHA }}"
           default_author: github_actions
           fetch: --no-tags --force --prune --no-recurse-submodules --depth=1 origin ${{ github.ref_name }}
-          add: 'engine/class_modules/apl'
-      
+          add: "engine/class_modules/apl"
+
   ubuntu-run:
     name: ubuntu-${{ matrix.compiler }}-cpp-${{ matrix.cppVersion }}-${{ matrix.type }}
     runs-on: ${{ matrix.os }}
-    needs: [ ubuntu-clang-build, ubuntu-gcc-build ]
+    needs: [ubuntu-clang-build, ubuntu-gcc-build]
 
     strategy:
       fail-fast: false
@@ -595,7 +622,7 @@ jobs:
   spelldata-dump:
     name: Spell Data Dump
     runs-on: ${{ matrix.os }}
-    needs: [ ubuntu-clang-build, ubuntu-run ]
+    needs: [ubuntu-clang-build, ubuntu-run]
     if: github.event_name == 'push'
 
     strategy:
@@ -639,10 +666,10 @@ jobs:
         continue-on-error: true
         uses: EndBug/add-and-commit@v9
         with:
-          message: 'Update Spell Data Dump ${{ env.SHORT_SHA }}'
+          message: "Update Spell Data Dump ${{ env.SHORT_SHA }}"
           default_author: github_actions
           fetch: --no-tags --force --prune --no-recurse-submodules --depth=1 origin ${{ github.ref_name }}
-          add: '*.txt'
+          add: "*.txt"
 
   build-osx:
     name: macos-latest
@@ -668,12 +695,12 @@ jobs:
             runSmokeTest: false # disable smoke test for now, as it seems to hang the workflow indefinitely on assert, instead of failing.
 
     env:
-       CMAKE_BUILD_DIR: ${{ github.workspace }}/builddir/
+      CMAKE_BUILD_DIR: ${{ github.workspace }}/builddir/
 
     steps:
       - uses: actions/checkout@v4
 
-       # Setup the build machine with the most recent versions of CMake and Ninja. Both are cached if not already: on subsequent runs both will be quickly restored from GitHub cache service.
+        # Setup the build machine with the most recent versions of CMake and Ninja. Both are cached if not already: on subsequent runs both will be quickly restored from GitHub cache service.
       - uses: lukka/get-cmake@latest
 
       # On Windows runners, let's ensure to have the Developer Command Prompt environment setup correctly. As used here the Developer Command Prompt created is targeting x64 and using the default the Windows SDK.
