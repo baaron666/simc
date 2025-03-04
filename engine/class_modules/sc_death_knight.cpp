@@ -5836,7 +5836,7 @@ struct ams_parent_buff_t : public death_knight_buff_base_t<absorb_buff_t>
     if ( option > 0 )
     {
       double ticks = buff_duration() / tick_time();
-      double pct   = p()->rng().gauss_ab( option, 0.3, 0.0, 1.0 ) / ticks;
+      double pct   = p()->rng().gauss_ab( option, 0.3, 0.01, 1.0 ) / ticks;
       damage       = calc_absorb() * pct;
     }
   };
