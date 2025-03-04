@@ -99,6 +99,6 @@ st->add_action( "full_moon,if=astral_power.deficit>variable.passive_asp+energize
 st->add_action( "starsurge,if=buff.starweavers_weft.up|buff.touch_the_cosmos.up" );
 st->add_action( "starsurge,if=astral_power.deficit<variable.passive_asp+action.wrath.energize_amount+(action.starfire.energize_amount+variable.passive_asp)*(buff.eclipse_solar.remains<(gcd.max*3))" );
 st->add_action( "force_of_nature,if=!hero_tree.keeper_of_the_grove" );
-st->add_action( "wild_mushroom" );
+st->add_action( "wild_mushroom,if=!prev_gcd.1.wild_mushroom&dot.fungal_growth.remains<2" );
 st->add_action( "starfire,if=talent.lunar_calling" );
 st->add_action( "wrath" );
