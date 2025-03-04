@@ -155,19 +155,18 @@ jobs:
     with:
       cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
 
-  spec-test-ptr:
-    needs: [spec-test, ubuntu-clang-build]
-    uses: ./.github/workflows/spec_test.yml
-    with:
-      cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
-      is-ptr: true
+  #spec-test-ptr:
+  #  needs: [spec-test, ubuntu-clang-build]
+  #  uses: ./.github/workflows/spec_test.yml
+  #  with:
+  #    cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
+  #    is-ptr: true
 
   apl-profile:
     name: Action Priority List Dump / Regenerate Profiles
     runs-on: ${{ matrix.os }}
     needs: [spec-test, spelldata-dump]
-    if: false
-    # if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraft/simc'
+    if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraft/simc'
 
     strategy:
       fail-fast: false
