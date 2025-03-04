@@ -156,9 +156,9 @@ jobs:
       cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
 
   spec-test-ptr:
+    continue-on-error: true
     needs: [spec-test, ubuntu-clang-build]
     uses: ./.github/workflows/spec_test.yml
-    continue-on-error: true
     with:
       cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
       is-ptr: true
