@@ -181,7 +181,7 @@ void arms( player_t* p )
 
   colossus_aoe->add_action( "cleave,if=!dot.deep_wounds.remains" );
   colossus_aoe->add_action( "thunder_clap,if=!dot.rend.remains" );
-  colossus_aoe->add_action( "thunderous_roar" ); );
+  colossus_aoe->add_action( "thunderous_roar" );
   colossus_aoe->add_action( "avatar" );
   colossus_aoe->add_action( "sweeping_strikes" );
   colossus_aoe->add_action( "ravager" );
