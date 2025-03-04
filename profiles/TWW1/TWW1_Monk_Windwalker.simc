@@ -5,7 +5,7 @@ level=80
 race=mechagnome
 role=attack
 position=back
-talents=C0QAAAAAAAAAAAAAAAAAAAAAAMzsMzgxMjZZGADAAAAAAAAAAAWWwImZYMDDLjZsNzMDzywMYZmAAYbmZYmZmZbGAAbLzyysNzMNLzSzMzsAA
+talents=C0QAAAAAAAAAAAAAAAAAAAAAAMzsMAmxMLzMjZGAAAAAAAAAAAYZZYEzMwMMsYmx2MzMMbDzglZCAglxMMzMsNDAgNAoZZWamZmFAzA
 
 # Default consumables
 potion=tempered_potion_3
