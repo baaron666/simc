@@ -3,89 +3,19 @@ name: spec-test
 run-name: ${{ github.event.workflow_run.head_commit.message }}
 
 on:
-  workflow_run:
-    workflows: ["CI"]
-    types: [completed]
+  workflow_call:
+    inputs:
+      for-run-sha:
+        type: string
+        required: true
+      generate-apl:
+        type: boolean
+        required: false
 
 jobs:
-  check-binary:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: ubuntu-22.04
-    outputs:
-      cache-hit: ${{ steps.restore-cache.outputs.cache-hit }}
-
-    steps:
-      - uses: actions/cache@v4
-        id: restore-cache
-        with:
-          path: |
-            ${{ runner.workspace }}/b/ninja/simc
-            profiles
-            tests
-            generate_profiles_ci.sh
-            .git
-          key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
-
-  build-binary:
-    needs: [check-binary]
-    if: ${{ needs.check-binary.outputs.cache-hit != 'true' }}
-    runs-on: ubuntu-22.04
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_branch }}
-
-      - uses: actions/cache@v4
-        env: { ccache-prefix: "ubuntu-clang++-15-cpp-17-ccache-0" }
-        with:
-          path: ${{ runner.workspace }}/.ccache
-          key: ${{ env.ccache-prefix }}-${{ github.event.workflow_run.head_sha }}
-          restore-keys: ${{ env.ccache-prefix }}-
-
-      - name: Install deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libcurl4-openssl-dev ninja-build ccache clang-15 lld-15
-
-      - name: Configure
-        env:
-          UBSAN_STRIP_COUNT: '`echo "${{ runner.workspace }}//" | grep -o ''/'' - | wc -l`'
-        run:
-          cmake -H. -B'${{ runner.workspace }}/b/ninja' -GNinja -DBUILD_GUI=OFF
-          -DCMAKE_BUILD_TYPE=Debug
-          -DCMAKE_CXX_COMPILER=clang++-15
-          -DCMAKE_CXX_FLAGS="-Og ${{ format('-ffile-prefix-map={0}/=/', runner.workspace) }}
-          -fno-omit-frame-pointer -fsanitize=address,undefined
-          -fsanitize-undefined-strip-path-components=$UBSAN_STRIP_COUNT"
-          -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld -fsanitize=address,undefined"
-          -DCMAKE_CXX_STANDARD=17
-          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-
-      - name: Build
-        env:
-          CCACHE_BASEDIR: ${{ runner.workspace }}
-          CCACHE_DIR: ${{ runner.workspace }}/.ccache
-          CCACHE_MAXSIZE: 256M # full build consumes around ~124, ~2x that to be safe
-        run: |
-          ccache -z
-          ninja -C '${{ runner.workspace }}/b/ninja'
-          ccache -s
-
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ${{ runner.workspace }}/b/ninja/simc
-            profiles
-            tests
-            generate_profiles_ci.sh
-            .git
-          key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
-
   spec-test:
     name: spec-test-${{ matrix.spec }}-${{ matrix.fightstyle }}
     runs-on: ubuntu-22.04
-    needs: [check-binary, build-binary]
 
     strategy:
       fail-fast: false
@@ -147,7 +77,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-clang++-15-for_run-${{ github.event.workflow_run.head_sha }}-cpp-17
+          key: ubuntu-clang++-15-for_run-${{ inputs.for-run-sha }}-cpp-17
 
       - name: Setup
         id: setup

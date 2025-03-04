@@ -15,8 +15,6 @@ env:
   SIMC_PROFILE: profiles/CI.simc
   CCACHE_COMPRESS: true # always enable ccache compression
   ccache-generation: 0 # bump if you need to "clean" ccache
-  # For PR, github.sha is the merge commit, workaround for cache hits on spec test workflows
-  BINARY_CACHE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   ubuntu-gcc-build:
@@ -80,7 +78,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
 
   ubuntu-clang-build:
     name: ubuntu-build-${{ matrix.compiler }}-C++${{ matrix.cppVersion }}
@@ -149,7 +147,14 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
+
+  call-spec-test:
+    needs: [ubuntu-clang-build]
+    uses: ./.github/workflows/spec_test.yml
+    with:
+      for-run-sha: ${{ github.sha }}
+    secrets: inherit
 
   spec-test:
     name: spec-test-${{ matrix.spec }}-${{ matrix.fightstyle }}
@@ -220,7 +225,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
 
       - name: Setup
         id: setup
@@ -379,7 +384,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
       - name: Setup
         id: setup
         env:
@@ -498,7 +503,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
 
       - uses: actions/checkout@v4
 
@@ -552,7 +557,7 @@ jobs:
         with:
           path: |
             ${{ runner.workspace }}/b/ninja/simc
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
 
       - uses: actions/checkout@v4
 
@@ -612,7 +617,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
 
       - name: Run
         env:
@@ -643,7 +648,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ env.BINARY_CACHE_SHA }}-cpp-${{ matrix.cppVersion }}
+          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
 
       - uses: actions/checkout@v4
 
