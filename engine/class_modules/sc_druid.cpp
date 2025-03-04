@@ -3725,25 +3725,25 @@ struct druid_form_t : public druid_spell_t
 };
 
 // Bear Form Spell ==========================================================
-struct bear_form_t final : public trigger_call_of_the_elder_druid_t<druid_form_t>
+struct bear_form_t final : public druid_form_t
 {
-  DRUID_ABILITY( bear_form_t, base_t, "bear_form", p->find_class_spell( "Bear Form" ) )
+  DRUID_ABILITY( bear_form_t, druid_form_t, "bear_form", p->find_class_spell( "Bear Form" ) )
   {
     set_form( BEAR_FORM );
   }
 
   void execute() override
   {
-    base_t::execute();
+    druid_form_t::execute();
 
     p()->buff.ursine_vigor->trigger();
   }
 };
 
 // Cat Form Spell ===========================================================
-struct cat_form_t final : public trigger_call_of_the_elder_druid_t<druid_form_t>
+struct cat_form_t final : public druid_form_t
 {
-  DRUID_ABILITY( cat_form_t, base_t, "cat_form", p->find_class_spell( "Cat Form" ) )
+  DRUID_ABILITY( cat_form_t, druid_form_t, "cat_form", p->find_class_spell( "Cat Form" ) )
   {
     set_form( CAT_FORM );
   }
@@ -4852,7 +4852,7 @@ struct maim_t final : public cat_finisher_t
 };
 
 // Rake =====================================================================
-struct rake_t final : public use_fluid_form_t<CAT_FORM, cp_generator_t>
+struct rake_t final : public use_fluid_form_t<CAT_FORM, trigger_call_of_the_elder_druid_t<cp_generator_t>>
 {
   struct rake_bleed_t final : public trigger_thriving_growth_t<trigger_waning_twilight_t<cat_attack_t>>
   {
@@ -5103,7 +5103,7 @@ struct primal_wrath_t final : public cat_finisher_t
 struct shred_t final : public use_fluid_form_t<CAT_FORM,
                                 trigger_claw_rampage_t<DRUID_FERAL,
                                   trigger_wildpower_surge_t<DRUID_FERAL,
-                                    trigger_thrashing_claws_t<cp_generator_t>>>>
+                                    trigger_thrashing_claws_t<trigger_call_of_the_elder_druid_t<cp_generator_t>>>>>
 {
   double stealth_mul = 0.0;
 
@@ -6700,7 +6700,8 @@ struct yseras_gift_t final : public druid_heal_t
 
 // Frenzied Regeneration ====================================================
 // NOTE: this msut come after regrowth and rejuvenation due to reinvigoration
-struct frenzied_regeneration_t final : public bear_attacks::rage_spender_t<druid_heal_t>
+struct frenzied_regeneration_t final : public bear_attacks::rage_spender_t<
+                                                trigger_call_of_the_elder_druid_t<druid_heal_t>>
 {
   action_t* regrowth = nullptr;
   action_t* rejuvenation = nullptr;
@@ -10414,7 +10415,7 @@ void druid_t::init_spells()
   sim->print_debug( "Initializing restoration talents..." );
   talent.abundance                      = ST( "Abundance" );
   talent.budding_leaves                 = ST( "Budding Leaves" );  // TODO: NYI
-  talent.call_of_the_elder_druid        = ST( "Call of the Elder Druid" );  // TODO: NYI
+  talent.call_of_the_elder_druid        = ST( "Call of the Elder Druid" );
   talent.cenarion_ward                  = ST( "Cenarion Ward" );
   talent.cenarius_guidance              = ST( "Cenarius' Guidance" );  // TODO: Incarn bonus NYI
   talent.cultivation                    = ST( "Cultivation" );
