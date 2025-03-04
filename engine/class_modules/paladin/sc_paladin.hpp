@@ -1880,7 +1880,7 @@ public:
       auto new_duration = p->buffs.divine_hammer->remains() + extra_time;
       if ( new_duration > p->buffs.divine_hammer->data().duration() )
       {
-        extra_time = p->buffs.divine_hammer->data().duration() - new_duration;
+        extra_time = p->buffs.divine_hammer->data().duration() - p->buffs.divine_hammer->remains();
       }
       p->buffs.divine_hammer->extend_duration( p, extra_time );
     }
