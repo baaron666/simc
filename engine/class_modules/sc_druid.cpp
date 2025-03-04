@@ -3631,10 +3631,13 @@ struct druid_form_t : public druid_spell_t
   buff_t* form_buff = nullptr;
   buff_t* lycara_buff = nullptr;
   timespan_t meditation_dur;
+  timespan_t meditation_required;
   form_e form = NO_FORM;
 
   druid_form_t( std::string_view n, druid_t* p, const spell_data_t* s, flag_e f )
-    : druid_spell_t( n, p, s, f ), meditation_dur( p->talent.lycaras_meditation->effectN( 1 ).time_value() )
+    : druid_spell_t( n, p, s, f ),
+      meditation_dur( p->talent.lycaras_meditation->effectN( 1 ).time_value() ),
+      meditation_required( p->talent.lycaras_meditation->effectN( 2 ).time_value() )
   {
     harmful = reset_melee_swing = false;
     ignore_false_positive = true;
@@ -3690,12 +3693,15 @@ struct druid_form_t : public druid_spell_t
     if ( old_form == form )
       return;
 
-    if ( auto old_buff = get_form_buff( old_form ) )
+    auto old_buff = get_form_buff( old_form );
+    if ( old_buff )
       old_buff->expire();
 
     if ( p()->talent.lycaras_teachings.ok() )
     {
-      if ( old_form != NO_FORM && meditation_dur > 0_ms )
+      // TODO: confirm meditation required scales with spell haste
+      if ( old_buff && meditation_dur > 0_ms &&
+           old_buff->elapsed( sim->current_time() ) >= meditation_required * p()->cache.spell_haste() )
       {
         // remove old lycaras meditation
         if ( p()->lycaras_meditation_buff )
@@ -10847,7 +10853,8 @@ void druid_t::create_buffs()
 
   buff.lycaras_teachings_mast =
     make_fallback( talent.lycaras_teachings.ok(), this, "lycaras_teachings_mast", find_spell( 378992 ) )
-      ->set_default_value( talent.lycaras_teachings->effectN( 1 ).base_value() )
+      ->set_default_value( talent.lycaras_teachings->effectN( 1 ).base_value() *
+                           ( specialization() == DRUID_FERAL ? 0.34 : 1.0 ) )
       ->set_pct_buff_type( STAT_PCT_BUFF_MASTERY )
       ->set_name_reporting( "Mastery" );
 
