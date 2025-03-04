@@ -9541,7 +9541,7 @@ struct totemic_recall_t : public shaman_spell_t
   {
     parse_options( options_str );
 
-    harmful = false;
+    harmful = may_crit = may_miss = callbacks = false;
   }
 
   void execute() override
@@ -9550,6 +9550,10 @@ struct totemic_recall_t : public shaman_spell_t
 
     if ( p()->action.totemic_recall_totem )
     {
+      sim->print_debug( "{} totemic_recall resets cooldown of {}, remains={}", p()->name(),
+        p()->action.totemic_recall_totem->name(),
+        p()->action.totemic_recall_totem->cooldown->remains() );
+
       p()->action.totemic_recall_totem->cooldown->reset( false );
     }
   }
@@ -15887,6 +15891,7 @@ shaman_t::pets_t::pets_t( shaman_t* s ) :
   lightning_wolves.set_event_callback( { spawner::pet_event_type::ARISE, spawner::pet_event_type::DEMISE }, event_fn );
 
   surging_totem.set_max_pets( 1U );
+  surging_totem.set_replacement_strategy( spawner::pet_replacement_strategy::REPLACE_OLDEST );
 }
 
 }  // namespace
