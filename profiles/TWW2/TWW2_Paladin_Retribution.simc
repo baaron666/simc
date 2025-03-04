@@ -1,11 +1,11 @@
-paladin="TWW1_Paladin_Retribution_Templar"
+paladin="TWW2_Paladin_Retribution"
 source=default
 spec=retribution
 level=80
 race=human
 role=attack
 position=back
-talents=CYEAAAAAAAAAAAAAAAAAAAAAAAAAAYAAassNzstsNGbjZ22mZDAAAAAAjmmhhZGbzgZbYWmlZYYwMmhlF2AAAIzMtNLz2MAgNgBAjxMMD
+talents=CYEAAAAAAAAAAAAAAAAAAAAAAAAAAYAAamltZmtltxYbMz22MbAAAAAAY00MMMzYbGMbDzysNDDDmhhlF2AAAIzMtNLz2MAgNgBAjxMMD
 
 # Default consumables
 potion=tempered_potion_3
@@ -76,30 +76,30 @@ actions.generators+=/crusader_strike
 actions.generators+=/hammer_of_wrath
 actions.generators+=/arcane_torrent
 
-head=entombed_seraphs_casque,id=211993,bonus_id=4800/4786/1540/10299/1808,gem_id=213743
-neck=sureki_zealots_insignia,id=225577,bonus_id=4800/4786/1540/10299/8781,gem_id=213494/213494
-shoulders=entombed_seraphs_plumes,id=211991,bonus_id=4800/4786/1540/10299
-back=royal_emblem_of_nerubar,id=212446,bonus_id=4800/4786/1540/10299
-chest=entombed_seraphs_breastplate,id=211996,bonus_id=4800/4786/1540/10299,enchant=crystalline_radiance_3
-wrists=everforged_vambraces,id=222435,bonus_id=10421/1515/8793/523/11109/8960,gem_id=213494
-hands=entombed_seraphs_castigation,id=211994,bonus_id=4800/4786/1540/10299
-waist=crystalfissure_girdle,id=221079,bonus_id=4786/3131/10299/523,gem_id=213494
-legs=legplates_of_broken_trust,id=221092,bonus_id=4786/3131/10299,enchant=stormbound_armor_kit_3
-feet=entombed_seraphs_sabatons,id=211995,ilevel=639
-finger1=seal_of_the_poisoned_pact,id=225578,bonus_id=4800/4786/1540/10299/8781,gem_id=213494/213458,enchant=radiant_mastery_3
-finger2=writhing_ringworm,id=225576,bonus_id=4800/4786/1540/10299/8781,gem_id=213482/213473,enchant=radiant_mastery_3
-trinket1=mark_of_khardros,id=133300,bonus_id=4786/11342/10299
-trinket2=arakara_sacbrood,id=219314,bonus_id=4786/3131/10299
-main_hand=everforged_greataxe,id=222443,bonus_id=10421/1515/11300/8960/8791,enchant=authority_of_the_depths_3
+head=aureate_sentrys_pledge,id=229244,bonus_id=1808,ilevel=678,gem_id=213743
+neck=strapped_rescuekeg,id=221060,bonus_id=8781,ilevel=678,gem_id=213491/213458
+shoulders=aureate_sentrys_roaring_will,id=229242,ilevel=678
+back=consecrated_cloak,id=222817,bonus_id=10421/9633/8902/12043/12040/1485/11303/8960/8791,ilevel=675
+chest=aureate_sentrys_encasement,id=229247,ilevel=678,enchant=crystalline_radiance_3
+wrists=everforged_vambraces,id=222435,bonus_id=10421/9633/8902/12043/12040/1485/11303/8960/523/8791,ilevel=675,gem_id=213482
+hands=gauntlets_of_absolute_authority,id=168980,ilevel=678
+waist=venture_contractors_floodlight,id=234505,bonus_id=1808,ilevel=678,gem_id=213482
+legs=aureate_sentrys_legguards,id=229243,ilevel=678,enchant=stormbound_armor_kit_3
+feet=cutthroat_competition_stompers,id=228887,ilevel=678
+finger1=faded_championship_ring,id=228840,bonus_id=8781,ilevel=678,gem_id=213482/213482,enchant=radiant_haste_3
+finger2=the_jastor_diamond,id=231265,bonus_id=8781,ilevel=678,gem_id=213482/213473,enchant=radiant_haste_3
+trinket1=house_of_cards,id=230027,ilevel=678
+trinket2=improvised_seaforium_pacemaker,id=232541,ilevel=678
+main_hand=capital_punisher,id=228891,ilevel=678,enchant=authority_of_the_depths_3
 
 # Gear Summary
-# gear_ilvl=638.60
-# gear_strength=36129
-# gear_stamina=236870
-# gear_crit_rating=9709
-# gear_haste_rating=11673
-# gear_mastery_rating=15239
-# gear_versatility_rating=2274
-# gear_armor=56297
-# set_bonus=thewarwithin_season_1_2pc=1
-# set_bonus=thewarwithin_season_1_4pc=1
+# gear_ilvl=677.60
+# gear_strength=56402
+# gear_stamina=391524
+# gear_crit_rating=12953
+# gear_haste_rating=14561
+# gear_mastery_rating=17665
+# gear_versatility_rating=147
+# gear_armor=72548
+# set_bonus=thewarwithin_season_2_2pc=1
+# set_bonus=thewarwithin_season_2_4pc=1
