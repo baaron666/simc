@@ -1875,7 +1875,7 @@ public:
 
     if ( p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && ( num_hopo_spent > 0 || isFreeHoL ) )
     {
-      unsigned base_cost = isFreeHoL ? hol_cost : as<int>( num_hopo_spent );
+      auto base_cost = isFreeHoL ? hol_cost : num_hopo_spent;
       auto extra_time = timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() * base_cost );
       auto new_duration = p->buffs.divine_hammer->remains() + extra_time;
       if ( new_duration > p->buffs.divine_hammer->data().duration() )

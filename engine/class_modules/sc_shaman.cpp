@@ -722,7 +722,7 @@ public:
   unsigned buff_state_lashing_flames;
 
   /// Flowing Spirits tracking
-  size_t active_flowing_spirits_proc;
+  unsigned active_flowing_spirits_proc;
   // Attempts, successes
   std::vector<std::tuple<simple_sample_data_t, simple_sample_data_t>> flowing_spirits_procs;
 
@@ -5534,7 +5534,7 @@ struct stormstrike_base_t : public shaman_attack_t
         break;
       default:
         cooldown = p()->cooldown.strike;
-        cooldown->charges = data().charges() + p()->talent.stormblast->effectN( 2 ).base_value();
+        cooldown->charges = data().charges() + as<int>( p()->talent.stormblast->effectN( 2 ).base_value() );
         cooldown->duration = data().charge_cooldown();
         cooldown->action = this;
         break;
@@ -15249,7 +15249,7 @@ public:
     unsigned total_procs = 0U;
     for ( const auto& pair : p.flowing_spirits_procs )
     {
-      total_procs += std::get<1>( pair ).count();
+      total_procs += as<unsigned>( std::get<1>( pair ).count() );
     }
     unsigned row = 0;
 

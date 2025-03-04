@@ -243,7 +243,7 @@ struct priest_pet_spell_t : public parse_action_effects_t<spell_t>
   bool triggers_atonement;
 
   priest_pet_spell_t( util::string_view token, priest_pet_t& p, const spell_data_t* s )
-    : ab( token, &p, s ), affected_by_shadow_weaving( false ), triggers_atonement( false ), affected_by_reveries( true )
+    : ab( token, &p, s ), affected_by_shadow_weaving( false ), affected_by_reveries( true ), triggers_atonement( false )
   {
     may_crit = true;
 

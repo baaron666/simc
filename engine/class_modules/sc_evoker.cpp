@@ -3072,7 +3072,7 @@ public:
   {
     ab::execute();
 
-    if ( ( !ab::background || ab::not_a_proc && ab::id != 359077 ) && !ab::dual )
+    if ( ( !ab::background || ( ab::not_a_proc && ab::id != 359077 ) ) && !ab::dual )
     {
       // These happen after any secondary spells are executed, so we schedule as events
       if ( spell_color == SPELL_BLUE )
@@ -8635,7 +8635,7 @@ void evoker_t::init_special_effects()
     set_effect->spell_id     = set_spell->id();
     special_effects.push_back( set_effect );
 
-    auto cb = new augmentation_tww2_2pc( this, *set_effect );
+    new augmentation_tww2_2pc( this, *set_effect );
   }
 
   
@@ -8680,7 +8680,7 @@ void evoker_t::init_special_effects()
     set_effect->spell_id     = set_spell->id();
     special_effects.push_back( set_effect );
 
-    auto cb = new devastation_tww2_2pc( this, *set_effect );
+    new devastation_tww2_2pc( this, *set_effect );
   }
 }
 
@@ -9598,7 +9598,7 @@ void evoker_t::spawn_mote_of_possibility( player_t* prospective_player, mote_buf
           
           if ( it != helper.begin() )
           {
-            std::partition( helper.begin(), it, [ this ]( player_t* t ) {
+            std::partition( helper.begin(), it, []( player_t* t ) {
               return t->role != ROLE_HYBRID && t->role != ROLE_HEAL && t->role != ROLE_TANK &&
                      t->specialization() != EVOKER_AUGMENTATION;
             } );

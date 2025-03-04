@@ -3598,7 +3598,6 @@ void priest_t::init_finished()
         continue;
       }
 
-      int actions           = 0;
       timespan_t time_spent = 0_ms;
       bool harmful_found    = false;
 
@@ -3612,7 +3611,6 @@ void priest_t::init_finished()
 
         if ( a->gcd() > 0_ms && ( !a->if_expr || a->if_expr->success() ) && a->action_ready() )
         {
-          actions++;
           time_spent += std::max( a->base_execute_time.value(), a->trigger_gcd );
           if ( a->harmful )
           {

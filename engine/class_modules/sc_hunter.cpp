@@ -1667,7 +1667,7 @@ struct hunter_pet_t: public pet_t
     main_hand_weapon.swing_time = 2_s;
   }
 
-  void apply_affecting_auras( action_t& action )
+  void apply_affecting_auras( action_t& action ) override
   {
     pet_t::apply_affecting_auras( action );
 
@@ -1685,7 +1685,7 @@ struct hunter_pet_t: public pet_t
     pet_t::schedule_ready( delta_time, waiting );
   }
 
-  double composite_melee_attack_power() const
+  double composite_melee_attack_power() const override
   {
     double ap = pet_t::composite_melee_attack_power();
 
@@ -2163,7 +2163,7 @@ struct animal_companion_t final : public hunter_main_pet_base_t
     resource_regeneration = regen_type::DISABLED;
   }
 
-  double composite_player_target_multiplier( player_t* target, school_e school ) const
+  double composite_player_target_multiplier( player_t* target, school_e school ) const override
   {
     double m = hunter_main_pet_base_t::composite_player_target_multiplier( target, school );
 
@@ -2376,7 +2376,7 @@ struct hunter_main_pet_t final : public hunter_main_pet_base_t
     return m;
   }
 
-  double composite_player_target_multiplier( player_t* target, school_e school ) const
+  double composite_player_target_multiplier( player_t* target, school_e school ) const override
   {
     double m = hunter_main_pet_base_t::composite_player_target_multiplier( target, school );
 
@@ -3257,7 +3257,7 @@ struct rend_flesh_t : public hunter_pet_attack_t<bear_t>
       envenomed_fangs = new envenomed_fangs_t( p );
   }
 
-  dot_t* get_dot( player_t* t )
+  dot_t* get_dot( player_t* t ) override
   {
     if ( !t )
       t = target;
@@ -3267,7 +3267,7 @@ struct rend_flesh_t : public hunter_pet_attack_t<bear_t>
     return p()->get_target_data( t )->dots.rend_flesh;
   }
 
-  void tick( dot_t* d )
+  void tick( dot_t* d ) override
   {
     hunter_pet_attack_t::tick( d );
 
@@ -4296,7 +4296,7 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
     snapshot_flags = STATE_MUL_PERSISTENT;
   }
 
-  virtual void update_state( action_state_t* s, result_amount_type rt )
+  void update_state( action_state_t* s, result_amount_type rt ) override
   {
     hunter_ranged_attack_t::update_state( s, rt );
 
@@ -5710,12 +5710,18 @@ struct aimed_shot_t : public aimed_shot_base_t
 
     // TODO 3/3/25: If Deathblow triggers from an Aimed Shot that has a Kill Shot queued after it that would consume an existing Deathblow, the new Deathblow is saved.
     if ( rng().roll( deathblow.chance ) )
+    {
       if ( p()->buffs.deathblow->check() )
+      {
         make_event( sim, sim->queue_lag.mean * 2, [ this ]() {
           p()->trigger_deathblow();
         } );
+      }
       else
+      {
         p()->trigger_deathblow();
+      }
+    }
 
     auto tl = target_list();
     if ( aspect_of_the_hydra && tl.size() > 1 )
@@ -6622,7 +6628,7 @@ struct summon_pet_t: public hunter_spell_t
 
   bool ready() override
   {
-    if ( opt_disabled || p() -> pets.main == pet || p()->specialization() == HUNTER_MARKSMANSHIP && !p()->talents.unbreakable_bond.ok() )
+    if ( opt_disabled || p() -> pets.main == pet || ( p()->specialization() == HUNTER_MARKSMANSHIP && !p()->talents.unbreakable_bond.ok() ) )
       return false;
 
     return hunter_spell_t::ready();

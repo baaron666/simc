@@ -4830,7 +4830,7 @@ struct sheiluns_gift_t : public monk_heal_t
   {
     base_t::execute();
 
-    double stacks = as<double>( p()->buff.sheiluns_gift->stack() );
+    auto stacks = p()->buff.sheiluns_gift->stack();
     p()->buff.sheiluns_gift->expire();
 
     p()->buff.heart_of_the_jade_serpent_stack_mw->increment( stacks );
@@ -4840,7 +4840,7 @@ struct sheiluns_gift_t : public monk_heal_t
       timespan_t max_duration =
           timespan_t::from_seconds( p()->talent.mistweaver.shaohaos_lessons->effectN( 1 ).base_value() );
       double max_stacks   = as<double>( p()->buff.sheiluns_gift->max_stack() );
-      timespan_t duration = max_duration * stacks / max_stacks;
+      timespan_t duration = max_duration * as<double>( stacks ) / max_stacks;
 
       switch ( shaohao_buff_e( shaohao_rng->trigger() ) )
       {

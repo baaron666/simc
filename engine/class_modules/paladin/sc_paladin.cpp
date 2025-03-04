@@ -37,10 +37,10 @@ paladin_t::paladin_t( sim_t* sim, util::string_view name, race_e r )
     radiant_glory_accumulator( 0.0 ),
     holy_power_generators_used( 0 ),
     melee_swing_count( 0 ),
+    last_hammer_of_light_dawn_stacks( 0 ),
     random_weapon_target( nullptr ),
     random_bulwark_target( nullptr ),
-    divine_inspiration_next( -1 ),
-    last_hammer_of_light_dawn_stacks( 0 )
+    divine_inspiration_next( -1 )
 {
   active_consecration = nullptr;
   active_boj_cons = nullptr;
@@ -2123,7 +2123,6 @@ struct hammer_of_light_t : public holy_power_consumer_t<paladin_melee_attack_t>
       parse_options( options_str );
       background = true;
 
-      auto hol                   = p->spells.templar.hammer_of_light;
       is_hammer_of_light         = true;
       aoe                        = 5;
       doesnt_consume_dp          = true;   // The driver consumes DP
@@ -5367,8 +5366,8 @@ std::unique_ptr<expr_t> paladin_t::create_expression( util::string_view name_str
         wake_cd( p.get_cooldown( "wake_of_ashes" ) ),
         hs_cd( p.get_cooldown( "holy_shock" ) ),
         at_cd( p.get_cooldown( "arcane_torrent" ) ),
-        bh_cd( p.get_cooldown( "blessed_hammer" ) ),
         hotr_cd( p.get_cooldown( "hammer_of_the_righteous" ) ),
+        bh_cd( p.get_cooldown( "blessed_hammer" ) ),
         dt_cd( p.get_cooldown( "divine_toll" ) )
     {
     }
@@ -5476,7 +5475,7 @@ std::unique_ptr<expr_t> paladin_t::create_expression( util::string_view name_str
   }
   if ( splits[ 0 ] == "divine_hammer_icd_remains" )
   {
-    return make_fn_expr( "divine_hammer_icd_remains", [this]() { return timespan_t::zero(); } );
+    return make_fn_expr( "divine_hammer_icd_remains", []() { return timespan_t::zero(); } );
   }
 
   struct judgment_holy_power_expr_t : public paladin_expr_t
