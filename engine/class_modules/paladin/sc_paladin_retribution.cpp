@@ -1246,6 +1246,11 @@ struct divine_hammer_tick_t : public paladin_melee_attack_t
     direct_tick = true;
     background  = true;
     may_crit    = true;
+    if ( !p->bugs )
+    {
+      affected_by.judgment = false;
+      clears_judgment = false;
+    }
   }
 
   void execute() override
@@ -1272,7 +1277,11 @@ struct divine_hammer_tick_t : public paladin_melee_attack_t
 
     paladin_td_t* td = this->td( target );
     if ( p()->talents.burn_to_ash->ok() && td->dots.truths_wake->is_ticking() )
+    {
       ctm *= 1.0 + p()->talents.burn_to_ash->effectN( 2 ).percent();
+      if ( p()->bugs )
+        ctm *= 1.0 + p()->talents.burn_to_ash->effectN( 2 ).percent();
+    }
 
     return ctm;
   }
