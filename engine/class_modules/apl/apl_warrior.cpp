@@ -289,7 +289,7 @@ void arms( player_t* p )
   slayer_execute->add_action( "execute,if=buff.juggernaut.remains<=gcd*2&talent.juggernaut" );
   slayer_execute->add_action( "bladestorm,if=(debuff.executioners_precision.stack=2&(debuff.colossus_smash.remains>4|cooldown.colossus_smash.remains>15))|!talent.executioners_precision" );
   slayer_execute->add_action( "skullsplitter,if=rage<=40" );
-  slayer_execute->add_action( "overpower,if=buff.martial_prowess.stack<2&buff.opportunist.up&talent.opportunist&!dot.ravager.remains" );
+  slayer_execute->add_action( "overpower,if=buff.martial_prowess.stack<2&buff.opportunist.up&talent.opportunist&(talent.bladestorm|talent.ravager&rage<85)" );
   slayer_execute->add_action( "mortal_strike,if=dot.rend.remains<2|debuff.executioners_precision.stack=2&!dot.ravager.remains" );
   slayer_execute->add_action( "overpower,if=rage<=40&buff.martial_prowess.stack<2&talent.fierce_followthrough" );
   slayer_execute->add_action( "execute" );
