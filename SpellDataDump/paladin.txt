@@ -3714,6 +3714,7 @@ Description      : $@spelldesc31935
 Tooltip          : The effects of your next Shield of the Righteous are increased by $s1%.
 
 Name             : Divine Hammer (id=198034) [Spell Family (10)] 
+Hotfixed         : Proc Flags 1 (4116 -> 4112), Internal Cooldown (1000 -> 0), Attributes
 Talent Entry     : Retribution [tree=spec, row=6, col=4, max_rank=1, req_points=8]
 Class            : Paladin
 School           : Holy
@@ -3727,12 +3728,11 @@ Labels           : 16: Class Spells
                  : 26: Paladin Spells
                  : 117
                  : 292
-Internal Cooldown: 1 seconds
 Proc Chance      : 101%
-Proc Flags       : White Melee, Yellow Melee, Generic Hostile Spell
+Proc Flags       : Yellow Melee, Generic Hostile Spell
 Affecting Spells : Retribution Paladin (137027 effect#4), Protection Paladin (137028 effects: #4, #5), Holy Paladin (137029 effects: #3, #4), Divine Purpose (408458 effect#1), All in! (1216837 effect#1)
 Family Flags     : 108
-Attributes       : Is Ability (4), Do Not Sheath (18), Can Proc From Procs (122), Extra Initial Period (169), Melee Haste Affects Periodic (278), Nameplate Personal Buffs/Debuffs (423)
+Attributes       : Is Ability (4), Do Not Sheath (18), Can Proc From Procs (122), Extra Initial Period (169), Nameplate Personal Buffs/Debuffs (423)
 Effects          :
 #1 (id=291057)   : Apply Aura (6) | Periodic Trigger Spell (23): Divine Hammer every 2 seconds
                    Base Value: 15 | Scaled Value: 15 | Trigger Spell: 198137 | Target: Self (1)
@@ -16347,7 +16347,7 @@ Range            : 100 yards
 Duration         : Aura (infinite)
 Labels           : 16: Class Spells
                  : 292
-                 : 1216: Flow State (390148 effect#2), Flow State (390148 effect#9), Flow State (390148 effect#11), Time Skip (404977 effect#1), Interwoven Threads (412713 effect#1), Temporal Burst (431698 effect#3), Burning Adrenaline (444019 effect#1)
+                 : 1216: Flow State (390148 effect#2), Flow State (390148 effect#10), Flow State (390148 effect#12), Time Skip (404977 effect#1), Interwoven Threads (412713 effect#1), Temporal Burst (431698 effect#3), Burning Adrenaline (444019 effect#1)
 Attributes       : No Aura Cancel (31), No Aura Icon (60), Allow Class Ability Procs (416)
 Effects          :
 #1 (id=1120106)  : Apply Aura (6) | Periodic Dummy (226): every 0.5 seconds
@@ -19433,6 +19433,7 @@ Effects          :
 Description      : While you have |cFFFFFFFF Luck of the Draw!|r Shield of the Righteous refunds $s1-$s2 Holy Power and extends the duration of |cFFFFFFFF Luck of the Draw!|r by ${$s3/1000}.1 sec, up to $1218114d.
 
 Name             : Winning Streak! (id=1216828) [Spell Family (10)] 
+Hotfixed         : Aura Interrupt, Channel Interrupt
 Class            : Paladin
 School           : Physical
 Spell Type       : None
@@ -19446,6 +19447,7 @@ Proc Chance      : 101%
 Proc Flags       : Cast Successful
 Triggered By     : Paladin Retribution 11.1 Class Set 2pc (1215707)
 Attributes       : Aura Points On Client (268), Do Not Consume Aura Stack On Proc (428)
+Aura Interrupt   : Change Specialization (38)
 Effects          :
 #1 (id=1200474)  : Apply Aura (6) | Add Percent Modifier (108): Spell Direct Amount (0)
                    Base Value: 2 | Scaled Value: 2 | PvP Coefficient: 0.5 | Target: Self (1)
