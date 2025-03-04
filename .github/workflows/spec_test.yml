@@ -66,7 +66,7 @@ jobs:
     env:
       UBSAN_OPTIONS: print_stacktrace=1
       SIMC_ARGS: output=/dev/null threads=2 iterations=10 cleanup_threads=1 allow_experimental_specializations=1
-      PTR_ARG: ptr=${{ inputs.is-ptr && "1" || "0" }}
+      PTR_ARG: ptr=${{ inputs.is-ptr == true && "1" || "0" }}
       PLAYER_ARGS: load_default_gear=1
 
     steps:
