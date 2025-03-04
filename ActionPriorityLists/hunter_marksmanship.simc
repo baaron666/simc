@@ -44,7 +44,6 @@ actions.st+=/explosive_shot,if=talent.precision_detonation&set_bonus.thewarwithi
 actions.st+=/aimed_shot,if=buff.precise_shots.down|debuff.spotters_mark.up&buff.moving_target.up
 actions.st+=/explosive_shot,if=!set_bonus.thewarwithin_season_2_4pc
 actions.st+=/black_arrow,if=!talent.headshot
-actions.st+=/kill_shot,if=!talent.headshot
 actions.st+=/steady_shot
 
 actions.trickshots=volley,if=!talent.double_tap
@@ -57,8 +56,8 @@ actions.trickshots+=/explosive_shot,if=talent.precision_detonation&(buff.lock_an
 actions.trickshots+=/aimed_shot,if=(buff.precise_shots.down|debuff.spotters_mark.up&buff.moving_target.up)&buff.trick_shots.up
 actions.trickshots+=/explosive_shot
 actions.trickshots+=/black_arrow
-actions.trickshots+=/kill_shot
-actions.trickshots+=/steady_shot
+actions.trickshots+=/steady_shot,if=focus+cast_regen<focus.max
+actions.trickshots+=/multishot
 
 # True if effects that are desirable to sync a trinket buff with are ready.
 actions.trinkets=variable,name=buff_sync_ready,value=cooldown.trueshot.ready
