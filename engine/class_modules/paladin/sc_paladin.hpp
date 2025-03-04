@@ -368,8 +368,6 @@ public:
     cooldown_t* endless_wrath_icd;   // Needed for many random hammer procs
     cooldown_t* hammerfall_icd;
     cooldown_t* art_of_war;
-
-    cooldown_t* divine_hammer_icd;
   } cooldowns;
 
   // Passives
@@ -1875,11 +1873,16 @@ public:
       }
     }
 
-    if ( p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && p->cooldowns.divine_hammer_icd->up() && ( num_hopo_spent > 0 || isFreeHoL ) )
+    if ( p->talents.divine_hammer->ok() && p->buffs.divine_hammer->up() && ( num_hopo_spent > 0 || isFreeHoL ) )
     {
       unsigned base_cost = isFreeHoL ? hol_cost : as<int>( num_hopo_spent );
-      p->buffs.divine_hammer->extend_duration( p, timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() * base_cost ) );
-      p->cooldowns.divine_hammer_icd->start();
+      auto extra_time = timespan_t::from_millis( p->buffs.divine_hammer->data().effectN( 2 ).base_value() * base_cost );
+      auto new_duration = p->buffs.divine_hammer->remains() + extra_time;
+      if ( new_duration > p->buffs.divine_hammer->data().duration() )
+      {
+        extra_time = p->buffs.divine_hammer->data().duration() - new_duration;
+      }
+      p->buffs.divine_hammer->extend_duration( p, extra_time );
     }
 
     if ( p->talents.relentless_inquisitor->ok() && !ab::background )

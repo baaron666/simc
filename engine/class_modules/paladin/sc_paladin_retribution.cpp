@@ -1297,16 +1297,7 @@ struct divine_hammer_t : public holy_power_consumer_t<paladin_spell_t>
   void execute() override
   {
     holy_power_consumer_t<paladin_spell_t>::execute();
-
-    if ( p()->bugs )
-    {
-      p()->sim->print_debug( "divine_hammer new buff duration: {} * {} = {}", p()->buffs.divine_hammer->buff_duration(), p()->cache.attack_haste(), p()->buffs.divine_hammer->buff_duration() * p()->cache.attack_haste() );
-      p()->buffs.divine_hammer->trigger( p()->buffs.divine_hammer->buff_duration() * p()->cache.attack_haste() );
-    }
-    else
-    {
-      p()->buffs.divine_hammer->trigger();
-    }
+    p()->buffs.divine_hammer->trigger();
   }
 };
 
@@ -1673,8 +1664,7 @@ void paladin_t::create_buffs_retribution()
     ->set_freeze_stacks( true )
     ->set_tick_callback([this](buff_t* b, int, const timespan_t&) {
       active.divine_hammer_tick->schedule_execute();
-    })
-    ->set_tick_time_behavior( buff_tick_time_behavior::HASTED );
+    });
 
   // legendaries
   buffs.empyrean_legacy = make_buff( this, "empyrean_legacy", find_spell( 387178 ) );

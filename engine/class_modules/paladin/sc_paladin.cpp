@@ -112,9 +112,6 @@ paladin_t::paladin_t( sim_t* sim, util::string_view name, race_e r )
   cooldowns.righteous_cause_icd = get_cooldown( "righteous_cause_icd" );
   cooldowns.righteous_cause_icd->duration = find_spell( 402912 )->internal_cooldown();
 
-  cooldowns.divine_hammer_icd = get_cooldown( "divine_hammer_icd" );
-  cooldowns.divine_hammer_icd->duration = find_spell( 198034 )->internal_cooldown();
-
   beacon_target         = nullptr;
   resource_regeneration = regen_type::DYNAMIC;
 }
@@ -5475,7 +5472,7 @@ std::unique_ptr<expr_t> paladin_t::create_expression( util::string_view name_str
   }
   if ( splits[ 0 ] == "divine_hammer_icd_remains" )
   {
-    return make_fn_expr( "divine_hammer_icd_remains", [this]() { return cooldowns.divine_hammer_icd->remains(); } );
+    return make_fn_expr( "divine_hammer_icd_remains", [this]() { return timespan_t::zero(); } );
   }
 
   struct judgment_holy_power_expr_t : public paladin_expr_t
