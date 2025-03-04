@@ -983,8 +983,8 @@ public:
 
     // 11.1 Flowing Spirits proc modeling tweaks
     unsigned flowing_spirits_procs = 3;  // Number of Flowing Spirits procs in a shuffled rng
-    unsigned flowing_spirits_total = 30; // Number of total draws in Flowing Spirits shuffled rng
-    double   tww1_4pc_flowing_spirits_chance = 1.0; // Chance to summon an additional wolf
+    unsigned flowing_spirits_total = 50; // Number of total draws in Flowing Spirits shuffled rng
+    double   tww1_4pc_flowing_spirits_chance = 0.2; // Chance to summon an additional wolf
   } options;
 
   // Cooldowns
@@ -14424,15 +14424,17 @@ void shaman_t::init_action_list_enhancement()
     return;
   }
 
-  action_priority_list_t* precombat        = get_action_priority_list( "precombat" );
-  action_priority_list_t* def              = get_action_priority_list( "default" );
-  action_priority_list_t* single           = get_action_priority_list( "single", "Single target action priority list" );
-  action_priority_list_t* single_totemic   = get_action_priority_list( "single_totemic", "Single target action priority list for the Totemic hero talent tree" );
-  action_priority_list_t* aoe              = get_action_priority_list( "aoe", "Multi target action priority list" );
-  action_priority_list_t* aoe_open         = get_action_priority_list( "aoe_open", "Multi target opener priority list" );
-  action_priority_list_t* aoe_totemic      = get_action_priority_list( "aoe_totemic", "Multi target action priority list for the Totemic hero talent tree" );
-  action_priority_list_t* aoe_totemic_open = get_action_priority_list( "aoe_totemic_open", "Multi target opener priority list for the Totemic hero talent tree" );
-  action_priority_list_t* funnel           = get_action_priority_list( "funnel", "Funnel action priority list" );
+  action_priority_list_t* precombat           = get_action_priority_list( "precombat" );
+  action_priority_list_t* def                 = get_action_priority_list( "default" );
+  action_priority_list_t* single              = get_action_priority_list( "single", "Single target action priority list" );
+  action_priority_list_t* single_open         = get_action_priority_list( "single_open", "Single target opener priority list" );
+  action_priority_list_t* single_totemic      = get_action_priority_list( "single_totemic", "Single target action priority list for the Totemic hero talent tree" );
+  action_priority_list_t* single_totemic_open = get_action_priority_list( "single_totemic_open", "Single target opener priority list for the Totemic hero talent tree" );
+  action_priority_list_t* aoe                 = get_action_priority_list( "aoe", "Multi target action priority list" );
+  action_priority_list_t* aoe_open            = get_action_priority_list( "aoe_open", "Multi target opener priority list" );
+  action_priority_list_t* aoe_totemic         = get_action_priority_list( "aoe_totemic", "Multi target action priority list for the Totemic hero talent tree" );
+  action_priority_list_t* aoe_totemic_open    = get_action_priority_list( "aoe_totemic_open", "Multi target opener priority list for the Totemic hero talent tree" );
+  action_priority_list_t* funnel              = get_action_priority_list( "funnel", "Funnel action priority list" );
 
   // action_priority_list_t* cds              = get_action_priority_list( "cds" );
 
@@ -14486,23 +14488,23 @@ void shaman_t::init_action_list_enhancement()
     def->add_action( "call_action_list,name=aoe_totemic,if=active_enemies>1&(rotation.standard|rotation.simple)&talent.surging_totem.enabled" );
     def->add_action( "call_action_list,name=funnel,if=active_enemies>1&rotation.funnel" );
 
-    single->add_action( "feral_spirit,if=talent.elemental_spirits.enabled" );
+    single->add_action( "run_action_list,name=single_open,if=time<15" );
     single->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=10|buff.primordial_storm.remains<=4&buff.maelstrom_weapon.stack>=5)" );
     single->add_action( "flame_shock,if=!ticking&(talent.ashen_catalyst.enabled|talent.primordial_wave.enabled|talent.lashing_flames.enabled)" );
-    single->add_action( "doom_winds,if=raid_event.adds.in>=action.doom_winds.cooldown&buff.maelstrom_weapon.stack>=2" );
+    single->add_action( "feral_spirit,if=(cooldown.doom_winds.remains>30|cooldown.doom_winds.remains<7)" );
+    single->add_action( "windstrike,if=talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>0&ti_lightning_bolt" );
+    single->add_action( "doom_winds,if=buff.legacy_of_the_frost_witch.up&(cooldown.feral_spirit.remains>30|cooldown.feral_spirit.remains<2)" );
     single->add_action( "primordial_wave,if=dot.flame_shock.ticking&(raid_event.adds.in>action.primordial_wave.cooldown|raid_event.adds.in<6)" );
-    single->add_action( "feral_spirit" );
-    single->add_action( "ascendance,if=(dot.flame_shock.ticking|!talent.primordial_wave.enabled|!talent.ashen_catalyst.enabled)&buff.maelstrom_weapon.stack>=2" );
+    single->add_action( "ascendance,if=(dot.flame_shock.ticking|!talent.primordial_wave.enabled|!talent.ashen_catalyst.enabled)" );
     single->add_action( "windstrike,if=talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>0&ti_lightning_bolt" );
     single->add_action( "elemental_blast,if=((!talent.overflowing_maelstrom.enabled&buff.maelstrom_weapon.stack>=5)|(buff.maelstrom_weapon.stack>=9))&charges_fractional>=1.8" );
     single->add_action( "tempest,if=(buff.tempest.stack=buff.tempest.max_stack&(tempest_mael_count>30|buff.awakening_storms.stack=3)&buff.maelstrom_weapon.stack>=9)" );
-    single->add_action( "lightning_bolt,if=buff.maelstrom_weapon.stack>=9&!buff.primordial_storm.up&buff.arc_discharge.stack>0" );
+    single->add_action( "lightning_bolt,if=buff.maelstrom_weapon.stack>=9&!buff.primordial_storm.up&buff.arc_discharge.stack>1" );
     single->add_action( "elemental_blast,if=((!talent.overflowing_maelstrom.enabled&buff.maelstrom_weapon.stack>=5)|(buff.maelstrom_weapon.stack>=9))" );
     single->add_action( "tempest,if=buff.maelstrom_weapon.stack>=9" );
     single->add_action( "lightning_bolt,if=buff.maelstrom_weapon.stack>=9" );
-    single->add_action( "voltaic_blaze,if=dot.flame_shock.remains<=3" );
     single->add_action( "lava_lash,if=(buff.hot_hand.up&(buff.ashen_catalyst.stack=buff.ashen_catalyst.max_stack))|(dot.flame_shock.remains<=2&!talent.voltaic_blaze.enabled)|(talent.lashing_flames.enabled&(debuff.lashing_flames.down))" );
-    single->add_action( "crash_lightning,if=buff.doom_winds.up&buff.electrostatic_wager.stack>1" ); 
+    single->add_action( "crash_lightning,if=(buff.doom_winds.up&buff.electrostatic_wager.stack>1)|buff.electrostatic_wager.stack>8" ); 
     single->add_action( "stormstrike,if=buff.doom_winds.up|buff.stormblast.stack>0" );
     single->add_action( "crash_lightning,if=talent.unrelenting_storms.enabled&talent.alpha_wolf.enabled&alpha_wolf_min_remains=0" );
     single->add_action( "lava_lash,if=buff.hot_hand.up" );
@@ -14521,23 +14523,41 @@ void shaman_t::init_action_list_enhancement()
     single->add_action( "earth_elemental" );
     single->add_action( "flame_shock" );
 
+    single_open->add_action( "flame_shock,if=!ticking" );
+    single_open->add_action( "voltaic_blaze,if=active_dot.flame_shock<3&!buff.ascendance.up" );
+    single_open->add_action( "primordial_wave,if=(buff.maelstrom_weapon.stack>=4)&dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
+    single_open->add_action( "feral_spirit,if=buff.legacy_of_the_frost_witch.up" );
+    single_open->add_action( "doom_winds,if=buff.legacy_of_the_frost_witch.up" );
+    single_open->add_action( "ascendance,if=buff.legacy_of_the_frost_witch.up" );
+    single_open->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=9)&(buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled)" );
+    single_open->add_action( "windstrike" );
+    single_open->add_action( "elemental_blast,if=buff.maelstrom_weapon.stack>=5" );
+    single_open->add_action( "tempest,if=buff.maelstrom_weapon.stack>=5" );
+    single_open->add_action( "lightning_bolt,if=buff.maelstrom_weapon.stack>=5" );
+    single_open->add_action( "stormstrike" );
+    single_open->add_action( "crash_lightning,if=set_bonus.tww2_4pc");
+    single_open->add_action( "voltaic_blaze" );
+    single_open->add_action( "lava_lash,if=talent.elemental_assault.enabled&talent.molten_assault.enabled&dot.flame_shock.ticking" );
+    single_open->add_action( "ice_strike" );
+
+    single_totemic->add_action( "run_action_list,name=single_totemic_open,if=time<20" );
     single_totemic->add_action( "surging_totem" );
     single_totemic->add_action( "ascendance,if=ti_lightning_bolt&pet.surging_totem.remains>4&(buff.totemic_rebound.stack>=3|buff.maelstrom_weapon.stack>0)" );
     single_totemic->add_action( "flame_shock,if=!ticking&(talent.ashen_catalyst.enabled|talent.primordial_wave.enabled)" );
-    single_totemic->add_action( "doom_winds,if=raid_event.adds.in>=action.doom_winds.cooldown&!talent.elemental_spirits.enabled&buff.legacy_of_the_frost_witch.up&(cooldown.primordial_wave.remains>3|!talent.primordial_wave.enabled)" );
-    single_totemic->add_action( "sundering,if=buff.ascendance.up&pet.surging_totem.active&talent.earthsurge.enabled&buff.legacy_of_the_frost_witch.up&buff.totemic_rebound.stack>=5&buff.earthen_weapon.stack>=2" );
     single_totemic->add_action( "lava_lash,if=buff.hot_hand.up" );
-    single_totemic->add_action( "primordial_wave,if=dot.flame_shock.ticking&(raid_event.adds.in>action.primordial_wave.cooldown|raid_event.adds.in<6)&(cooldown.doom_winds.remains>3)" );
-    single_totemic->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=10)&(buff.earthen_weapon.stack>=3|buff.doom_winds.remains<=3)&(buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled)|(buff.primordial_storm.remains<=4&buff.maelstrom_weapon.stack>=7)" );
+    single_totemic->add_action( "feral_spirit,if=((cooldown.doom_winds.remains>23|cooldown.doom_winds.remains<7)&(cooldown.primordial_wave.remains<20|buff.primordial_storm.up|!talent.primordial_storm.enabled))" );
+    single_totemic->add_action( "primordial_wave,if=dot.flame_shock.ticking&(raid_event.adds.in>action.primordial_wave.cooldown)|raid_event.adds.in<6" );
+    single_totemic->add_action( "doom_winds,if=buff.legacy_of_the_frost_witch.up" );
+    single_totemic->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=10)&(buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled)&(cooldown.doom_winds.remains>=15|buff.doom_winds.up)" );
+    single_totemic->add_action( "sundering,if=buff.ascendance.up&pet.surging_totem.active&talent.earthsurge.enabled&buff.legacy_of_the_frost_witch.up&buff.totemic_rebound.stack>=5&buff.earthen_weapon.stack>=2" );
     single_totemic->add_action( "windstrike,if=talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>0&ti_lightning_bolt" );
     single_totemic->add_action( "sundering,if=buff.legacy_of_the_frost_witch.up&((cooldown.ascendance.remains>=10&talent.ascendance.enabled)|!talent.ascendance.enabled)&pet.surging_totem.active&buff.totemic_rebound.stack>=3&!buff.ascendance.up" );
-    single_totemic->add_action( "feral_spirit" );
     single_totemic->add_action( "crash_lightning,if=talent.unrelenting_storms.enabled&talent.alpha_wolf.enabled&alpha_wolf_min_remains=0" );
-    single_totemic->add_action( "lava_burst,if=!talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>=5&buff.whirling_air.down" );
-    single_totemic->add_action( "primordial_wave,if=dot.flame_shock.ticking&(raid_event.adds.in>action.primordial_wave.cooldown)|raid_event.adds.in<6" );
-    single_totemic->add_action( "elemental_blast,if=(buff.maelstrom_weapon.stack>=10)&(buff.primordial_storm.down|buff.primordial_storm.remains>4)" );
     single_totemic->add_action( "lava_burst,if=!talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>=10&buff.whirling_air.down" );
+    single_totemic->add_action( "elemental_blast,if=(buff.maelstrom_weapon.stack>=10)&(buff.primordial_storm.down|buff.primordial_storm.remains>4)" );
+    single_totemic->add_action( "stormstrike,if=buff.doom_winds.up&buff.legacy_of_the_frost_witch.up" );
     single_totemic->add_action( "lightning_bolt,if=(buff.maelstrom_weapon.stack>=10)&(buff.primordial_storm.down|buff.primordial_storm.remains>4)" );
+    single_totemic->add_action( "crash_lightning,if=buff.electrostatic_wager.stack>4" );
     single_totemic->add_action( "stormstrike,if=buff.doom_winds.up|buff.stormblast.stack>1" );
     single_totemic->add_action( "lava_lash,if=buff.whirling_fire.up|buff.ashen_catalyst.stack>=8" );
     single_totemic->add_action( "windstrike" );
@@ -14553,16 +14573,31 @@ void shaman_t::init_action_list_enhancement()
     single_totemic->add_action( "earth_elemental" );
     single_totemic->add_action( "flame_shock,if=!talent.voltaic_blaze.enabled" );
 
+    single_totemic_open->add_action( "flame_shock,if=!ticking" );
+    single_totemic_open->add_action( "lava_lash,if=!pet.surging_totem.active&talent.lashing_flames.enabled&debuff.lashing_flames.down" );
+    single_totemic_open->add_action( "surging_totem" );
+    single_totemic_open->add_action( "primordial_wave" );
+    single_totemic_open->add_action( "feral_spirit,if=buff.legacy_of_the_frost_witch.up" );
+    single_totemic_open->add_action( "doom_winds,if=buff.legacy_of_the_frost_witch.up" );
+    single_totemic_open->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=10)&buff.legacy_of_the_frost_witch.up" );
+    single_totemic_open->add_action( "lava_lash,if=buff.hot_hand.up" );
+    single_totemic_open->add_action( "stormstrike,if=buff.doom_winds.up&buff.legacy_of_the_frost_witch.up" );
+    single_totemic_open->add_action( "sundering,if=buff.legacy_of_the_frost_witch.up" );
+    single_totemic_open->add_action( "elemental_blast,if=buff.maelstrom_weapon.stack=10" );
+    single_totemic_open->add_action( "lightning_bolt,if=buff.maelstrom_weapon.stack=10" );
+    single_totemic_open->add_action( "stormstrike" );
+    single_totemic_open->add_action( "lava_lash" );
+
+    aoe->add_action( "feral_spirit,if=talent.elemental_spirits.enabled|talent.alpha_wolf.enabled" );
     aoe->add_action( "run_action_list,name=aoe_open,if=time<15" );
-    aoe->add_action( "feral_spirit" );
     aoe->add_action( "flame_shock,if=talent.molten_assault.enabled&!ticking" );
     aoe->add_action( "ascendance,if=(dot.flame_shock.ticking|!talent.molten_assault.enabled)&ti_chain_lightning" );
     aoe->add_action( "tempest,target_if=min:debuff.lightning_rod.remains,if=!buff.arc_discharge.stack>=1&((buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&!talent.raging_maelstrom.enabled)|(buff.maelstrom_weapon.stack>=9))|(buff.maelstrom_weapon.stack>=5&(tempest_mael_count>30))" );
+    aoe->add_action( "feral_spirit,if=(cooldown.doom_winds.remains>30|cooldown.doom_winds.remains<7)" );
     aoe->add_action( "doom_winds" );
     aoe->add_action( "primordial_wave,if=dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
     aoe->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=10)&(buff.doom_winds.up|cooldown.doom_winds.remains>15|buff.primordial_storm.remains<3)" );
-    aoe->add_action( "voltaic_blaze,if=active_dot.flame_shock<5" );
-    aoe->add_action( "crash_lightning,if=talent.converging_storms.enabled&buff.electrostatic_wager.stack>3" );
+    aoe->add_action( "crash_lightning,if=talent.converging_storms.enabled&buff.electrostatic_wager.stack>6|!buff.crash_lightning.up" );
     aoe->add_action( "windstrike,target_if=min:debuff.lightning_rod.remains,if=talent.thorims_invocation.enabled&buff.maelstrom_weapon.stack>0&ti_chain_lightning" );
     aoe->add_action( "crash_lightning,if=talent.converging_storms.enabled&talent.alpha_wolf.enabled" );
     aoe->add_action( "stormstrike,if=buff.converging_storms.stack=6&buff.stormblast.stack>0&buff.legacy_of_the_frost_witch.up&buff.maelstrom_weapon.stack<=8" );
@@ -14580,7 +14615,7 @@ void shaman_t::init_action_list_enhancement()
     aoe->add_action( "flame_shock,target_if=min:dot.flame_shock.remains,if=(talent.fire_nova.enabled|talent.primordial_wave.enabled)&(active_dot.flame_shock<active_enemies)&active_dot.flame_shock<6" );
     aoe->add_action( "fire_nova,if=active_dot.flame_shock>=3" );
     aoe->add_action( "stormstrike,if=buff.crash_lightning.up&(talent.deeply_rooted_elements.enabled|buff.converging_storms.stack=buff.converging_storms.max_stack)" );
-    aoe->add_action( "crash_lightning,if=talent.crashing_storms.enabled&buff.cl_crash_lightning.up&active_enemies>=4" );
+    aoe->add_action( "crash_lightning,if=talent.crashing_storms.enabled&buff.cl_crash_lightning.up" );
     aoe->add_action( "windstrike" );
     aoe->add_action( "stormstrike" );
     aoe->add_action( "ice_strike" );
@@ -14595,7 +14630,8 @@ void shaman_t::init_action_list_enhancement()
     aoe_open->add_action( "crash_lightning,if=(buff.electrostatic_wager.stack>9&buff.doom_winds.up)|!buff.crash_lightning.up" );
     aoe_open->add_action( "voltaic_blaze,if=active_dot.flame_shock<3" );
     aoe_open->add_action( "lava_lash,if=talent.molten_assault.enabled&(talent.primordial_wave.enabled|talent.fire_nova.enabled)&dot.flame_shock.ticking&(active_dot.flame_shock<active_enemies)&active_dot.flame_shock<3" );
-    aoe_open->add_action( "primordial_wave,if=dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
+    aoe_open->add_action( "primordial_wave,if=(buff.maelstrom_weapon.stack>=4)&dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
+    aoe_open->add_action( "feral_spirit,if=buff.maelstrom_weapon.stack>=9" );
     aoe_open->add_action( "doom_winds,if=buff.maelstrom_weapon.stack>=9" );
     aoe_open->add_action( "ascendance,if=(dot.flame_shock.ticking|!talent.molten_assault.enabled)&ti_chain_lightning&(buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled)&!buff.doom_winds.up" );
     aoe_open->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=9)&(buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled)" );
@@ -14614,20 +14650,28 @@ void shaman_t::init_action_list_enhancement()
     aoe_totemic->add_action( "ascendance,if=ti_chain_lightning" );
     aoe_totemic->add_action( "flame_shock,if=!ticking&(talent.ashen_catalyst.enabled|talent.primordial_wave.enabled)" );
     aoe_totemic->add_action( "crash_lightning,if=talent.crashing_storms.enabled&(active_enemies>=15-5*talent.unruly_winds.enabled)" );
+    aoe_totemic->add_action( "feral_spirit,if=((cooldown.doom_winds.remains>30|cooldown.doom_winds.remains<7)&(cooldown.primordial_wave.remains<2|buff.primordial_storm.up|!talent.primordial_storm.enabled))" );
     aoe_totemic->add_action( "doom_winds,if=!talent.elemental_spirits.enabled" );
     aoe_totemic->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=10)&(cooldown.doom_winds.remains>3)" );
     aoe_totemic->add_action( "primordial_wave,if=dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
     aoe_totemic->add_action( "windstrike" );
+    aoe_totemic->add_action( "elemental_blast,if=(!talent.elemental_spirits.enabled|(talent.elemental_spirits.enabled&(charges=max_charges|feral_spirit.active>=2)))&buff.maelstrom_weapon.stack=buff.maelstrom_weapon.max_stack&(!talent.crashing_storms.enabled|active_enemies<=3)" );
     aoe_totemic->add_action( "lava_lash,if=buff.hot_hand.up" );
     aoe_totemic->add_action( "crash_lightning,if=buff.electrostatic_wager.stack>8" );
     aoe_totemic->add_action( "sundering,if=buff.doom_winds.up|talent.earthsurge.enabled&(buff.legacy_of_the_frost_witch.up|!talent.legacy_of_the_frost_witch.enabled)&pet.surging_totem.active" );
+    aoe_totemic->add_action( "chain_lightning,if=buff.maelstrom_weapon.stack>=10&buff.electrostatic_wager.stack>4&!buff.cl_crash_lightning.up&buff.doom_winds.up" );
     aoe_totemic->add_action( "elemental_blast,if=(buff.maelstrom_weapon.stack>=10)" );
     aoe_totemic->add_action( "chain_lightning,if=buff.maelstrom_weapon.stack>=10&!buff.primordial_storm.up" );
-    aoe_totemic->add_action( "feral_spirit" );
     aoe_totemic->add_action( "crash_lightning,if=buff.doom_winds.up|!buff.crash_lightning.up|(talent.alpha_wolf.enabled&feral_spirit.active&alpha_wolf_min_remains=0)" );
     aoe_totemic->add_action( "voltaic_blaze" );
-    aoe_totemic->add_action( "crash_lightning,if=talent.crashing_storms.enabled" );
+    aoe_totemic->add_action( "fire_nova,if=(dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6))&pet.searing_totem.active" );
     aoe_totemic->add_action( "lava_lash,if=talent.molten_assault.enabled&dot.flame_shock.ticking" );
+    aoe_totemic->add_action( "frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.up&pet.searing_totem.active" );
+    aoe_totemic->add_action( "crash_lightning,if=talent.crashing_storms.enabled" );
+    aoe_totemic->add_action( "fire_nova,if=dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
+    aoe_totemic->add_action( "frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.up" );
+    aoe_totemic->add_action( "crash_lightning" );
+    aoe_totemic->add_action( "ice_strike,if=talent.hailstorm.enabled&!buff.ice_strike.up" );
     aoe_totemic->add_action( "elemental_blast,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up" );
     aoe_totemic->add_action( "chain_lightning,if=buff.maelstrom_weapon.stack>=5&!buff.primordial_storm.up" );
     aoe_totemic->add_action( "stormstrike" );
@@ -14646,7 +14690,9 @@ void shaman_t::init_action_list_enhancement()
 
     aoe_totemic_open->add_action( "surging_totem" );
     aoe_totemic_open->add_action( "flame_shock,if=!ticking" );
+    aoe_totemic_open->add_action( "fire_nova,if=talent.swirling_maelstrom.enabled&dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
     aoe_totemic_open->add_action( "primordial_wave,if=dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
+    aoe_totemic_open->add_action( "feral_spirit,if=buff.maelstrom_weapon.stack>=8" );
     aoe_totemic_open->add_action( "crash_lightning,if=(buff.electrostatic_wager.stack>9&buff.doom_winds.up)|!buff.crash_lightning.up" );
     aoe_totemic_open->add_action( "doom_winds,if=buff.maelstrom_weapon.stack>=8" );
     aoe_totemic_open->add_action( "primordial_storm,if=(buff.maelstrom_weapon.stack>=10)&buff.legacy_of_the_frost_witch.up" );
@@ -14654,6 +14700,9 @@ void shaman_t::init_action_list_enhancement()
     aoe_totemic_open->add_action( "sundering,if=buff.legacy_of_the_frost_witch.up" );
     aoe_totemic_open->add_action( "elemental_blast,if=buff.maelstrom_weapon.stack>=10" );
     aoe_totemic_open->add_action( "chain_lightning,if=buff.maelstrom_weapon.stack>=10" );
+    aoe_totemic_open->add_action( "frost_shock,if=talent.hailstorm.enabled&buff.hailstorm.up&pet.searing_totem.active" );
+    aoe_totemic_open->add_action( "fire_nova,if=pet.searing_totem.active&dot.flame_shock.ticking&(active_dot.flame_shock=active_enemies|active_dot.flame_shock=6)" );
+    aoe_totemic_open->add_action( "ice_strike" );
     aoe_totemic_open->add_action( "stormstrike,if=buff.maelstrom_weapon.stack<10&!buff.legacy_of_the_frost_witch.up" );
     aoe_totemic_open->add_action( "lava_lash" );
 
