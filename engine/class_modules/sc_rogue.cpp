@@ -10153,7 +10153,7 @@ std::unique_ptr<expr_t> rogue_t::create_action_expression( action_t& action, std
   }
   else if ( split[ 0 ] == "buff" && split[ 1 ] == "envenom" && split[ 2 ] == "remains" && split.size() == 4 )
   {
-    int buff_idx = util::to_int( split[ 3 ] );
+    size_t buff_idx = as<size_t>( util::to_int( split[ 3 ] ) );
     return make_fn_expr( name_str, [ this, buff_idx ]() {
       if ( buffs.envenom->expiration.size() < buff_idx )
         return 0_s;
@@ -12883,7 +12883,7 @@ void rogue_t::arise()
 
   if ( talent.rogue.supercharger->ok() && options.initial_supercharged_cp > 0 )
   {
-    for ( size_t i = 0; i < options.initial_supercharged_cp; i++ )
+    for ( size_t i = 0; i < as<size_t>( options.initial_supercharged_cp ); i++ )
     {
       buffs.supercharger[ i ]->trigger();
     }

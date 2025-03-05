@@ -1671,7 +1671,7 @@ void paladin_t::create_buffs_retribution()
     ->set_default_value( 1.0 )
     ->set_period( timespan_t::from_millis( 2000 ) )
     ->set_freeze_stacks( true )
-    ->set_tick_callback([this](buff_t* b, int, const timespan_t&) {
+    ->set_tick_callback([this](buff_t*, int, const timespan_t&) {
       active.divine_hammer_tick->schedule_execute();
     });
 

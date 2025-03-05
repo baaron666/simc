@@ -3184,7 +3184,7 @@ struct frost_mage_spell_t : public mage_spell_t
       source->occur( FROZEN_NONE );
   }
 
-  virtual bool should_consume_winters_chill( const action_state_t* s, bool execute = false ) const
+  virtual bool should_consume_winters_chill( const action_state_t*, [[maybe_unused]] bool execute = false ) const
   { return consumes_winters_chill; }
 
   void execute() override

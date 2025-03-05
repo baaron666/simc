@@ -3667,7 +3667,7 @@ void priest_t::init_special_effects()
   if ( unique_gear::find_special_effect( this, 443393 ) && talents.twist_of_fate.enabled() )
   {
     callbacks.register_callback_execute_function(
-        443393, [ this ]( const dbc_proc_callback_t* cb, action_t* a, const action_state_t* s ) {
+        443393, [ this ]( const dbc_proc_callback_t* cb, action_t*, const action_state_t* s ) {
           buffs.twist_of_fate->trigger();
 
           cb->proc_action->set_target( cb->target( s ) );

@@ -12267,7 +12267,7 @@ void druid_t::init_special_effects()
         proc = p->get_proc( "Winning Streak" )->collect_count()->collect_interval();
       }
 
-      void execute( action_t*, action_state_t* s ) override
+      void execute( action_t*, action_state_t* ) override
       {
         p()->buff.winning_streak->trigger();
         proc->occur();

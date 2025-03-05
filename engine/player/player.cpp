@@ -8862,24 +8862,32 @@ struct gift_of_the_naaru : public racial_heal_t
 
 struct ancestral_call_t : public racial_spell_t
 {
+  std::vector<std::tuple<buff_t*, stat_e, double>> stat_values;
+
   ancestral_call_t( player_t* p, util::string_view options_str ) :
     racial_spell_t( p, "ancestral_call", p->find_racial_spell( "Ancestral Call" ) )
   {
     parse_options( options_str );
     harmful = false;
     target = p;
+
+    for ( auto b : p->buffs.ancestral_call )
+      if ( !b->is_fallback )
+        stat_values.emplace_back( b, debug_cast<stat_buff_t*>( b )->stats.front().stat, 0.0 );
   }
 
   void execute() override
   {
     racial_spell_t::execute();
 
-    std::array<std::pair<buff_t*, double>, std::tuple_size_v<decltype( player->buffs.ancestral_call )>> stat_values;
-    auto& buffs = player->buffs.ancestral_call;
-    for ( int i = 0; i < buffs.size(); i++ )
-      stat_values[ i ] = { buffs[ i ], util::stat_value( player, debug_cast<stat_buff_t*>( buffs[ i ] )->stats.front().stat ) };
-    std::sort( stat_values.begin(), stat_values.end(), [] ( auto& a, auto& b ) { return a.second > b.second; } );
-    stat_values[ rng().range( 2 ) ].first->trigger();
+    for ( auto& stat : stat_values )
+      std::get<2>( stat ) = util::stat_value( player, std::get<1>( stat ) );
+
+    std::sort( stat_values.begin(), stat_values.end(), []( const auto& a, const auto& b ) {
+      return std::get<2>( a ) > std::get<2>( b );
+    } );
+
+    std::get<0>( stat_values[ rng().range( 2 ) ] )->trigger();
   }
 };
 

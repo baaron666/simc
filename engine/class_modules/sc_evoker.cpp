@@ -185,7 +185,7 @@ static std::function<int( actor_target_data_t* )> d_fn( T d, bool stack = true )
 }
 
 template <typename T>
-static std::function<double( actor_target_data_t* )> d_value_fn( T d, bool stack = true )
+static std::function<double( actor_target_data_t* )> d_value_fn( T d, [[maybe_unused]] bool stack = true )
 {
   if constexpr ( std::is_invocable_v<T, evoker_td_t::debuffs_t> )
   {
@@ -8574,7 +8574,7 @@ void evoker_t::init_special_effects()
        talent.essence_burst.enabled() )
   {
     callbacks.register_callback_execute_function(
-        443393, [ this ]( const dbc_proc_callback_t* cb, action_t* a, const action_state_t* s ) {
+        443393, [ this ]( const dbc_proc_callback_t* cb, action_t*, const action_state_t* s ) {
           // Only trigger this on Single Target (Pretending its a 2nd target)
           if ( sim->target_non_sleeping_list.size() == 1 &&
                rng().roll( talent.ruby_essence_burst->effectN( 1 ).percent() ) )

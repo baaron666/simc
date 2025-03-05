@@ -4348,7 +4348,7 @@ struct explosive_shot_base_t : public hunter_ranged_attack_t
     hunter_ranged_attack_t::impact( s );
   }
 
-  void tick( dot_t* d ) override
+  void tick( dot_t* ) override
   {
     // Prevent tick() from updating state so it can be used to clear the effectiveness bonus.
   }
@@ -5124,7 +5124,7 @@ struct barbed_shot_t: public hunter_ranged_attack_t
   {
     serpent_sting_t* poisoned_barbs_serpent_sting = nullptr;
 
-    poisoned_barbs_t( util::string_view n, hunter_t* p ) : hunter_ranged_attack_t( "poisoned_barbs", p, p->find_spell( 1217549 ) )
+    poisoned_barbs_t( util::string_view, hunter_t* p ) : hunter_ranged_attack_t( "poisoned_barbs", p, p->find_spell( 1217549 ) )
     {
       background = dual = true;
       aoe = -1;
@@ -5266,7 +5266,7 @@ struct laceration_t : public residual_bleed_base_t
 
 struct barbed_shot_tww_s2_bm_2pc_t : public barbed_shot_t
 {
-  barbed_shot_tww_s2_bm_2pc_t( util::string_view n, hunter_t* p ) : barbed_shot_t( p, "" )
+  barbed_shot_tww_s2_bm_2pc_t( util::string_view, hunter_t* p ) : barbed_shot_t( p, "" )
   {
     background = dual = proc = true;
   }
@@ -8801,7 +8801,7 @@ void hunter_t::create_buffs()
   buffs.howl_of_the_pack_leader_wyvern = 
     make_buff( this, "howl_of_the_pack_leader_wyvern", talents.howl_of_the_pack_leader_wyvern_ready_buff )
       ->set_stack_change_callback(
-        [ this ]( buff_t* b, int, int cur ) {
+        [ this ]( buff_t*, int, int cur ) {
           if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
             buffs.howl_of_the_pack_leader_cooldown->trigger();
         } );
@@ -8809,7 +8809,7 @@ void hunter_t::create_buffs()
   buffs.howl_of_the_pack_leader_boar = 
     make_buff( this, "howl_of_the_pack_leader_boar", talents.howl_of_the_pack_leader_boar_ready_buff )
       ->set_stack_change_callback(
-        [ this ]( buff_t* b, int, int cur ) {
+        [ this ]( buff_t*, int, int cur ) {
           if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
             buffs.howl_of_the_pack_leader_cooldown->trigger();
         } );
@@ -8817,7 +8817,7 @@ void hunter_t::create_buffs()
   buffs.howl_of_the_pack_leader_bear = 
     make_buff( this, "howl_of_the_pack_leader_bear", talents.howl_of_the_pack_leader_bear_ready_buff )
       ->set_stack_change_callback(
-        [ this ]( buff_t* b, int, int cur ) {
+        [ this ]( buff_t*, int, int cur ) {
           if ( cur == 0 && !buffs.howl_of_the_pack_leader_cooldown->check() )
             buffs.howl_of_the_pack_leader_cooldown->trigger();
         } );
@@ -8826,7 +8826,7 @@ void hunter_t::create_buffs()
     make_buff( this, "howl_of_the_pack_leader_cooldown", talents.howl_of_the_pack_leader_cooldown_buff )
       ->apply_affecting_aura( talents.better_together )
       ->set_stack_change_callback(
-        [ this ]( buff_t* b, int, int cur ) {
+        [ this ]( buff_t*, int, int cur ) {
           if ( cur == 0 )
             trigger_howl_of_the_pack_leader();
         } );
@@ -8835,7 +8835,7 @@ void hunter_t::create_buffs()
     make_buff( this, "wyverns_cry", talents.howl_of_the_pack_leader_wyvern_buff )
       ->set_default_value_from_effect( 1 )
       ->set_stack_change_callback(
-        [ this ]( buff_t* b, int, int cur ) {
+        [ this ]( buff_t*, int, int cur ) {
           if ( cur == 0 )
             state.fury_of_the_wyvern_extension = 0_s;
         } );
@@ -8854,7 +8854,7 @@ void hunter_t::create_buffs()
   
   buffs.lunar_storm_cooldown = make_buff( this, "lunar_storm_cooldown", talents.lunar_storm_cooldown_buff )
     ->set_stack_change_callback(
-      [ this ]( buff_t* b, int, int cur ) {
+      [ this ]( buff_t*, int, int cur ) {
         if ( cur == 0 )
           buffs.lunar_storm_ready->trigger();
       } );

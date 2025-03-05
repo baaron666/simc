@@ -4052,7 +4052,7 @@ void paladin_t::create_buffs()
 
   if ( bugs && specialization() == PALADIN_PROTECTION && talents.of_dusk_and_dawn->ok() && talents.templar.undisputed_ruling->ok() && talents.eye_of_tyr->ok() )
   {
-    buffs.blessing_of_dusk->set_stack_change_callback( [ this ]( buff_t* b, int, int new_ ) {
+    buffs.blessing_of_dusk->set_stack_change_callback( [ this ]( buff_t*, int, int new_ ) {
       for ( auto a : action_list )
       {
         if ( a->id != 387174 )

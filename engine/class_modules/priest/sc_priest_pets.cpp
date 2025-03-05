@@ -217,7 +217,7 @@ struct priest_pet_melee_t : public melee_attack_t
     return static_cast<priest_pet_t&>( *player );
   }
 
-  virtual double composite_atonement_multiplier( action_state_t* s )
+  virtual double composite_atonement_multiplier( action_state_t* /* s */ )
   {
     double mul = p().o().talents.discipline.atonement->effectN( 1 ).percent();
 

@@ -6359,7 +6359,7 @@ void suspicious_energy_drink( special_effect_t& effect )
     double hp_limit;
     double base_buff_value;
     suspicious_energy_drink_buff_t( player_t* p, util::string_view n, const special_effect_t& e, const spell_data_t* s )
-      : stat_buff_t( e.player, n, s ), bonus_value( 0 ), hp_limit( 0 )
+      : stat_buff_t( p, n, s ), bonus_value( 0 ), hp_limit( 0 )
     {
       base_buff_value = e.driver()->effectN( 1 ).average( e );
       set_stat_from_effect_type( A_MOD_RATING, base_buff_value );
@@ -6951,7 +6951,7 @@ void tome_of_lights_devotion( special_effect_t& effect )
       ward_of_devotion_buff = make_buff<ward_of_devotion_buff_t>( e, e.player->find_spell( 450719 ), data );
     }
 
-    void execute( action_t*, action_state_t* s ) override
+    void execute( action_t*, action_state_t* ) override
     {
       if ( radiance_buff->check() )
         ward_of_devotion_buff->trigger(-1, ward_of_devotion_buff->DEFAULT_VALUE() * 2 );
@@ -7029,7 +7029,7 @@ void tome_of_lights_devotion( special_effect_t& effect )
 
         resilience_verses_tracker = create_buff<buff_t>( e.player, e.player->find_spell( 450696 ) );
         resilience_verses_tracker->expire_at_max_stack = true;
-        resilience_verses_tracker->set_expire_callback( [ this ]( buff_t* b, int, timespan_t ) {
+        resilience_verses_tracker->set_expire_callback( [ this ]( buff_t*, int, timespan_t ) {
                                       resilience_phase = false;
                                       inner_resilience_buff->expire();
                                       inner_radiance_buff->trigger();
@@ -7038,7 +7038,7 @@ void tome_of_lights_devotion( special_effect_t& effect )
 
         radiance_verses_tracker = create_buff<buff_t>( e.player, e.player->find_spell( 450699 ) );
         radiance_verses_tracker->expire_at_max_stack = true;
-        radiance_verses_tracker->set_expire_callback( [ this ]( buff_t* b, int, timespan_t ) {
+        radiance_verses_tracker->set_expire_callback( [ this ]( buff_t*, int, timespan_t ) {
                                       resilience_phase = true;
                                       inner_radiance_buff->expire();
                                       inner_resilience_buff->trigger();
@@ -7069,7 +7069,7 @@ void tome_of_lights_devotion( special_effect_t& effect )
         inner_radiance_cb->activate_with_buff( radiance_verses_tracker, true );
       }
 
-    void execute( action_t*, action_state_t* s ) override
+    void execute( action_t*, action_state_t* ) override
     {
       if ( resilience_phase )
       {
