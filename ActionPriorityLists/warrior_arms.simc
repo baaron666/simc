@@ -154,7 +154,7 @@ actions.slayer_execute+=/colossus_smash
 actions.slayer_execute+=/execute,if=buff.juggernaut.remains<=gcd*2&talent.juggernaut
 actions.slayer_execute+=/bladestorm,if=(debuff.executioners_precision.stack=2&(debuff.colossus_smash.remains>4|cooldown.colossus_smash.remains>15))|!talent.executioners_precision
 actions.slayer_execute+=/skullsplitter,if=rage<=40
-actions.slayer_execute+=/overpower,if=buff.martial_prowess.stack<2&buff.opportunist.up&talent.opportunist&!dot.ravager.remains
+actions.slayer_execute+=/overpower,if=buff.martial_prowess.stack<2&buff.opportunist.up&talent.opportunist&(talent.bladestorm|talent.ravager&rage<85)
 actions.slayer_execute+=/mortal_strike,if=dot.rend.remains<2|debuff.executioners_precision.stack=2&!dot.ravager.remains
 actions.slayer_execute+=/overpower,if=rage<=40&buff.martial_prowess.stack<2&talent.fierce_followthrough
 actions.slayer_execute+=/execute
