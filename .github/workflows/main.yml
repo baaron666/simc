@@ -169,7 +169,7 @@ jobs:
     name: Update Generated Files
     needs: [spec-test]
     runs-on: ubuntu-22.04
-    if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraf/simc'
+    if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraft/simc'
 
     steps:
       - uses: actions/cache@v4
