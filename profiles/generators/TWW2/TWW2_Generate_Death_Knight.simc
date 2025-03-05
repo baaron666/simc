@@ -31,7 +31,7 @@ level=80
 race=maghar_orc
 role=attack
 position=back
-talents=CsPAAAAAAAAAAAAAAAAAAAAAAMGAzMjZmxMDDzMzMzMGmJzYYMgZGjZMzMzMzMLzMAAAAAAAAAAAAjltBGwCYZYCZsgZYMDA
+talents=CsPAAAAAAAAAAAAAAAAAAAAAAMGAzMjZmxYYGzMzMzMGmJzYYMgZGjZMzMzMzMLzMAAAAAAAAAAAAjltBGwCYZYCZsgZYMDA
 deathknight.ams_absorb_percent=1
 deathknight.first_ams_cast=0
 
@@ -55,13 +55,12 @@ off_hand=charged_slicer,id=222451,bonus_id=12043/9627/9633/8902/12040/11300/8960
 save="TWW2_Death_Knight_Frost_Deathbringer.simc"
 
 deathknight="TWW2_Death_Knight_Frost_Rider"
-deathknight.ams_absorb_percent=1
 spec=frost
 level=80
 race=maghar_orc
 role=attack
 position=back
-talents=CsPAAAAAAAAAAAAAAAAAAAAAAAAzMjZmxMDDzMzMzMGmJzYYwgZGzMMzMzMzMLzMAAAAAAAAAAAAgFzihBGY20QDbYmZGzMA
+talents=CsPAAAAAAAAAAAAAAAAAAAAAAAAzMjZmxYYGzMzMzMGmJzYYwgZGzMMzMzMzMLzMAAAAAAAAAAAAgFzihBGY20QDbYmZGzMA
 deathknight.ams_absorb_percent=1
 deathknight.first_ams_cast=0
 
