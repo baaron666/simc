@@ -156,6 +156,7 @@ jobs:
     with:
       cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
       cache-sha: ${{ github.sha }}
+      is-ptr: false
 
   spec-test-ptr:
     needs: [spec-test, ubuntu-clang-build]

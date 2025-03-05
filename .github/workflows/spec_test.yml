@@ -1,7 +1,5 @@
 name: spec-test
 
-run-name: ${{ github.event.workflow_run.head_commit.message }}
-
 on:
   workflow_call:
     inputs:
@@ -13,7 +11,7 @@ on:
         required: true
       is-ptr:
         type: boolean
-        required: false
+        required: true
 
 jobs:
   spec-test:
