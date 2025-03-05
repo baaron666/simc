@@ -984,7 +984,7 @@ public:
     // 11.1 Flowing Spirits proc modeling tweaks
     unsigned flowing_spirits_procs = 3;  // Number of Flowing Spirits procs in a shuffled rng
     unsigned flowing_spirits_total = 50; // Number of total draws in Flowing Spirits shuffled rng
-    double   tww1_4pc_flowing_spirits_chance = 0.2; // Chance to summon an additional wolf
+    double   tww1_4pc_flowing_spirits_chance = 1.0; // Chance to summon an additional wolf
   } options;
 
   // Cooldowns
