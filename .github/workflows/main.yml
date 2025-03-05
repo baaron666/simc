@@ -154,14 +154,14 @@ jobs:
     needs: [ubuntu-clang-build]
     uses: ./.github/workflows/spec_test.yml
     with:
-      cache-key: ${{ env.RUN_BINARY_CACHE }}
+      cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
       cache-sha: ${{ github.sha }}
 
   spec-test-ptr:
     needs: [spec-test, ubuntu-clang-build]
     uses: ./.github/workflows/spec_test.yml
     with:
-      cache-key: ${{ env.RUN_BINARY_CACHE }}
+      cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
       cache-sha: ${{ github.sha }}
       is-ptr: true
 
@@ -180,7 +180,7 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ${{ env.RUN_BINARY_CACHE }}
+          key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
 
       - uses: actions/checkout@v4
 
