@@ -15235,6 +15235,7 @@ void death_knight_action_t<Base>::apply_action_effects()
   parse_effects( p()->buffs.plaguebringer, p()->talent.unholy.plaguebringer );
   parse_effects( p()->mastery.dreadblade );
   parse_effects( p()->buffs.winning_streak_unholy, [ & ]( double v ) {
+    v *= 0.1; // Divides by 10 in spell data
     if ( p()->buffs.dark_transformation->check() )
       v *= 1.0 + p()->sets->set( DEATH_KNIGHT_UNHOLY, TWW2, B4 )->effectN( 1 ).percent();
 
@@ -15616,6 +15617,7 @@ struct death_knight_module_t : public module_t
     unique_gear::register_special_effect( 326982, runeforge::unending_thirst );
   }
 
+  /*
   void register_hotfixes() const override
   {
     hotfix::register_effect( "Death Knight", "2025-2-28", "Winning Streak Buffed to 4.5%", 1200456,
@@ -15624,7 +15626,7 @@ struct death_knight_module_t : public module_t
         .operation( hotfix::HOTFIX_SET )
         .modifier( 4.5 )
         .verification_value( 3 );
-  }
+  }*/
 
   void init( player_t* ) const override
   {
