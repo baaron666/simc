@@ -6859,9 +6859,11 @@ void zees_thug_hotline( special_effect_t& effect )
       e.player->buffs.bloodlust->add_stack_change_callback( [ & ]( buff_t*, int, int new_ ) {
           if ( new_ )
           {
-            pocket_ace_spawner.spawn();
-            snake_eyes_spawner.spawn();
-            thwack_jack_spawner.spawn();
+            make_event( sim, [ this ] {
+              pocket_ace_spawner.spawn();
+              snake_eyes_spawner.spawn();
+              thwack_jack_spawner.spawn();
+            } );
           }
         } );
     }
