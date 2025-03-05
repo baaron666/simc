@@ -13,6 +13,7 @@ on:
 
 env:
   SIMC_PROFILE: profiles/CI.simc
+  RUN_BINARY_CACHE: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
   CCACHE_COMPRESS: true # always enable ccache compression
   ccache-generation: 0 # bump if you need to "clean" ccache
 
@@ -153,29 +154,22 @@ jobs:
     needs: [ubuntu-clang-build]
     uses: ./.github/workflows/spec_test.yml
     with:
-      cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
+      cache-key: ${{ env.RUN_BINARY_CACHE }}
+      cache-sha: ${{ github.sha }}
 
-  #spec-test-ptr:
-  #  needs: [spec-test, ubuntu-clang-build]
-  #  uses: ./.github/workflows/spec_test.yml
-  #  with:
-  #    cache-key: ubuntu-clang++-15-for_run-${{ github.sha }}-cpp-17
-  #    is-ptr: true
+  spec-test-ptr:
+    needs: [spec-test, ubuntu-clang-build]
+    uses: ./.github/workflows/spec_test.yml
+    with:
+      cache-key: ${{ env.RUN_BINARY_CACHE }}
+      cache-sha: ${{ github.sha }}
+      is-ptr: true
 
-  apl-profile:
-    name: Action Priority List Dump / Regenerate Profiles
-    runs-on: ${{ matrix.os }}
-    needs: [spec-test, spelldata-dump]
-    if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraft/simc'
-
-    strategy:
-      fail-fast: false
-      matrix:
-        cppVersion: [17]
-        compiler: [clang++-15]
-        include:
-          - compiler: clang++-15
-            os: ubuntu-22.04
+  update-generated-files:
+    name: Update Generated Files
+    needs: [spec-test]
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraf/simc'
 
     steps:
       - uses: actions/cache@v4
@@ -186,81 +180,57 @@ jobs:
             tests
             generate_profiles_ci.sh
             .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
+          key: ${{ env.RUN_BINARY_CACHE }}
 
       - uses: actions/checkout@v4
 
-      - name: Download APLs
+      - name: Setup
+        run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
+
+      - name: Generate APL Modules
+        env:
+          SIMC_CLI_PATH: ${{ runner.workspace }}/b/ninja/simc
+        run: ${{ github.workspace }}/generate_apl_modules_ci.sh
+
+      - name: Download APL Dumps
         uses: actions/download-artifact@v4
         with:
           path: ActionPriorityLists
           pattern: apl-${{ github.sha }}-*
           merge-multiple: true
 
-      - name: Setup
-        run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
-
-      - name: Run
+      - name: Generate Profiles
         env:
-          UBSAN_OPTIONS: print_stacktrace=1
           SIMC_CLI_PATH: ${{ runner.workspace }}/b/ninja/simc
         run: ${{ github.workspace }}/generate_profiles_ci.sh
 
-      - name: Commit APLs
+      - name: Dump Spell Data
+        env:
+          SIMC_CLI_PATH: ${{ runner.workspace }}/b/ninja/simc
+        run: ${{ github.workspace}}/SpellDataDump/spelldatadump_ci.sh
+
+      - name: Check for Non-Trivial Changes
+        run: |
+          if [ "$(git ls-files -m)" = "SpellDataDump/build_info.txt" ]; then
+            git checkout -- SpellDataDump/build_info.txt
+          fi
+
+      - name: Commit Updated Files
         continue-on-error: true
         uses: EndBug/add-and-commit@v9
         with:
-          message: "Update APL Dump / Regenerate Profiles ${{ env.SHORT_SHA }}"
+          message: "Update Generated Files ${{ env.SHORT_SHAT }}"
           default_author: github_actions
           fetch: --no-tags --force --prune --no-recurse-submodules --depth=1 origin ${{ github.ref_name }}
-          add: "*.simc"
+          add: |
+            - "engine/class_modules/apl"
+            - "*.simc"
+            - "*.txt"
 
-      - name: Cleanup
+      - name: Cleanup APL Dumps
         uses: geekyeggo/delete-artifact@v5
         with:
           name: apl-${{ github.sha }}-*
-
-  update-generated-apl-modules:
-    name: Action Priority List Dump / Regenerate Profiles
-    runs-on: ${{ matrix.os }}
-    needs: [spec-test, spelldata-dump]
-    if: github.event_name == 'push' && ( success() || failure() ) && github.repository == 'simulationcraft/simc'
-
-    strategy:
-      fail-fast: false
-      matrix:
-        cppVersion: [17]
-        compiler: [clang++-15]
-        include:
-          - compiler: clang++-15
-            os: ubuntu-22.04
-
-    steps:
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ${{ runner.workspace }}/b/ninja/simc
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
-
-      - uses: actions/checkout@v4
-
-      - name: Setup
-        run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
-
-      - name: Run
-        env:
-          UBSAN_OPTIONS: print_stacktrace=1
-          SIMC_CLI_PATH: ${{ runner.workspace }}/b/ninja/simc
-        run: ${{ github.workspace }}/generate_apl_modules_ci.sh
-
-      - name: Commit code-generated APLs
-        continue-on-error: true
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: "Update generated APL modules ${{ env.SHORT_SHA }}"
-          default_author: github_actions
-          fetch: --no-tags --force --prune --no-recurse-submodules --depth=1 origin ${{ github.ref_name }}
-          add: "engine/class_modules/apl"
 
   ubuntu-run:
     name: ubuntu-${{ matrix.compiler }}-cpp-${{ matrix.cppVersion }}-${{ matrix.type }}
@@ -306,58 +276,6 @@ jobs:
         env:
           UBSAN_OPTIONS: print_stacktrace=1
         run: ${{ runner.workspace }}/b/ninja/simc output=/dev/null html=/dev/null json2=/dev/null ${{ matrix.simc_flags }}
-
-  spelldata-dump:
-    name: Spell Data Dump
-    runs-on: ${{ matrix.os }}
-    needs: [ubuntu-clang-build, ubuntu-run]
-    if: github.event_name == 'push'
-
-    strategy:
-      fail-fast: false
-      matrix:
-        cppVersion: [17]
-        compiler: [clang++-15]
-        include:
-          - compiler: clang++-15
-            os: ubuntu-22.04
-
-    steps:
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ${{ runner.workspace }}/b/ninja/simc
-            profiles
-            tests
-            generate_profiles_ci.sh
-            .git
-          key: ubuntu-${{ matrix.compiler }}-for_run-${{ github.sha }}-cpp-${{ matrix.cppVersion }}
-
-      - uses: actions/checkout@v4
-
-      - name: Dump Spell Data
-        env:
-          UBSAN_OPTIONS: print_stacktrace=1
-          SIMC_CLI_PATH: ${{ runner.workspace }}/b/ninja/simc
-        run: ${{ github.workspace}}/SpellDataDump/spelldatadump_ci.sh
-
-      - name: Check for Non-Trivial Changes
-        run: |
-          if [ "$(git ls-files -m)" = "SpellDataDump/build_info.txt" ]; then
-            git checkout -- SpellDataDump/build_info.txt
-          fi
-
-      - name: Setup
-        run: echo "SHORT_SHA=$(git rev-parse --short ${{ github.sha }})" >> $GITHUB_ENV
-
-      - name: Commit Spell Data
-        continue-on-error: true
-        uses: EndBug/add-and-commit@v9
-        with:
-          message: "Update Spell Data Dump ${{ env.SHORT_SHA }}"
-          default_author: github_actions
-          fetch: --no-tags --force --prune --no-recurse-submodules --depth=1 origin ${{ github.ref_name }}
-          add: "*.txt"
 
   build-osx:
     name: macos-latest

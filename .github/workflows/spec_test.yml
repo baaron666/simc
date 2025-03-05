@@ -8,6 +8,9 @@ on:
       cache-key:
         type: string
         required: true
+      cache-sha:
+        type: string
+        required: true
       is-ptr:
         type: boolean
         required: false
@@ -66,8 +69,6 @@ jobs:
     env:
       UBSAN_OPTIONS: print_stacktrace=1
       SIMC_ARGS: output=/dev/null threads=2 iterations=10 cleanup_threads=1 allow_experimental_specializations=1
-      #PTR_ARG: ptr=${{ inputs.is-ptr == true && "1" || "0" }}
-      PTR_ARG: ptr=0
       PLAYER_ARGS: load_default_gear=1
 
     steps:
@@ -89,103 +90,107 @@ jobs:
           echo "CLASS_STR=${MATRIX_SPEC%%_*}" >> "$GITHUB_ENV"
           echo "SPEC_STR=${MATRIX_SPEC#*_}" >> "$GITHUB_ENV"
 
+      - name: Enable PTR
+        if: inputs.is-ptr
+        run: echo "PTR_ARG=ptr=1" >> "$GITHUB_ENV"
+
       - name: "Log Debug"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} log=1 debug=1 ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} log=1 debug=1 ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} log=1 debug=1 ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} log=1 debug=1 ${{ matrix.style_arg }} \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "HTML JSON"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} html=test.html json=test.json ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} html=test.html json=test.json ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} html=test.html json=test.json ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} html=test.html json=test.json ${{ matrix.style_arg }} \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "No Talents, No Effects, No Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "No Talents, No Effects, All Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "No Talents, All Effects, No Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "No Talents, All Effects, All Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "Starter Talents, No Effects, No Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }} load_default_talents=1
 
       - name: "Starter Talents, No Effects, All Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }} load_default_talents=1
 
       - name: "Starter Talents, All Effects, No Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }} load_default_talents=1
 
       - name: "Starter Talents, All Effects, All Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }} load_default_talents=1
 
       - name: "All Talents, No Effects, No Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "All Talents, No Effects, All Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "All Talents, All Effects, No Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "All Talents, All Effects, All Sets"
         if: always()
         run: |
-          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }}  ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
+          ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
@@ -203,6 +208,6 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
-          name: apl-${{ github.event.workflow_run.head_sha }}-${{ matrix.spec }}
+          name: apl-${{ inputs.cache-sha }}-${{ matrix.spec }}
           path: ${{ matrix.spec }}.simc
           retention-days: 1
