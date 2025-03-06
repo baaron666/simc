@@ -198,6 +198,7 @@ jobs:
         uses: ouzi-dev/commit-status-updater@v2
         with:
           status: success
+          name: CI / spec-test-ptr / spec-test-$${{ matrix.spec }}-${{ matrix.fightstyle }} (${{ github.event_name }})
 
       - name: Dump APL
         id: dump_apl
