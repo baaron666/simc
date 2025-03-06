@@ -17,7 +17,6 @@ jobs:
   spec-test:
     name: spec-test-${{ matrix.spec }}-${{ matrix.fightstyle }}
     runs-on: ubuntu-22.04
-    continue-on-error: ${{ inputs.is-ptr }}
 
     strategy:
       fail-fast: false
@@ -95,6 +94,7 @@ jobs:
 
       - name: "Log Debug"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} log=1 debug=1 ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 enable_all_sets=1 \
@@ -104,6 +104,7 @@ jobs:
 
       - name: "HTML JSON"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} html=test.html json=test.json ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 enable_all_sets=1 \
@@ -113,12 +114,14 @@ jobs:
 
       - name: "No Talents, No Effects, No Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
       - name: "No Talents, No Effects, All Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_sets=1 \
@@ -126,6 +129,7 @@ jobs:
 
       - name: "No Talents, All Effects, No Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 \
@@ -133,6 +137,7 @@ jobs:
 
       - name: "No Talents, All Effects, All Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 enable_all_sets=1 \
@@ -140,12 +145,14 @@ jobs:
 
       - name: "Starter Talents, No Effects, No Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }} load_default_talents=1
 
       - name: "Starter Talents, No Effects, All Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_sets=1 \
@@ -153,6 +160,7 @@ jobs:
 
       - name: "Starter Talents, All Effects, No Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 \
@@ -160,6 +168,7 @@ jobs:
 
       - name: "Starter Talents, All Effects, All Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_item_effects=1 enable_all_sets=1 \
@@ -167,6 +176,7 @@ jobs:
 
       - name: "All Talents, No Effects, No Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 \
@@ -174,6 +184,7 @@ jobs:
 
       - name: "All Talents, No Effects, All Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_sets=1 \
@@ -181,6 +192,7 @@ jobs:
 
       - name: "All Talents, All Effects, No Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 \
@@ -188,6 +200,7 @@ jobs:
 
       - name: "All Talents, All Effects, All Sets"
         if: always()
+        continue-on-error: ${{ inputs.is-ptr }}
         run: |
           ${{ runner.workspace }}/b/ninja/simc ${{ env.PTR_ARG }} ${{ env.SIMC_ARGS }} ${{ matrix.style_arg }} \
             enable_all_talents=1 enable_all_item_effects=1 enable_all_sets=1 \
