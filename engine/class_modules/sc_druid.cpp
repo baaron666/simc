@@ -4335,7 +4335,7 @@ struct adaptive_swarm_t final : public cat_attack_t
   {
     timespan_t g = cat_attack_t::gcd();
 
-    if ( p()->buff.cat_form->check() )
+    if ( p()->form == CAT_FORM )
       g += gcd_add;
 
     return g;
@@ -4467,12 +4467,12 @@ struct brutal_slash_t final : public trigger_claw_rampage_t<DRUID_FERAL,
 
   resource_e current_resource() const override
   {
-    return p()->buff.cat_form->check() ? RESOURCE_ENERGY : RESOURCE_NONE;
+    return p()->form == CAT_FORM ? RESOURCE_ENERGY : RESOURCE_NONE;
   }
 
   double composite_energize_amount( const action_state_t* s ) const override
   {
-    return p()->buff.cat_form->check() ? base_t::composite_energize_amount( s ) : 0.0;
+    return p()->form == CAT_FORM ? base_t::composite_energize_amount( s ) : 0.0;
   }
 };
 
@@ -6336,7 +6336,7 @@ struct regrowth_t final : public druid_heal_t
   {
     timespan_t g = druid_heal_t::gcd();
 
-    if ( p()->buff.cat_form->check() )
+    if ( p()->form == CAT_FORM )
       g += gcd_add;
 
     return g;
@@ -6752,7 +6752,7 @@ struct frenzied_regeneration_t final : public bear_attacks::rage_spender_t<
 
   resource_e current_resource() const override
   {
-    if ( p()->talent.empowered_shapeshifting.ok() && p()->buff.cat_form->check() )
+    if ( p()->talent.empowered_shapeshifting.ok() && p()->form == CAT_FORM )
       return RESOURCE_ENERGY;
     else
       return base_t::current_resource();
@@ -7312,7 +7312,7 @@ struct entangling_roots_t final : public druid_spell_t
   {
     timespan_t g = druid_spell_t::gcd();
 
-    if ( p()->buff.cat_form->check() )
+    if ( p()->form == CAT_FORM )
       g += gcd_add;
 
     return g;
@@ -8061,20 +8061,22 @@ struct swipe_proxy_t final : public druid_spell_t
 
   timespan_t gcd() const override
   {
-    if ( p()->buff.cat_form->check() )
-      return swipe_cat->gcd();
-    else if ( p()->buff.bear_form->check() )
-      return swipe_bear->gcd();
-
-    return druid_spell_t::gcd();
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return swipe_bear->gcd();
+      case CAT_FORM:  return swipe_cat->gcd();
+      default:        return druid_spell_t::gcd();
+    }
   }
 
   void execute() override
   {
-    if ( p()->buff.cat_form->check() )
-      swipe_cat->execute();
-    else if ( p()->buff.bear_form->check() )
-      swipe_bear->execute();
+    switch ( p()->form )
+    {
+      case BEAR_FORM: swipe_bear->execute(); break;
+      case CAT_FORM:  swipe_cat->execute();  break;
+      default:        break;
+    }
 
     if ( pre_execute_state )
       action_state_t::release( pre_execute_state );
@@ -8082,42 +8084,42 @@ struct swipe_proxy_t final : public druid_spell_t
 
   bool action_ready() override
   {
-    if ( p()->buff.cat_form->check() )
-      return swipe_cat->action_ready();
-    else if ( p()->buff.bear_form->check() )
-      return swipe_bear->action_ready();
-
-    return false;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return swipe_bear->action_ready();
+      case CAT_FORM:  return swipe_cat->action_ready();
+      default:        return false;
+    }
   }
 
-  bool target_ready( player_t* candidate_target ) override
+  bool target_ready( player_t* t ) override
   {
-    if ( p()->buff.cat_form->check() )
-      return swipe_cat->target_ready( candidate_target );
-    else if ( p()->buff.bear_form->check() )
-      return swipe_bear->target_ready( candidate_target );
-
-    return false;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return swipe_bear->target_ready( t );
+      case CAT_FORM:  return swipe_cat->target_ready( t );
+      default:        return false;
+    }
   }
 
   bool ready() override
   {
-    if ( p()->buff.cat_form->check() )
-      return swipe_cat->ready();
-    else if ( p()->buff.bear_form->check() )
-      return swipe_bear->ready();
-
-    return false;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return swipe_bear->ready();
+      case CAT_FORM:  return swipe_cat->ready();
+      default:        return false;
+    }
   }
 
   double cost() const override
   {
-    if ( p()->buff.cat_form->check() )
-      return swipe_cat->cost();
-    else if ( p()->buff.bear_form->check() )
-      return swipe_bear->cost();
-
-    return 0;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return swipe_bear->cost();
+      case CAT_FORM:  return swipe_cat->cost();
+      default:        return 0.0;
+    }
   }
 };
 
@@ -8154,20 +8156,22 @@ struct thrash_proxy_t final : public druid_spell_t
 
   timespan_t gcd() const override
   {
-    if ( p()->buff.cat_form->check() )
-      return thrash_cat->gcd();
-    else if ( p()->buff.bear_form->check() )
-      return thrash_bear->gcd();
-
-    return druid_spell_t::gcd();
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return thrash_bear->gcd();
+      case CAT_FORM:  return thrash_cat->gcd();
+      default:        return druid_spell_t::gcd();
+    }
   }
 
   void execute() override
   {
-    if ( p()->buff.cat_form->check() )
-      thrash_cat->execute();
-    else if ( p()->buff.bear_form->check() )
-      thrash_bear->execute();
+    switch ( p()->form )
+    {
+      case BEAR_FORM: thrash_bear->execute(); break;
+      case CAT_FORM:  thrash_cat->execute();  break;
+      default:        break;
+    }
 
     if ( pre_execute_state )
       action_state_t::release( pre_execute_state );
@@ -8175,52 +8179,52 @@ struct thrash_proxy_t final : public druid_spell_t
 
   bool action_ready() override
   {
-    if ( p()->buff.cat_form->check() )
-      return thrash_cat->action_ready();
-    else if ( p()->buff.bear_form->check() )
-      return thrash_bear->action_ready();
-
-    return false;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return thrash_bear->action_ready();
+      case CAT_FORM:  return thrash_cat->action_ready();
+      default:        return false;
+    }
   }
 
   dot_t* get_dot( player_t* t ) override
   {
-    if ( p()->buff.cat_form->check() )
-      return thrash_cat->get_dot( t );
-    else if ( p()->buff.bear_form->check() )
-      return thrash_bear->get_dot( t );
-
-    return nullptr;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return thrash_bear->get_dot( t );
+      case CAT_FORM:  return thrash_cat->get_dot( t );
+      default:        return nullptr;
+    }
   }
 
-  bool target_ready( player_t* candidate_target ) override
+  bool target_ready( player_t* t ) override
   {
-    if ( p()->buff.cat_form->check() )
-      return thrash_cat->target_ready( candidate_target );
-    else if ( p()->buff.bear_form->check() )
-      return thrash_bear->target_ready( candidate_target );
-
-    return false;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return thrash_bear->target_ready( t );
+      case CAT_FORM:  return thrash_cat->target_ready( t );
+      default:        return false;
+    }
   }
 
   bool ready() override
   {
-    if ( p()->buff.cat_form->check() )
-      return thrash_cat->ready();
-    else if ( p()->buff.bear_form->check() )
-      return thrash_bear->ready();
-
-    return false;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return thrash_bear->ready();
+      case CAT_FORM:  return thrash_cat->ready();
+      default:        return false;
+    }
   }
 
   double cost() const override
   {
-    if ( p()->buff.cat_form->check() )
-      return thrash_cat->cost();
-    else if ( p()->buff.bear_form->check() )
-      return thrash_bear->cost();
-
-    return 0;
+    switch ( p()->form )
+    {
+      case BEAR_FORM: return thrash_bear->cost();
+      case CAT_FORM:  return thrash_cat->cost();
+      default:        return 0.0;
+    }
   }
 };
 
@@ -9215,7 +9219,7 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
     switch ( conv_type )
     {
       case CAST_MOONFIRE:
-        if ( p()->buff.cat_form->check() )
+        if ( p()->form == CAT_FORM )
           return actions.conv_lunar_inspiration;
         else
           return actions.conv_moonfire;
@@ -9502,12 +9506,13 @@ struct convoke_the_spirits_t final : public trigger_control_of_the_dream_t<druid
     main_count = 0;
 
     // form-specific execute setup
-    if ( p()->buff.bear_form->check() )
-      _execute_bear();
-    else if ( p()->buff.moonkin_form->check() )
-      _execute_moonkin();
-    else if ( p()->buff.cat_form->check() )
-      _execute_cat();
+    switch ( p()->form )
+    {
+      case BEAR_FORM:    _execute_bear();    break;
+      case CAT_FORM:     _execute_cat();     break;
+      case MOONKIN_FORM: _execute_moonkin(); break;
+      default:           break;
+    }
 
     cast_list.insert( cast_list.end(), max_ticks - cast_list.size(), CAST_SPEC );
   }
@@ -12737,7 +12742,7 @@ double druid_t::resource_regen_per_second( resource_e r ) const
 
   if ( r == RESOURCE_MANA )
   {
-    if ( specialization() == DRUID_BALANCE && buff.moonkin_form->check() )
+    if ( specialization() == DRUID_BALANCE && form == MOONKIN_FORM )
       reg *= ( 1.0 + buff.moonkin_form->data().effectN( 5 ).percent() ) / cache.spell_haste();
   }
   else if ( r == RESOURCE_ENERGY )
@@ -12988,9 +12993,9 @@ double druid_t::non_stacking_movement_modifier() const
 {
   double ms = player_t::non_stacking_movement_modifier();
 
-  if ( buff.dash->up() && buff.cat_form->check() )
+  if ( buff.dash->up() && form == CAT_FORM )
     ms = std::max( ms, buff.dash->check_value() );
-  else if ( buff.tiger_dash->up() && buff.cat_form->check() )
+  else if ( buff.tiger_dash->up() && form == CAT_FORM )
     ms = std::max( ms, buff.tiger_dash->check_value() );
 
   if ( buff.wild_charge_movement->check() )
@@ -13008,7 +13013,7 @@ double druid_t::stacking_movement_modifier() const
 
   ms += buff.forestwalk->check_value();
 
-  if ( buff.cat_form->check() )
+  if ( form == CAT_FORM )
     ms += spec.cat_form_speed->effectN( 1 ).percent();
 
   ms += talent.feline_swiftness->effectN( 1 ).percent();
@@ -13449,29 +13454,33 @@ void druid_t::target_mitigation( school_e school, result_amount_type rt, action_
 
   s->result_amount *= 1.0 + buff.guardians_tenacity->check_stack_value();
 
-  if ( spec.ursine_adept->ok() && buff.bear_form->check() )
+  if ( spec.ursine_adept->ok() && form == BEAR_FORM )
     s->result_amount *= 1.0 + spec.ursine_adept->effectN( 2 ).percent();
 
   // as this is run-time, we can't use find_effect. TODO: possibly cache these values somewhere
   if ( talent.glistening_fur.ok() )
   {
-    if ( buff.bear_form->check() )
+    switch ( form )
     {
-      if ( dbc::is_school( school, SCHOOL_ARCANE ) )
-        s->result_amount *= 1.0 + buff.bear_form->data().effectN( 14 ).percent();
-      else
-        s->result_amount *= 1.0 + buff.bear_form->data().effectN( 13 ).percent();
-    }
-    else if ( buff.moonkin_form->check() )
-    {
-      if ( dbc::is_school( school, SCHOOL_ARCANE ) )
-        s->result_amount *= 1.0 + buff.moonkin_form->data().effectN( 13 ).percent();
-      else
-        s->result_amount *= 1.0 + buff.moonkin_form->data().effectN( 12 ).percent();
+      case BEAR_FORM:
+        if ( dbc::is_school( school, SCHOOL_ARCANE ) )
+          s->result_amount *= 1.0 + buff.bear_form->data().effectN( 14 ).percent();
+        else
+          s->result_amount *= 1.0 + buff.bear_form->data().effectN( 13 ).percent();
+        break;
+
+      case MOONKIN_FORM:
+        if ( dbc::is_school( school, SCHOOL_ARCANE ) )
+          s->result_amount *= 1.0 + buff.moonkin_form->data().effectN( 13 ).percent();
+        else
+          s->result_amount *= 1.0 + buff.moonkin_form->data().effectN( 12 ).percent();
+        break;
+
+      default: break;
     }
   }
 
-  if ( talent.empowered_shapeshifting.ok() && buff.bear_form->check() &&
+  if ( talent.empowered_shapeshifting.ok() && form == BEAR_FORM &&
        spec.bear_form_passive_2->effectN( 3 ).has_common_school( school ) )
   {
     s->result_amount *= 1.0 + talent.empowered_shapeshifting->effectN( 4 ).percent();
@@ -14298,7 +14307,7 @@ void druid_t::parse_action_effects( action_t* action )
   // Class
   _a->parse_effects( buff.cat_form );
   _a->parse_effects( spec.cat_form_passive_2, talent.hunt_beneath_the_open_skies,
-                     [ this ] { return buff.cat_form->check(); } );
+                     [ this ] { return form == CAT_FORM; } );
   _a->parse_effects( buff.moonkin_form );
 
   auto hotw_mask = effect_mask_t( true );
@@ -14395,7 +14404,7 @@ void druid_t::parse_action_effects( action_t* action )
 
   // Guardian
   _a->parse_effects( buff.bear_form );
-  _a->parse_effects( spec.bear_form_passive_2, [ this ] { return buff.bear_form->check(); } );
+  _a->parse_effects( spec.bear_form_passive_2, [ this ] { return form == BEAR_FORM; } );
 
   auto bear_mask = effect_mask_t( false ).enable( 1, 4, 5 );
   if ( talent.berserk_persistence.ok() )
