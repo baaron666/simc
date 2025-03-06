@@ -2028,16 +2028,16 @@ struct sck_tick_action_t : charred_passions_t<monk_melee_attack_t>
     parse_effects( p->talent.windwalker.crane_vortex );
 
     // dance of chiji is scripted
-    const auto add_docj_parse_entry = [ this, &p ]( auto talent ) {
-      if ( const auto &effect = talent->effectN( 1 ); effect.ok() )
+    const auto add_docj_parse_entry = [ this, &p ]( auto talent, size_t effectNum ) {
+      if ( const auto &effect = talent->effectN( effectNum ); effect.ok() )
         add_parse_entry( da_multiplier_effects )
             .set_func( [ &b = p->buff.dance_of_chiji_hidden ]() { return b->check(); } )
             .set_value( effect.percent() )
             .set_eff( &effect );
     };
 
-    add_docj_parse_entry( p->talent.mistweaver.dance_of_chiji );
-    add_docj_parse_entry( p->talent.windwalker.dance_of_chiji );
+    add_docj_parse_entry( p->talent.mistweaver.dance_of_chiji, 1 );
+    add_docj_parse_entry( p->passives.dance_of_chiji, 2 );
   }
 
   result_amount_type report_amount_type( const action_state_t * ) const override
