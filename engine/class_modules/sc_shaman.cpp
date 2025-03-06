@@ -984,7 +984,7 @@ public:
     // 11.1 Flowing Spirits proc modeling tweaks
     unsigned flowing_spirits_procs = 3;  // Number of Flowing Spirits procs in a shuffled rng
     unsigned flowing_spirits_total = 50; // Number of total draws in Flowing Spirits shuffled rng
-    double   tww1_4pc_flowing_spirits_chance = 1.0; // Chance to summon an additional wolf
+    double   tww1_4pc_flowing_spirits_chance = -1.0; // Chance to summon an additional wolf
   } options;
 
   // Cooldowns
@@ -13482,7 +13482,13 @@ void shaman_t::trigger_flowing_spirits( action_t* action )
   }
 
   auto n_summons = 1U;
-  if ( rng().roll( options.tww1_4pc_flowing_spirits_chance ) )
+  // [BUG] 2025-03-06 Apparently in-game, only Elemental Spirits gets the TWW1 4PC chance to spawn
+  // an additional wolf chance reduction.
+  if ( rng().roll( options.tww1_4pc_flowing_spirits_chance == -1.0
+    ? bugs
+      ? talent.elemental_spirits.ok() ? 0.2 : 1.0
+      : 0.2
+    : options.tww1_4pc_flowing_spirits_chance  ) )
   {
     n_summons += as<unsigned>(
       sets->set( SHAMAN_ENHANCEMENT, TWW1, B4 )->effectN( 1 ).base_value() );
