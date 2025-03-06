@@ -14395,6 +14395,7 @@ void druid_t::parse_action_effects( action_t* action )
 
   // Guardian
   _a->parse_effects( buff.bear_form );
+  _a->parse_effects( spec.bear_form_passive_2, [ this ] { return buff.bear_form->check(); } );
 
   auto bear_mask = effect_mask_t( false ).enable( 1, 4, 5 );
   if ( talent.berserk_persistence.ok() )
