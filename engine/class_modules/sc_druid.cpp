@@ -3701,7 +3701,8 @@ struct druid_form_t : public druid_spell_t
     {
       // TODO: confirm meditation required scales with spell haste
       if ( old_buff && meditation_dur > 0_ms &&
-           old_buff->elapsed( sim->current_time() ) >= meditation_required * p()->cache.spell_haste() )
+           ( sim->current_time() == 0_ms ||
+             old_buff->elapsed( sim->current_time() ) >= meditation_required * p()->cache.spell_haste() ) )
       {
         // remove old lycaras meditation
         if ( p()->lycaras_meditation_buff )
