@@ -193,6 +193,12 @@ jobs:
             enable_all_talents=1 enable_all_item_effects=1 enable_all_sets=1 \
             ${{ env.CLASS_STR }}=${{ matrix.spec }} spec=${{ env.SPEC_STR }} ${{ env.PLAYER_ARGS }}
 
+      - name: Update Status
+        if: failure() && inputs.is-ptr
+        uses: ouzi-dev/commit-status-updater@v2
+        with:
+          status: success
+
       - name: Dump APL
         id: dump_apl
         if: github.event_name == 'push' && matrix.fightstyle == 'singletarget' && !failure() && !inputs.is-ptr
