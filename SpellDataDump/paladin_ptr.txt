@@ -1,4 +1,4 @@
-SimulationCraft 1100-02 for World of Warcraft 11.1.0.59347 PTR
+SimulationCraft 1100-02 for World of Warcraft 11.1.5.59571 PTR
 Name             : Block (desc=Passive) (id=107) [Passive] 
 Class            : Warrior, Paladin, Shaman
 School           : Physical
@@ -909,7 +909,7 @@ Effects          :
                    Base Value: -50 | Scaled Value: -50 | Misc Value: 33 | Target: Self (1)
 #3 (id=1031977)  : Apply Aura (6) | Dummy (4)
                    Base Value: 1 | Scaled Value: 1 | Misc Value: 23 | Target: Self (1)
-Description      : $?(c1|c2|c3)[Avenging Wrath now ][The duration of Avenging Wrath is increased by $s1%.]$?c1[reduces Holy Shock's cooldown by $s2%,]?c2[causes Judgment to generate $s3 additional Holy Power,]?c3[causes each Holy Power spent to explode with Holy light for $326731s1 damage to nearby enemies,][]$?(c1|c2|c3)[ and its duration is increased by $s1%.][]
+Description      : $?(c1|c2|c3)[][The duration of Avenging Wrath is increased by $s1%.]$?c1[Avenging Wrath and Avenging Crusader reduce Holy Shock's cooldown by $s2%,]?c2[Avenging Wrath and Sentinel cause Judgment to generate $s3 additional Holy Power,]?c3[Avenging Wrath and Crusade cause each Holy Power spent to explode with Holy light for $326731s1 damage to nearby enemies,][]$?(c1|c2|c3)[ and have $s1% increased duration.][]
 Variables        : $time= $?a385438&a53376[${$389539d}]?a385438[${$389539d*(1+($53376s1/100))}]?a53376[${$31884d}][${$31884d*(1+($53376s1/100))}]
 
 Name             : Divine Storm (id=53385) [Spell Family (10)] 
@@ -2015,7 +2015,6 @@ Effects          :
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | SP Coefficient: 4.32 | Target: Enemy (6)
 #2 (id=128372)   : Direct Heal (10) | Attributes: Add Target (Dest) Combat Reach to AOE (11)
                    Base Value: 0 | Scaled Value: 0 (delta=0.05) | SP Coefficient: 3.78 | Radius: 0 - 30 yards | Target: At Enemy (53) -> At Friendly in Area (31)
-Hotfixed         : SP Coefficient (3.15 -> 3.78)
 #3 (id=128388)   : Server Side Script (77) | Attributes: Add Target (Dest) Combat Reach to AOE (11)
                    Base Value: 0 | Scaled Value: 0 | Radius: 0 - 30 yards | Target: At Enemy (53) -> To Area (8)
 Description      : $@spelldesc114165
@@ -2584,12 +2583,10 @@ Effects          :
                    Base Value: 1 | Scaled Value: 1
                    Affected Spells: Flash of Light (19750), Holy Shock (25914), Holy Light (82326), Word of Glory (85673), Holy Prism (114165), Holy Prism (114852), Holy Prism (114871), Arcing Light (119952), Barrier of Faith (148039), Eternal Flame (156322), Merciful Auras (183415), Judgment of Light (183811), Light of the Martyr (183998), Holy Ritual (199423), Tyr's Deliverance (200654), Merciful Auras (210291), Bestow Faith (223306), Light of Dawn (225311), Radiant Incandescence (278147), Grace of the Justicar (278785), Glimmer of Light (287286), Ashen Hallow (317223), Glimmer of Light (325983), Shock Barrier (337824), Hallowed Discernment (340214), Divine Toll (375576), Golden Path (377129), Light of the Titans (378412), Seal of Charity (384810), Recompense (384914), Barrier of Faith (395180), Lightforged Blessing (403460), Lightforged Blessing (407467), Glimmer of Light (416619), Seal of the Crusader (416771), Holy Reverberation (423377), Dawnlight (431381), Sun Sear (431415), Sun's Avatar (431939), Rite of Adjuration (433682), Hammer and Anvil (433722), Divine Guidance (433807), Sacred Weapon (441590), Sacred Word (447246), Eternal Flame (461432), Truth Prevails (461529), Truth Prevails (461546), Sun's Avatar (463074), A Just Reward (469413), Insurance! (1215534), Insurance! (1215535)
                    Family Flags: 38, 46, 90
-Hotfixed         : Base Value (-3 -> 1)
 #2 (id=191084)   : Apply Aura (6) | Add Percent Modifier (108): Spell Periodic Amount (22)
                    Base Value: 1 | Scaled Value: 1 | Misc Value: 22
                    Affected Spells: Flash of Light (19750), Holy Shock (25914), Holy Light (82326), Word of Glory (85673), Arcing Light (119952), Eternal Flame (156322), Merciful Auras (183415), Judgment of Light (183811), Light of the Martyr (183998), Holy Ritual (199423), Tyr's Deliverance (200654), Merciful Auras (210291), Bestow Faith (223306), Light of Dawn (225311), Radiant Incandescence (278147), Grace of the Justicar (278785), Glimmer of Light (287286), Ashen Hallow (317223), Glimmer of Light (325983), Shock Barrier (337824), Hallowed Discernment (340214), Divine Toll (375576), Golden Path (377129), Light of the Titans (378412), Seal of Charity (384810), Recompense (384914), Barrier of Faith (395180), Lightforged Blessing (403460), Lightforged Blessing (407467), Glimmer of Light (416619), Seal of the Crusader (416771), Holy Reverberation (423377), Dawnlight (431381), Sun Sear (431415), Sun's Avatar (431939), Rite of Adjuration (433682), Hammer and Anvil (433722), Divine Guidance (433807), Sacred Weapon (441590), Sacred Word (447246), Eternal Flame (461432), Truth Prevails (461529), Truth Prevails (461546), Sun's Avatar (463074), A Just Reward (469413), Insurance! (1215534), Insurance! (1215535)
                    Family Flags: 46
-Hotfixed         : Base Value (-3 -> 1)
 #3 (id=191085)   : Apply Aura (6) | Hasted Cooldown Duration (416)
                    Base Value: 100 | Scaled Value: 100 | SP Coefficient: 0.25 | Misc Value: 11 | Target: Self (1)
                    Affected Spells: Denounce (2812), Holy Shock (20473), Holy Shock (25912), Consecration (26573), Avenger's Shield (31935), Crusader Strike (35395), Hammer of the Righteous (53595), Shield of the Righteous (53600), Consecration (81297), Light of Dawn (85222), Crusader Strike (132331), Blade of Justice (184575), Divine Hammer (198034), Light of Dawn (225311), Consecration (243597), Execution Sentence (343527), Final Reckoning (343721), Focused Enmity (378845), Expurgation (383344), Execution Sentence (387113), Execution Sentence (387200), Consecration (387881), Blade of Justice (404358), Shield of the Righteous (415091), Consecration (419810)
@@ -3716,7 +3713,6 @@ Description      : $@spelldesc31935
 Tooltip          : The effects of your next Shield of the Righteous are increased by $s1%.
 
 Name             : Divine Hammer (id=198034) [Spell Family (10)] 
-Hotfixed         : Proc Flags 1 (4116 -> 4112), Internal Cooldown (1000 -> 0), Attributes
 Talent Entry     : Retribution [tree=spec, row=6, col=4, max_rank=1, req_points=8]
 Class            : Paladin
 School           : Holy
@@ -4214,7 +4210,7 @@ Effects          :
                    Base Value: 25 | Scaled Value: 25
 #5 (id=1080985)  : Apply Aura (6) | Apply Percent Modifier w/ Label (218): Spell Radius (6)
                    Base Value: 15 | Scaled Value: 15 | Misc Value: 6 | Misc Value 2: 2664 (Label) | Target: Self (1)
-                   Affected Spells (Label): Consecration (81297), Golden Path (377129)
+                   Affected Spells (Label): Consecration (81297), Golden Path (377129), Divine Guidance (1228455)
 Description      : Your Consecration is $s1% larger, and enemies within it have $s2% reduced movement speed.$?c3[
 
 Your Divine Hammer is $s4% larger, and enemies within them have ${$198137s3*-1}% reduced movement speed.][]
@@ -5076,7 +5072,6 @@ Effects          :
                    Base Value: -100 | Scaled Value: -100 | Misc Value: 39 | Target: Self (1)
                    Affected Spells: Denounce (2812), Shield of the Righteous (53600), Light of Dawn (85222), Word of Glory (85673), Eternal Flame (156322), Light of Dawn (225311), Afterimage (391309), Shield of the Righteous (415091), Eternal Flame (461432)
                    Family Flags: 52, 78, 82, 89
-Hotfixed         : NEW EFFECT
 Description      : $@spelldesc223817
 Tooltip          : Your next Holy Power spending ability is free and deals $s2% increased damage and healing.
 
@@ -12314,7 +12309,6 @@ Description      : $@spelldesc393672
 Tooltip          : Your next Holy Shock deals $s1% additional damage or healing.
 
 Name             : Unending Light (id=394709) [Spell Family (10)] 
-Hotfixed         : Proc Flags 1 (16384 -> 0), Internal Cooldown (0 -> 500), Attributes, Proc Flags 2 (0 -> 4)
 Class            : Paladin
 School           : Physical
 Spell Type       : Magic
@@ -15398,7 +15392,7 @@ Effects          :
                    Family Flags: 5
 #2 (id=1101750)  : Apply Aura (6) | Apply Percent Modifier w/ Label (218): Spell Radius (6)
                    Base Value: 30 | Scaled Value: 30 | PvP Coefficient: 0.5 | Misc Value: 6 | Misc Value 2: 2664 (Label) | Target: Self (1)
-                   Affected Spells (Label): Consecration (81297), Golden Path (377129)
+                   Affected Spells (Label): Consecration (81297), Golden Path (377129), Divine Guidance (1228455)
 #3 (id=1101757)  : Apply Aura (6) | Apply Percent Modifier w/ Label (218): Spell Direct Amount (0)
                    Base Value: 200 | Scaled Value: 200 | PvP Coefficient: 0.5 | Misc Value 2: 2906 (Label) | Target: Self (1)
 #4 (id=1102994)  : Apply Aura (6) | Modify Damage Taken% (87)
@@ -17152,7 +17146,7 @@ Name             : Divine Guidance (id=433808) [Spell Family (10)]
 Class            : Paladin
 School           : Holy
 Spell Type       : Magic
-Range            : 40 yards
+Range            : 50000 yards
 Labels           : 16: Class Spells
                  : 26: Paladin Spells
                  : 292
@@ -18195,7 +18189,6 @@ Wake of Ashes activates $?s384392[Crusade for $454373d][Avenging Wrath for $4543
 Each Holy Power spent has a chance to activate $?s384392[Crusade for ${$454373d/2} sec][Avenging Wrath for ${$454351d/2} sec].
 
 Name             : Divine Favor (id=460422) [Spell Family (10), Passive] 
-Hotfixed         : Proc Flags 1 (0 -> 16384), Proc Flags 2 (4 -> 0)
 Talent Entry     : Holy [tree=spec, row=6, col=2, max_rank=1, req_points=8, select_idx=100]
 Class            : Paladin
 School           : Physical
@@ -19435,7 +19428,6 @@ Effects          :
 Description      : While you have |cFFFFFFFF Luck of the Draw!|r Shield of the Righteous refunds $s1-$s2 Holy Power and extends the duration of |cFFFFFFFF Luck of the Draw!|r by ${$s3/1000}.1 sec, up to $1218114d.
 
 Name             : Winning Streak! (id=1216828) [Spell Family (10)] 
-Hotfixed         : Aura Interrupt, Channel Interrupt
 Class            : Paladin
 School           : Physical
 Spell Type       : None
@@ -19522,5 +19514,20 @@ Effects          :
                    Base Value: 15 | Scaled Value: 15 | PvP Coefficient: 0.5 | Target: Self (1)
 Description      : $@spelldesc1215987
 Tooltip          : Damage increased by $s1%.$?a1215989[ Shield of the Righteous refunds Holy Power.][]
+
+Name             : Divine Guidance (id=1228455) [Spell Family (10), Hidden] 
+Class            : Paladin
+School           : Holy
+Spell Type       : None
+Range            : 100 yards
+Labels           : 16: Class Spells
+                 : 26: Paladin Spells
+                 : 292
+                 : 2664: Consecrated Ground (204054 effect#5), Sanctification (424622 effect#2)
+Attributes       : Do Not Display (Spellbook, Aura Icon, Combat Log) (7), No Threat (42), Suppress Caster Procs (112), Suppress Target Procs (113), Do Not Display Range (126), Suppress Weapon Procs (151), Area Effects Use Target Radius (328)
+Effects          :
+#1 (id=1219472)  : Dummy (3)
+                   Base Value: 0 | Scaled Value: 0 | Radius: 0 - 8 yards | Target: Unknown(87) -> To Area (8)
+Description      : $@spelldesc433106
 
 
